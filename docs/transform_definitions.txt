@@ -1,0 +1,32 @@
+Transform definitions
+
+the _transform module maps each named transform to its input and output classes so that calling
+transform( <input_instance>, <output_class> ) will match to the required transform module
+in /fourdvar/transfunc and return the output instance requested
+
+These transforms are:
+
+condition:          (PhysicalData -> UnknownData)
+-apply and pre-conditioning to physical data and express information as a vector
+
+uncondition:        (UnknownData -> PhysicalData)
+-undo pre-conditioning and re-attach lost meta-data, inverse of condition
+
+prepare_model:      (PhysicalData -> ModelInputData)
+-convert into format used by the forward model (e.g: change resolution, create files etc.)
+
+run_model:          (ModelInputData -> ModelOutputData)
+-run the forward model, collect output into ModelOutputData class
+
+obs_operator:       (ModelOutputData -> ObservationData)
+-observation operator, created simulated observations based of model output
+
+calc_forcing:       (ObservationData -> AdjointForcingData)
+-produce input for adjoint model based off weighted residual of observations
+
+run_adjoint:        (AdjointForcingData -> SensitivityData)
+-run the adjoint of the forward model
+
+condition_adjoint:  (SensitivityData -> UnknownData)
+-convert output of adjoint model into gradient vector in Unknown space
+
