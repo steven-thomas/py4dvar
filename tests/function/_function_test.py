@@ -62,8 +62,7 @@ def is_interp_valid( python_interp ):
 
 def make_valid_test( test_list ):
     #check all provided tests exist inside test_dir
-    loc = os.path.dirname( os.path.realpath( __file__ ) )
-    test_dir = os.path.join( loc, 'function' )
+    test_dir = os.path.dirname( os.path.realpath( __file__ ) )
     checked_list = []
     if type(test_list) == str and test_list.strip().lower() == 'all':
         all_files = os.listdir( test_dir )

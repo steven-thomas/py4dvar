@@ -1,9 +1,18 @@
-the tests package has 2 subpackages included.
+the tests package has 3 subpackages included.
 
-function: collection of boolean tests to check that the components of the system. 
- each test will fail if an exception was raised and pass otherwise.
- the 'run_test' script will call each of these tests and report on what passed and failed.
+Skeleton:
+This is mine. Testing for the framework during development. users should not need this.
 
-accuracy: each test in this folder produces a report regarding the accuracy or internal consistency of components
- e.g.: will condition/uncondition return you to your starting point
+Function:
+This is for auto-testing user-required code.
+It tests all the user-definied components that are required by the framework to run.
+All these tests should be pre-defined and will not require user modification to run.
+These tests are accessed by the tests/check_error.py file, where user-parameters are set and the functions are run.
+output is a summary pass/fail list for every test run and a traceback for any failed test.
+outputs can be send to a file, the screen, or supressed by the params in check_error
+
+Accuracy:
+This is to assess the internal consistency of components.
+Tests in here output reports instead of a simple pass/fail check.
+e.g: does a calculated gradient produce a similar answer to a finite difference perturbation?
 

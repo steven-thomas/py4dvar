@@ -1,7 +1,7 @@
 #run tests from the 'function' package to check that required components do not generate errors
 
 import _get_root
-from tests._function_test import check_functions
+from tests.function._function_test import check_functions
 
 #User parameters
 ###########################################################################################
