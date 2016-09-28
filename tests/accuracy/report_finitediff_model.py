@@ -1,4 +1,4 @@
-# test that the calc_forcing transform matches the obs_operator transform.
+# test that the run_adjoint transform matches the run_model transform.
 # output a report on the finite difference test
 from __future__ import print_function
 import numpy as np
@@ -9,13 +9,14 @@ import fourdvar.datadef as d
 from fourdvar._transform import transform
 from fourdvar.util import dim_label as l
 
-#list of ModelOutputData lookups
-subset = [ ( 0, i ) for i in l.label_t ]
+#list of ModelInputData lookups
+subset = [ ( 'icon', i ) for i in l.label_x ]
+subset.extend( [ ( 'emis', 0, i ) for i in l.label_t ] )
 #size of perturbation
 delta = 1.0
 
-#convert ModelOutput lookup into equivalent AdjointForcing lookup
-def adj_cast( lookup ):
+#convert ModelInput lookup into equivalent Sensitivity lookup
+def sense_cast( lookup ):
     return lookup
 
 #how to output the results
@@ -32,21 +33,22 @@ def display( results ):
     return None
 
 
-base_in = d.ModelOutputData.example()
-base_obs = transform( base_in, d.ObservationData )
-grad = transform( base_obs, d.AdjointForcingData )
-base_score = 0.5 * base_obs.sum_square()
+base_in = d.ModelInputData.example()
+base_out = transform( base_in, d.ModelOutputData )
+grad_in = d.AdjointForcingData.from_model( base_out )
+grad = transform( grad_in, d.SensitivityData )
+base_score = 0.5 * base_out.sum_square()
 
-results = {'pert_score':[], 'grad_score':[], 'abs_diff':[], 'rel_diff':[], }
+results = {'pert_score':[], 'grad_score':[], 'abs_diff':[], 'rel_diff':[] }
 for i in subset:
-    pert_in = d.ModelOutputData.clone( base_in )
+    pert_in = d.ModelInputData.clone( base_in )
     val = pert_in.get_value( i )
     pert_in.set_value( i, val + delta )
-    pert_obs = transform( pert_in, d.ObservationData )
+    pert_out = transform( pert_in, d.ModelOutputData )
     pert_in.cleanup()
     
-    pert_score = 0.5 * pert_obs.sum_square()
-    grad_score = base_score + delta * grad.get_value( adj_cast( i ) )
+    pert_score = 0.5 * pert_out.sum_square()
+    grad_score = base_score + delta * grad.get_value( sense_cast( i ) )
     abs_diff = abs( pert_score - grad_score )
     rel_diff = abs( 2*abs_diff / ( pert_score + grad_score ) )
     results['pert_score'].append( pert_score )

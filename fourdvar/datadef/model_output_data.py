@@ -25,9 +25,21 @@ class ModelOutputData( InterfaceData ):
     def set_value( self, coord, val ):
         self.conc[ coord[ 0 ], coord[ 1 ] ] = val
         return None
+    
+    def sum_square( self ):
+        return np.sum( self.conc**2 )
 
     @classmethod
     def example( cls ):
         #return an instance with example data
         return cls( np.ones(( len(cls.label_x), len(cls.label_t) )) )
+    
+    @classmethod
+    def clone( cls, source ):
+        #produce another instance with same data as source
+        return cls( source.conc.copy() )
+    
+    def cleanup( self ):
+        #called when cloned instance is to be removed
+        return None
 

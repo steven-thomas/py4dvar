@@ -27,4 +27,9 @@ class AdjointForcingData( InterfaceData ):
     def example( cls ):
         #return an instance with example data
         return cls( np.ones(( len(cls.label_x), len(cls.label_t) )) )
+    
+    @classmethod
+    def from_model( cls, m_out ):
+        #generate forcing directly from model_output
+        return cls( m_out.conc.copy() )
 

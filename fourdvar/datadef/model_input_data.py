@@ -27,7 +27,24 @@ class ModelInputData( InterfaceData ):
         self.emis += e_in.reshape(( len(self.label_x), 1 ))
         
         return None
-
+    
+    def get_value( self, i ):
+        if i[0].strip().lower() == 'icon':
+            return self.icon[i[1]]
+        elif i[0].strip().lower() == 'emis':
+            return self.emis[ i[1], i[2] ]
+        else:
+            raise ValueError( 'invalid lookup {} for ModelInput'.format( i ) )
+    
+    def set_value( self, i, val ):
+        if i[0].strip().lower() == 'icon':
+            self.icon[i[1]] = val
+        elif i[0].strip().lower() == 'emis':
+            self.emis[ i[1], i[2] ] = val
+        else:
+            raise ValueError( 'invalid lookup {} for ModelInput'.format( i ) )
+        return None
+    
     @classmethod
     def example( cls ):
         #return an instance with example data
@@ -35,4 +52,19 @@ class ModelInputData( InterfaceData ):
         for x in cls.label_x:
             argdict[x] = (1,1)
         return cls( argdict )
+    
+    @classmethod
+    def clone( cls, source ):
+        #return a new copy of source, with its own data
+        argdict = {}
+        for i,icon in enumerate( source.icon ):
+            argdict[i] = ( icon, 0 )
+        #constructor assumes const emis, clone can't therefore hijack emis.
+        output = cls( argdict )
+        output.emis = source.emis.copy()
+        return output
+    
+    def cleanup( self ):
+        #cleanup any tmp files from a clone
+        return None
 

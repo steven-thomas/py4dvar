@@ -5,13 +5,15 @@ import numpy as np
 
 import _get_root
 from fourdvar import _main_driver as dr
+from fourdvar.datadef import UnknownData
 
-base_input = np.ones( 4 )
+base_input = np.array( UnknownData.example().get_vector() )
 
 base_cost = dr.cost_func( base_input )
 grad = dr.gradient_func( base_input )
 
 subset = [0,1]
+subset = range(len(base_input))
 for i in subset:
     pert_input = base_input.copy()
     pert_input[i] += 1

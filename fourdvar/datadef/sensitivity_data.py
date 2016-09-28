@@ -28,6 +28,14 @@ class SensitivityData( InterfaceData ):
         
         return None
     
+    def get_value( self, i ):
+        if i[0].strip().lower() == 'icon':
+            return self.icon[i[1]]
+        elif i[0].strip().lower() == 'emis':
+            return self.emis[ i[1], i[2] ]
+        else:
+            raise ValueError( 'invalid lookup {} for SensitivityData'.format(i) )
+    
     @classmethod
     def example( cls ):
         #return an instance with example data
