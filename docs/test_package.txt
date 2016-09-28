@@ -1,0 +1,9 @@
+the tests package has 2 subpackages included.
+
+function: collection of boolean tests to check that the components of the system. 
+ each test will fail if an exception was raised and pass otherwise.
+ the 'run_test' script will call each of these tests and report on what passed and failed.
+
+accuracy: each test in this folder produces a report regarding the accuracy or internal consistency of components
+ e.g.: will condition/uncondition return you to your starting point
+

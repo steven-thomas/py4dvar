@@ -27,4 +27,11 @@ class SensitivityData( InterfaceData ):
         self.emis = np.copy( d_emis )
         
         return None
+    
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        argicon = np.ones( len(cls.label_x) )
+        argemis = np.ones(( len(cls.label_x), len(cls.label_t) ))
+        return cls( argicon, argemis )
 

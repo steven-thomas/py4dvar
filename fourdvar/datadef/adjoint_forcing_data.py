@@ -19,4 +19,12 @@ class AdjointForcingData( InterfaceData ):
         
         self.frc = np.copy(frc)
         return None
+    
+    def get_value( self, coord ):
+        return self.frc[ coord[ 0 ], coord[ 1 ] ]
+
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        return cls( np.ones(( len(cls.label_x), len(cls.label_t) )) )
 

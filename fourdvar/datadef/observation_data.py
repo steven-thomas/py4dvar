@@ -32,6 +32,10 @@ class ObservationData( ExtractableData ):
             raise ValueError( 'input data does not match observation space.' )
         return None
     
+    def sum_square( self ):
+        vector = np.array( self.get_vector( 'value' ) )
+        return np.sum( vector**2 )
+    
     @classmethod
     def weight( cls, res ):
         # weight residual relative to inverse observation error covariance
@@ -57,4 +61,10 @@ class ObservationData( ExtractableData ):
         o_dict = data_read.get_dict( filename )
         attr_list = [ (o_dict['i'][n-1], o_dict['value'][n-1]) for n in cls.label_i ]
         return cls( attr_list )
+
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        arglist = [ (i,1) for i in cls.label_i ]
+        return cls( arglist )
 

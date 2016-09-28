@@ -36,3 +36,11 @@ class PhysicalData( InterfaceData ):
             arg_dict[ int( p_dict['x'][i] ) ] = [ p_dict['icon'][i], p_dict['emis'][i] ]
         return cls( arg_dict )
 
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        argdict = {}
+        for x in cls.label_x:
+            argdict[ x ] = (1,1)
+        return cls( argdict )
+

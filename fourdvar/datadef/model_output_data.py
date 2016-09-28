@@ -18,4 +18,16 @@ class ModelOutputData( InterfaceData ):
         
         self.conc = np.copy(conc)
         return None
+    
+    def get_value( self, coord ):
+        return self.conc[ coord[ 0 ], coord[ 1 ] ]
+    
+    def set_value( self, coord, val ):
+        self.conc[ coord[ 0 ], coord[ 1 ] ] = val
+        return None
+
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        return cls( np.ones(( len(cls.label_x), len(cls.label_t) )) )
 

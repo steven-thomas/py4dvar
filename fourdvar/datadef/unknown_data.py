@@ -6,6 +6,7 @@ import numpy as np
 import _get_root
 from fourdvar.datadef.abstract._single_data import SingleData
 from fourdvar.datadef.abstract._extractable_data import ExtractableData
+from fourdvar.util import dim_label as l
 
 class UnknownSingle( SingleData ):
     """single point in the unknown vector space"""
@@ -21,4 +22,10 @@ class UnknownData( ExtractableData ):
         dataset = [ UnknownSingle( val ) for val in val_list ]
         ExtractableData.__init__( self, dataset )
         return None
+    
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        arglist = [ 1 for x in range( 2*len( l.label_x ) ) ]
+        return cls( arglist )
 

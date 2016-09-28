@@ -28,3 +28,11 @@ class ModelInputData( InterfaceData ):
         
         return None
 
+    @classmethod
+    def example( cls ):
+        #return an instance with example data
+        argdict = {}
+        for x in cls.label_x:
+            argdict[x] = (1,1)
+        return cls( argdict )
+
