@@ -7,13 +7,12 @@ import _get_root
 from fourdvar import _main_driver as dr
 import fourdvar.datadef as d
 from fourdvar._transform import transform
-from fourdvar.util import dim_label as l
+from fourdvar.util.dim_defn import x_len
 
 #list of ModelInputData lookups
-subset = [ ( 'icon', i ) for i in l.label_x ]
-subset.extend( [ ( 'emis', 0, i ) for i in l.label_t ] )
+subset = [ i for i in range( x_len ) ]
 #size of perturbation
-delta = 1.0
+delta = 0.000001
 
 #convert ModelInput lookup into equivalent Sensitivity lookup
 def sense_cast( lookup ):
@@ -50,7 +49,7 @@ for i in subset:
     pert_score = 0.5 * pert_out.sum_square()
     grad_score = base_score + delta * grad.get_value( sense_cast( i ) )
     abs_diff = abs( pert_score - grad_score )
-    rel_diff = abs( 2*abs_diff / ( pert_score + grad_score ) )
+    rel_diff = abs( 2*abs_diff / ( abs( pert_score ) + abs( grad_score ) ) )
     results['pert_score'].append( pert_score )
     results['grad_score'].append( grad_score )
     results['abs_diff'].append( abs_diff )

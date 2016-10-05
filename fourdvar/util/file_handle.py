@@ -4,8 +4,10 @@
 # Values after the keys are converted into floats.
 
 import os
+import numpy as np
 
 data_loc = os.path.join( os.path.realpath( os.path.join( os.path.dirname( __file__ ), '..' ) ), 'data' )
+fnames = {}
 
 def get_dict( f_name ):
     file_obj = open( os.path.join( data_loc, f_name ), 'r' )
@@ -24,4 +26,20 @@ def get_dict( f_name ):
         out_dict[ key_str[ n ] ] = [ float(i[n]) for i in items ]
     
     return out_dict
+
+def save_array( obj, f_name ):
+    assert type( obj ) == np.ndarray, 'can only save a numpy array'
+    f_path = os.path.join( data_loc, f_name )
+    np.savetxt( f_path, obj )
+    return None
+
+def load_array( f_name ):
+    f_path = os.path.join( data_loc, f_name )
+    obj = np.loadtxt( f_path )
+    return obj
+
+def cleanup( f_name ):
+    f_path = os.path.join( data_loc, f_name )
+    os.remove( f_path )
+    return None
 

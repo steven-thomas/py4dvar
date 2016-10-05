@@ -6,7 +6,8 @@ import numpy as np
 import _get_root
 from fourdvar.datadef.abstract._single_data import SingleData
 from fourdvar.datadef.abstract._extractable_data import ExtractableData
-from fourdvar.util import dim_label as l
+
+from fourdvar.util.dim_defn import x_len
 
 class UnknownSingle( SingleData ):
     """single point in the unknown vector space"""
@@ -17,15 +18,16 @@ class UnknownSingle( SingleData ):
 
 class UnknownData( ExtractableData ):
     """vector of unknowns"""
-    def __init__( self, val_array ):
-        val_list = list( val_array )
-        dataset = [ UnknownSingle( val ) for val in val_list ]
+    def __init__( self, vals ):
+        val_arr = np.array( vals, dtype='float64' )
+        assert val_arr.shape == ( x_len, ), 'input data does not match model space'
+        dataset = [ UnknownSingle( val ) for val in val_arr ]
         ExtractableData.__init__( self, dataset )
         return None
     
     @classmethod
     def example( cls ):
         #return an instance with example data
-        arglist = [ 1 for x in range( 2*len( l.label_x ) ) ]
+        arglist = [ 1 for x in range( x_len ) ]
         return cls( arglist )
 

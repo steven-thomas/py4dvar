@@ -11,17 +11,16 @@ class ExtractableData( FourDVarData ):
     """This is the abstract class for data stuctures that are examined afterwards.
     This must contain of a list of DataSingle objects to be returned as a vector.
     """
+    require = FourDVarData.add_require( 'dataset' )
     
     def __init__( self, dataset ):
         """dataset is a list of instances that subclass SingleData"""
-        FourDVarData.__init__( self )
         
         if not np.all( [ isinstance( i, SingleData ) for i in dataset ] ):
             #this is not a valid dataset
             raise Exception( "dataset of extractable must be subclassed from SingleData" )
         
         self.dataset = [ i for i in dataset ]
-        self.required.add( 'dataset' )
         
         return None
     

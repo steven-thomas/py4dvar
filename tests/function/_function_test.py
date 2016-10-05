@@ -7,6 +7,7 @@ import subprocess
 def check_functions( python_interp, test_list,
                 summary_filename, summary_output,
                 traceback_filename, traceback_output ):
+    
     if not is_interp_valid( python_interp ): sys.exit(1)
     valid_tests = make_valid_test( test_list )
     if valid_tests is None: sys.exit(1)

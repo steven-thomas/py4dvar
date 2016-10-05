@@ -7,20 +7,26 @@ import _get_root
 from fourdvar import _main_driver as dr
 from fourdvar.datadef import UnknownData
 
-base_input = np.array( UnknownData.example().get_vector() )
+subset = [0,1,2]
+delta = 0.001
+
+
+#base_input = np.array( UnknownData.example().get_vector() )
+
+#DO NOT KEEP THIS, IT IS WRONG!
+from fourdvar.user_driver import get_background
+base_input = np.array( get_background().data ) + np.random.normal( 0, 1.0, 3 )
+
 
 base_cost = dr.cost_func( base_input )
 grad = dr.gradient_func( base_input )
-
-subset = [0,1]
-subset = range(len(base_input))
 for i in subset:
     pert_input = base_input.copy()
-    pert_input[i] += 1
+    pert_input[i] += delta
     pert_cost = dr.cost_func( pert_input )
-    grad_cost = base_cost + grad[i]
+    grad_cost = base_cost + delta*grad[i]
     abs_diff = abs( pert_cost - grad_cost )
-    rel_diff = abs_diff / (0.5 * ( pert_cost + grad_cost ) )
+    rel_diff = 2.0 * abs_diff / ( abs( pert_cost ) + abs( grad_cost ) )
     print( 'pert: {}'.format( pert_cost ) )
     print( 'grad: {}'.format( grad_cost ) )
     print( 'abs_diff: {:}'.format( abs_diff ) )

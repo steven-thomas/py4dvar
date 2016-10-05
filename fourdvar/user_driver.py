@@ -40,6 +40,7 @@ def display( min_output ):
     #first element has been converted into a PhysicalData object, other elements untouched
     phys_out = min_output[0]
     metadata = min_output[1:]
+    print( '\n\nRESULTS!\n' )
     print( phys_out.data )
     for m in metadata:
         print( m )

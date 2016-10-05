@@ -4,32 +4,32 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
-from fourdvar.util import dim_label as l
+
+from fourdvar.util.dim_defn import x_len, nstep
 
 class AdjointForcingData( InterfaceData ):
+    """docstring
+    """
+    require = InterfaceData.add_require( 'data' )
     
-    label_x = [ x for x in l.label_x ]
-    label_t = [ t for t in l.label_t ]
-    
-    def __init__( self, frc ):
-        #frc is a 2D numpy array, forcing for space (x) and time (t)
-        InterfaceData.__init__( self )
-        if frc.shape != ( len( self.label_x ), len( self.label_t ) ):
-            raise ValueError( 'AdjointForcingData failed. input of wrong shape.' )
-        
-        self.frc = np.copy(frc)
+    def __init__( self, data ):
+        #data is a 2d array of x_len, nstep+1 x-values
+        data = np.array( data, dtype='float64' )
+        assert data.shape == ( x_len, nstep+1 ), 'input data does not match model space'
+        self.data = data.copy()
         return None
     
     def get_value( self, coord ):
-        return self.frc[ coord[ 0 ], coord[ 1 ] ]
+        return self.data[ tuple( coord ) ]
 
     @classmethod
     def example( cls ):
         #return an instance with example data
-        return cls( np.ones(( len(cls.label_x), len(cls.label_t) )) )
+        arglist = 1.0 + np.zeros(( x_len, nstep+1 ))
+        return cls( arglist )
     
     @classmethod
     def from_model( cls, m_out ):
         #generate forcing directly from model_output
-        return cls( m_out.conc.copy() )
+        return cls( m_out.data.copy() )
 

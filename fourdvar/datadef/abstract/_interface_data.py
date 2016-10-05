@@ -12,7 +12,5 @@ class InterfaceData( FourDVarData ):
     This has less strict requirements for consistent layout, but less standard accessor methods
     """
     
-    def __init__( self ):
-        FourDVarData.__init__( self )
-        return None
+    pass
 

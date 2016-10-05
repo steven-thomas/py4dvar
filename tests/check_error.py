@@ -11,8 +11,9 @@ python_interp = [ '/bin/python2', '/bin/python3' ]
 #python_interp = [ 'python' ]
 
 # The list of tests to run. Must be in tests/function package. Use 'all' to run every test 
-#test_list = ['test_all_datadef_example.py', 'test_cost_func.py', 'test_grad_func.py']
+#test_list = ['test_datadef_example.py', 'test_from_file.py', 'test_datadef_obs.py']
 test_list = 'all'
+#test_list = ['test_datadef_example.py']
 
 # file to save the summary to (if applicable)
 summary_filename = 'summary.log'

@@ -9,14 +9,12 @@ from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 class SingleData( FourDVarData ):
     """This abstract class is for the single instances of the 'extractable' array-like class"""
     
+    require = FourDVarData.add_require( 'value' )
+    
     def __init__( self, value, **kwargs ):
         """adds every provided kwarg as an atribute"""
         
-        FourDVarData.__init__( self )
-        
         self.value = value
-        self.required.add( 'value' )
-        
         [ setattr( self, attr, kwargs[ attr ] ) for attr in kwargs.keys() ]
         
         return None
