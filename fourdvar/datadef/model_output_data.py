@@ -5,7 +5,7 @@ import numpy as np
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-import fourdvar.util.file_handle as fh
+from fourdvar.util.file_handle import save_array, rm
 from fourdvar.util.dim_defn import x_len, nstep
 
 class ModelOutputData( InterfaceData ):
@@ -22,8 +22,7 @@ class ModelOutputData( InterfaceData ):
         assert data.shape == ( x_len, nstep+1 ), 'input data does not match model space'
         self.data = data.copy()
         self.fname = fname
-        fh.save_array( self.data, self.fname )
-        fh.fnames[ self.__class__.__name__ ] = fname
+        save_array( self, self.data, self.fname, True )
         return None
     
     def get_value( self, coord ):
@@ -31,7 +30,7 @@ class ModelOutputData( InterfaceData ):
     
     def set_value( self, coord, val ):
         self.data[ tuple( coord ) ] = val
-        fh.save_array( self.data, self.fname )
+        save_array( self, self.data, self.fname, True )
         return None
     
     def sum_square( self ):
@@ -50,8 +49,6 @@ class ModelOutputData( InterfaceData ):
     
     def cleanup( self ):
         #called when cloned instance is to be removed
-        fh.cleanup( self.fname )
-        if fh.fnames[ self.__class__.__name__ ] == self.fname:
-            fh.fnames[ self.__class__.__name__ ] = ''
+        rm( self.fname )
         return None
 

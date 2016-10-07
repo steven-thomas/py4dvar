@@ -5,11 +5,9 @@ This is mine. Testing for the framework during development. users should not nee
 
 Function:
 This is for auto-testing user-required code.
-It tests all the user-definied components that are required by the framework to run.
-All these tests should be pre-defined and will not require user modification to run.
-These tests are accessed by the tests/check_error.py file, where user-parameters are set and the functions are run.
-output is a summary pass/fail list for every test run and a traceback for any failed test.
-outputs can be send to a file, the screen, or supressed by the params in check_error
+config_function_test.py holds the config for the user for a test run,
+whether to run the test or not, any setup requirements and any teardown requirements are defined here
+run the function test by calling > python run_function_test.py
 
 Accuracy:
 This is to assess the internal consistency of components.

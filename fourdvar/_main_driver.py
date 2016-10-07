@@ -63,13 +63,14 @@ def gradient_func( vector ):
     return np.array( gradient )
 
 def get_answer():
+    user_driver.setup()
     start_vector = np.array( bg_unknown.get_vector( 'value' ) )
     min_output = user_driver.minim( cost_func, gradient_func, start_vector )
     out_vector = min_output[0]
     out_unknown = d.UnknownData( out_vector )
     out_physical = transform( out_unknown, d.PhysicalData )
-    answer = [ out_physical ] + list( min_output[1:] )
-    user_driver.display( answer )
+    user_driver.display( out_physical, min_output[1:] )
+    user_driver.teardown()
     return None
 
 if __name__ == '__main__':

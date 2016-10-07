@@ -8,7 +8,16 @@ from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import _get_root
 from fourdvar import datadef as d
-from fourdvar._transform import transform
+from fourdvar.util.file_handle import rmall
+
+def setup():
+    # run at start of get_answer
+    return None
+
+def teardown():
+    # run at end of get_answer
+    rmall()
+    return None
 
 def get_background():
     # return the background as a PhysicalData object
@@ -24,24 +33,14 @@ def minim( cost_func, grad_func, init_guess ):
     #the minimizer function
     #return a list, 1st element is minimized vector, all other elements contain metadata passed to display
     
-    #convert init_guess to array if in other format (PhysicalData/UnknownData)
-    if isinstance( init_guess, d.PhysicalData ):
-        init_guess = transform( init_guess, d.UnknownData )
-    if isinstance( init_guess, d.UnknownData ):
-        init_guess = np.array( init_guess.get_vector( 'value' ) )
-    if type( init_guess ) != np.ndarray:
-        raise TypeError( 'invalid inital guess, must be np.array, PhysicalData or UnknownData' )
-    
     answer = minimize( cost_func, init_guess, grad_func )
     #check answer warnflag, etc for success
     return answer
 
-def display( min_output ):
+def display( out_physical, metadata ):
     #first element has been converted into a PhysicalData object, other elements untouched
-    phys_out = min_output[0]
-    metadata = min_output[1:]
     print( '\n\nRESULTS!\n' )
-    print( phys_out.data )
+    print( out_physical.data )
     for m in metadata:
         print( m )
     return None

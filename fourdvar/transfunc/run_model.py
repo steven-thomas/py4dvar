@@ -10,5 +10,5 @@ def run_model( model_input ):
     #run the forward model
     assert model_input.data.shape == (x_len, ), 'invalid model input'
     out_data = model( model_input.data )
-    return ModelOutputData( out_data, 'arbitrary_file.array' )
+    return ModelOutputData( out_data, 'model_output.ndarray' )
 

@@ -8,7 +8,7 @@ from fourdvar import _main_driver as dr
 from fourdvar.datadef import UnknownData
 
 subset = [0,1,2]
-delta = 0.001
+delta = 0.0001
 
 
 #base_input = np.array( UnknownData.example().get_vector() )
