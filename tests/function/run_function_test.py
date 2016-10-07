@@ -8,7 +8,8 @@ from fourdvar._main_driver import get_answer
 from fourdvar._transform import transform
 from tests.function.config_function_test import cfg
 
-def example_check( testcase, ( do_test, setup, teardown ), testcls ):
+def example_check( testcase, do_set_tear, testcls ):
+    ( do_test, setup, teardown ) = do_set_tear
     if do_test is not True:
         return None
     if setup is not None:
@@ -24,7 +25,8 @@ def transform_check( testcase, do_set_tear, incls, outcls ):
     func_check( testcase, do_set_tear, transform, [incls.example(), outcls], outcls )
     return None
 
-def func_check( testcase, (do_test, setup, teardown ), func, args, outcls ):
+def func_check( testcase, do_set_tear, func, args, outcls ):
+    ( do_test, setup, teardown ) = do_set_tear
     if do_test is not True:
         return None
     if setup is not None:
