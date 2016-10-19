@@ -37,6 +37,7 @@ base_out = transform( base_in, d.ModelOutputData )
 grad_in = d.AdjointForcingData.from_model( base_out )
 grad = transform( grad_in, d.SensitivityData )
 base_score = 0.5 * base_out.sum_square()
+base_out.cleanup()
 
 results = {'pert_score':[], 'grad_score':[], 'abs_diff':[], 'rel_diff':[] }
 for i in subset:

@@ -39,8 +39,16 @@ def cost_func( vector ):
     res_vector = np.array( residual.get_vector( 'value' ) )
     wres_vector = np.array( w_residual.get_vector( 'value' ) )
     ob_cost = np.sum( res_vector * wres_vector )
-
     cost = bg_cost + ob_cost
+    
+    unknown.cleanup()
+    physical.cleanup()
+    model_in.cleanup()
+    model_out.cleanup()
+    simulated.cleanup()
+    residual.cleanup()
+    w_residual.cleanup()
+    
     return cost
 
 def gradient_func( vector ):
@@ -67,8 +75,19 @@ def gradient_func( vector ):
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
     un_vector = np.array( unknown.get_vector( 'value' ) )
     bg_grad = un_vector - bg_vector
-    
     gradient = bg_grad + np.array( un_gradient.get_vector( 'value' ) )
+    
+    unknown.cleanup()
+    physical.cleanup()
+    model_in.cleanup()
+    model_out.cleanup()
+    simulated.cleanup()
+    residual.cleanup()
+    w_residual.cleanup()
+    adj_forcing.cleanup()
+    sensitivity.cleanup()
+    un_gradient.cleanup()
+    
     return np.array( gradient )
 
 def get_answer():
@@ -84,6 +103,8 @@ def get_answer():
     out_unknown = d.UnknownData( out_vector )
     out_physical = transform( out_unknown, d.PhysicalData )
     user_driver.display( out_physical, min_output[1:] )
+    out_unknown.cleanup()
+    out_physical.cleanup()
     user_driver.cleanup()
     return None
 

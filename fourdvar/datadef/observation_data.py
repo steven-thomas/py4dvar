@@ -138,7 +138,7 @@ class ObservationData( ExtractableData ):
     @classmethod
     def from_file( cls, filename ):
         """
-        application: create an ObservationData from a file
+        extension: create an ObservationData from a file
         input: user-defined
         output: ObservationData
         

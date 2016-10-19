@@ -37,7 +37,7 @@ class PhysicalData( InterfaceData ):
     @classmethod
     def from_file( cls, filename ):
         """
-        application: create a PhysicalData instance from a file
+        extension: create a PhysicalData instance from a file
         input: user-defined
         output: PhysicalData
         

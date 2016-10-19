@@ -7,9 +7,9 @@ eg: transform( observation_instance, datadef.AdjointForcingData ) == calc_forcin
 import numpy as np
 
 import _get_root
-from fourdvar.datadef import ObservationData, AdjointForcingData
+from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
 from fourdvar.libshare.obs_handle import mkfrc_map
-from fourdvar.util.file_handle import load_array
+from fourdvar.util.file_handle import read_array
 
 def calc_forcing( w_residual ):
     """
@@ -20,7 +20,7 @@ def calc_forcing( w_residual ):
     vallist = w_residual.get_vector( 'value' )
     kindlist = w_residual.get_vector( 'kind' )
     timelist = w_residual.get_vector( 'time' )
-    xtraj = load_array( label='ModelOutputData' )
+    xtraj = read_array( ModelOutputData )
     frc = np.zeros_like( xtraj )
     for val, kind, time in zip( vallist, kindlist, timelist ):
         sparse = mkfrc_map[ kind ]( xtraj[ :, time ], val )

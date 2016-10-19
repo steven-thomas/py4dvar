@@ -8,7 +8,7 @@ import numpy as np
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-from fourdvar.util.file_handle import save_array, rm
+import fourdvar.util.file_handle as fh
 from fourdvar.util.dim_defn import x_len, nstep
 
 class ModelOutputData( InterfaceData ):
@@ -17,11 +17,8 @@ class ModelOutputData( InterfaceData ):
     
     #add to the require set all the attributes that must be defined for a ModelOutputData to be valid.
     require = InterfaceData.add_require( 'data', 'fname' )
-    #default filenames for examples & clones
-    clone_fname = 'model_out.clone'
-    example_fname = 'model_out.example'
     
-    def __init__( self, data, fname ):
+    def __init__( self, data ):
         """
         application: create an instance of ModelOutputData
         input: user-defined
@@ -33,8 +30,7 @@ class ModelOutputData( InterfaceData ):
         data = np.array( data, dtype='float64' )
         assert data.shape == ( x_len, nstep+1 ), 'input data does not match model space'
         self.data = data.copy()
-        self.fname = fname
-        save_array( self, self.data, self.fname, True )
+        self.fname = fh.create_array( self.__class__, self.data )
         return None
     
     def get_value( self, coord ):
@@ -60,7 +56,7 @@ class ModelOutputData( InterfaceData ):
         notes: only used for accuracy testing. Should use same lookup as get_value
         """
         self.data[ tuple( coord ) ] = val
-        save_array( self, self.data, self.fname, True )
+        fh.update_array( self.fname, self.data )
         return None
     
     def sum_square( self ):
@@ -87,10 +83,10 @@ class ModelOutputData( InterfaceData ):
         notes: only used for testing.
         """
         arglist = 1.0 + np.zeros(( x_len, nstep+1 ))
-        return cls( arglist, cls.example_fname )
+        return cls( arglist )
     
     @classmethod
-    def clone( cls, source, fname=None ):
+    def clone( cls, source ):
         """
         application: copy a ModelOutputData.
         input: ModelOutputData
@@ -101,9 +97,7 @@ class ModelOutputData( InterfaceData ):
         notes: only used for testing. ensure that copy is independant (eg: uses copies of files, etc.)
         """
         assert isinstance( source, cls )
-        if fname is None:
-            fname = cls.clone_fname
-        return cls( source.data.copy(), fname )
+        return cls( source.data.copy() )
     
     def cleanup( self ):
         """
@@ -115,6 +109,6 @@ class ModelOutputData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
-        rm( self.fname )
+        fh.rm( self.fname )
         return None
 
