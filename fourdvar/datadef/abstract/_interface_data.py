@@ -1,6 +1,6 @@
-# NOT FOR USER MODIFICATION
-# interface data is the abstract class for 'default' data types
-# any information that doesn't have specific access requirements is an interface class
+"""
+framework: abstract class for data structures that store data in arbitrary formats
+"""
 
 import numpy as np
 
@@ -8,9 +8,15 @@ import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 class InterfaceData( FourDVarData ):
-    """This is the abstract class for data stuctures used only for passing between transform calls.
-    This has less strict requirements for consistent layout, but less standard accessor methods
+    """
+    framework: abstract class for data stuctures passing between transform calls.
     """
     
-    pass
+    def cleanup( self ):
+        """
+        framework: concrete application must overwrite the cleanup method
+        input: None
+        output: <N/A> (raises error)
+        """
+        raise NotImplementedError( '{} requires cleanup method'.format( self.__class__.__name__ ) )
 

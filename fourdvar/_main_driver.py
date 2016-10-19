@@ -1,7 +1,6 @@
-# NOT FOR USER MODIFICATION
-# main driver for 4dvar system, to use from import call the get_answer() function
-
-from __future__ import print_function
+"""
+framework: driver of 4dvar system
+"""
 
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as minimize
@@ -11,13 +10,18 @@ from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
 
-#set up saved data
+#set up prior/background and observed data
 bg_physical = user_driver.get_background()
 bg_unknown = transform( bg_physical, d.UnknownData )
 observed = user_driver.get_observed()
 
 def cost_func( vector ):
-    #cost function of minimizer, input must be a numpy array, output a scalar
+    """
+    framework: cost function used by minimizer
+    input: numpy.ndarray
+    output: scalar
+    """
+    
     unknown = d.UnknownData( vector )
     
     physical = transform( unknown, d.PhysicalData )
@@ -40,6 +44,11 @@ def cost_func( vector ):
     return cost
 
 def gradient_func( vector ):
+    """
+    framework: gradient function used by minimizer
+    input: numpy.ndarray
+    output: numpy.ndarray
+    """
     #gradient function of minimizer, input and output must be numpy arrays
     unknown = d.UnknownData( vector )
     
@@ -63,6 +72,11 @@ def gradient_func( vector ):
     return np.array( gradient )
 
 def get_answer():
+    """
+    framework: run the minimizer & display results from user_driver module
+    input: None
+    output: None (user_driver.display should print/save output as desired)
+    """
     user_driver.setup()
     start_vector = np.array( bg_unknown.get_vector( 'value' ) )
     min_output = user_driver.minim( cost_func, gradient_func, start_vector )
@@ -70,9 +84,6 @@ def get_answer():
     out_unknown = d.UnknownData( out_vector )
     out_physical = transform( out_unknown, d.PhysicalData )
     user_driver.display( out_physical, min_output[1:] )
-    user_driver.teardown()
+    user_driver.cleanup()
     return None
-
-if __name__ == '__main__':
-    get_answer()
 

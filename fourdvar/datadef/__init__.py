@@ -1,7 +1,13 @@
-#make directory into package
-#run any loading/setup required by whole package
+"""
+framework: turns directory into a package
+packages can be imported
+eg: from <package> import <module>
 
-#run import of non-abstract classes for external access / simpler naming
+any code in this file is run the first time this package is imported
+
+imports listed here are for easier access to data classes
+eg: "import datadef.UnknownData" instead of "import datadef.unknown_data.UnknownData"
+"""
 
 import _get_root
 from fourdvar.datadef.unknown_data import UnknownData

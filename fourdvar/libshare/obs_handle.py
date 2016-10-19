@@ -1,4 +1,19 @@
+"""
+extension: functions used by the obs_operator and make_forcing transforms
+contains the original and adjoint function for every kind of observation
+functions are saved to maps obsop_map & mkfrc_map for easy importing/referencing
 
+for every original function:
+    input: x - the state of the model at the time of observation.
+    output: obs_val - the value of the simulated observation
+
+for every adjoint function:
+    input: x - the state of the model at the time of observation.
+           val - the value of the weighted residual of the observation.
+    output: sparse - a dictionary to simulate a sparse matrix of adjoint forcing values
+
+The tangent linear functions are not used.
+"""
 import numpy as np
 
 import _get_root
@@ -49,9 +64,4 @@ def sumall_ad( x, val ):
 
 obsop_map = { 0:first, 1:second, 2:third, 3:squarefirst, 4:firstbysecond, 5:sumall }
 mkfrc_map = { 0:first_ad, 1:second_ad, 2:third_ad, 3:squarefirst_ad, 4:firstbysecond_ad, 5:sumall_ad }
-
-obs_param = []
-for i in range( 1, nstep-1 ):
-    obs_param.append( {'time':i, 'kind':( i % len(obsop_map) )} )
-    obs_param.append( {'time':i, 'kind':( (i + 2) % len(obsop_map) )} )
 

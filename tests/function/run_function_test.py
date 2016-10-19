@@ -1,5 +1,10 @@
-
+"""
+framework: run tests on components of system
+these tests are only concerned with technically valid output
+eg: Has no concern for accuracy
+"""
 import unittest
+import inspect
 
 import _get_root
 import fourdvar.datadef as d
@@ -7,6 +12,8 @@ import fourdvar.user_driver as ud
 from fourdvar._main_driver import get_answer
 from fourdvar._transform import transform
 from tests.function.config_function_test import cfg
+
+datacls = d.abstract._fourdvar_data.FourDVarData
 
 def example_check( testcase, do_set_tear, testcls ):
     ( do_test, setup, teardown ) = do_set_tear
@@ -17,6 +24,7 @@ def example_check( testcase, do_set_tear, testcls ):
     example_instance = testcls.example()
     testcase.assertIsInstance( example_instance, testcls )
     testcase.assertTrue( example_instance.has_require( True ) )
+    example_instance.cleanup()
     if teardown is not None:
         teardown()
     return None
@@ -33,6 +41,11 @@ def func_check( testcase, do_set_tear, func, args, outcls ):
         setup()
     outinst = func( *args )
     testcase.assertIsInstance( outinst, outcls )
+    if isinstance( outinst, datacls ):
+        testcase.assertTrue( outinst.has_require( True ) )
+    for obj in args + [ outinst ]:
+        if isinstance( obj, datacls ):
+            obj.cleanup()
     if teardown is not None:
         teardown()
     return None
@@ -100,8 +113,8 @@ class TestDriver( unittest.TestCase ):
         pass
     def test_setup_driver( self ):
         func_check( self, cfg['test_setup_driver'], ud.setup, [], None.__class__ )
-    def test_teardown_driver( self ):
-        func_check( self, cfg['test_teardown_driver'], ud.teardown, [], None.__class__ )
+    def test_cleanup_driver( self ):
+        func_check( self, cfg['test_cleanup_driver'], ud.cleanup, [], None.__class__ )
     def test_get_background_driver( self ):
         func_check( self, cfg['test_get_background_driver'], ud.get_background, [], d.PhysicalData )
     def test_get_observed_driver( self ):

@@ -1,12 +1,11 @@
-#lorenz 63 model and adjoint code
+"""
+extension: code for running the forward and adjoint models
+"""
 
 import numpy as np
 
 import _get_root
 from fourdvar.util.dim_defn import dt, nstep, x_len
-
-#refer params
-traj_file = 'xtraj_file.array'
 
 #local params
 p = 10.0

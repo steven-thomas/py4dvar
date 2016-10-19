@@ -54,6 +54,8 @@ for i in subset:
     results['grad_score'].append( grad_score )
     results['abs_diff'].append( abs_diff )
     results['rel_diff'].append( rel_diff )
+    
+    pert_out.cleanup()
 
 display( results )
 

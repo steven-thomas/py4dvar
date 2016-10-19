@@ -1,15 +1,25 @@
-# the get_dict function reads a csv-formatted file saved in the projects data directory
-# (fourdvar/data) and returns a dictionary with keys from the first line and value lists
-# from each column matching its key.
-# Values after the keys are converted into floats.
+"""
+extension: all the file IO functions needed for the program
+in this example all files are saved to and read from the fourdvar/data directory
+"""
 
 import os
 import numpy as np
 
+#data directories full pathname
 data_loc = os.path.join( os.path.realpath( os.path.join( os.path.dirname( __file__ ), '..' ) ), 'data' )
+#tracking for all files created during a programs run
 fdict = {}
 
 def get_dict( fname ):
+    """
+    extension: read a csv-format file and return contents as a dictionary of lists
+    input: string (filename)
+    output: dictionary
+    
+    notes: first line of file are keys for dictionary. values are list from every following line
+    all values are converted into floats. Will raise an error if not applicable
+    """
     file_obj = open( os.path.join( data_loc, fname ), 'r' )
     lines = file_obj.readlines()
     file_obj.close()
@@ -28,6 +38,14 @@ def get_dict( fname ):
     return out_dict
 
 def save_array( label, data, fname, make_label_str=False ):
+    """
+    extension: save a numpy array to a file, remember this file in fdict
+    input: label=class or string, data=numpy array, fname=string (filename), make_label_str=Boolean
+    output: None
+    
+    notes: if make_label_str is True get label from from the name of the class of label input
+    label is used as key when saving to fdict. value is list of filenames, most recently made first
+    """
     global fdict
     assert type( data ) == np.ndarray, 'can only save a numpy array'
     if type( label ) != str:
@@ -47,6 +65,14 @@ def save_array( label, data, fname, make_label_str=False ):
     return None
 
 def load_array( label=None, fname=None, make_label_str=False ):
+    """
+    extension: load a numpy array from a file
+    input: label=class or string, fname=string (filename), make_label_str=Boolean
+    output: numpy.ndarray
+    
+    notes: if make_label_str is True get label text from the name of class of label input
+    if label is provided use first element of fdict[ label ] as fname
+    """
     assert ( label is None ) ^ ( fname is None ), 'Must provide either label or fname (but not both)'
     if label is not None:
         if make_label_str is True and type( label ) is not str:
@@ -58,6 +84,11 @@ def load_array( label=None, fname=None, make_label_str=False ):
     return data
 
 def rm( fname, fail_not_found=True ):
+    """
+    extension: delete a file and remove its tracking
+    input: string (filename), Boolean (if file not found raise Error)
+    output: None
+    """
     global fdict
     fcount = sum( l.count( fname ) for l in fdict.values() )
     assert fcount <= 1, 'Only store 1 copy of every filename!'
@@ -74,6 +105,11 @@ def rm( fname, fail_not_found=True ):
     return None
 
 def rmall():
+    """
+    extension: delete every file tracked in fdict
+    input: None
+    output: None
+    """
     for flist in list( fdict.values() ):
         for fname in flist:
             rm( fname )

@@ -1,3 +1,6 @@
+_make_hidden.py
+
 *.pyc
 __pycache__
 *.log
+.hidden

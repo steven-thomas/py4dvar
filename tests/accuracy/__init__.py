@@ -1,2 +1,8 @@
-# ensure that this directory is a package for python imports
-# any code in this file is run when this package is imported
+"""
+framework: turns directory into a package
+packages can be imported
+eg: from <package> import <module>
+
+any code in this file is run the first time this package is imported
+"""
+

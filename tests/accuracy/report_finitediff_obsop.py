@@ -54,5 +54,6 @@ for i in subset:
     results['abs_diff'].append( abs_diff )
     results['rel_diff'].append( rel_diff )
 
+base_in.cleanup()
 display( results )
 
