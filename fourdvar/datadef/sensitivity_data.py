@@ -4,20 +4,25 @@ should contain data with a similar shape to ModelInputData
 """
 
 import numpy as np
+import os
 
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-from fourdvar.util.dim_defn import x_len
+import fourdvar.util.netcdf_handle as ncf
+from fourdvar.util.cmaq_datadef_files import sensitivity_files as file_data
+from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.file_handle import ensure_path
 
 class SensitivityData( InterfaceData ):
     """application
     """
     
     #add to the require set all the attributes that must be defined for an AdjointForcingData to be valid.
-    require = InterfaceData.add_require( 'data' )
+    #require = InterfaceData.add_require( 'data' )
+    file_data = file_data
     
-    def __init__( self, data ):
+    def __init__( self ):
         """
         application: create an instance of SensitivityData
         input: user-defined
@@ -25,24 +30,40 @@ class SensitivityData( InterfaceData ):
         
         eg: new_sense =  datadef.SensitivityData( filelist )
         """
-        #data is an array of x_len x-values
-        InterfaceData.__init__( self )
-        data = np.array( data, dtype='float64' )
-        assert data.shape == ( x_len, ), 'input data does not match model space'
-        self.data = data.copy()
+        #just check all required files exist
+        for record in file_data.values():
+            assert os.path.isfile( record['actual'] ), 'missing {}'.format( record['actual'] )
         return None
     
-    def get_value( self, i ):
+    def get_variable( self, file_label, varname ):
         """
-        application: return a single value from the provided lookup/co-ordinate
-        input: user-defined
-        output: scalar
-        
-        eg: sense_value = sensitivity.get_value( day, time, row, col, lay )
-        
-        notes: only used for accuracy testing.
+        extension: return an array of a single variable
+        input: string, string
+        output: numpy.ndarray
         """
-        return self.data[i]
+        err_msg = 'file_label {} not in file_details'.format( file_label )
+        assert file_label in file_data.keys(), err_msg
+        return ncf.get_variable( file_data[file_label]['actual'], varname )
+    
+    def archive( self, dirname=None ):
+        """
+        extension: save copy of files to archive/experiment directory
+        input: string or None
+        output: None
+        
+        notes: this will overwrite any clash of namespace.
+        if input is None file will write to experiment directory
+        else it will create dirname in experiment directory and save there.
+        """
+        save_path = get_archive_path()
+        if dirname is not None:
+            save_path = os.path.join( save_path, dirname )
+        ensure_path( save_path, inc_file=False )
+        for record in file_data.values():
+            source = record['actual']
+            dest = os.path.join( save_path, record['archive'] )
+            ncf.copy_compress( source, dest )
+        return None
     
     @classmethod
     def example( cls ):
@@ -55,22 +76,9 @@ class SensitivityData( InterfaceData ):
         
         notes: only used for testing.
         """
-        arglist = 1.0 + np.zeros( x_len )
-        return cls( arglist )
-    
-    @classmethod
-    def clone( cls, source ):
-        """
-        application: copy a SensitivityData instance.
-        input: SensitivityData
-        output: SensitivityData
-        
-        eg: sense_copy = datadef.SensitivityData.clone( current_sense )
-        
-        notes: only used for testing. ensure that copy is independant (eg: uses copies of files, etc.)
-        """
-        assert isinstance( cls, source )
-        return cls( source.data.copy() )
+        for record in file_data.values():
+            ncf.create_from_template( record['template'], record['actual'], {} )
+        return cls()
     
     def cleanup( self ):
         """
@@ -82,6 +90,6 @@ class SensitivityData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
-        pass
+        for record in file_data.values():
+            os.remove( record['actual'] )
         return None
-

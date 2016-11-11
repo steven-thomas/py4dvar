@@ -8,8 +8,10 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ModelInputData, ModelOutputData
-from fourdvar.libshare.lorenz_63 import model
-from fourdvar.util.dim_defn import x_len
+import fourdvar.util.cmaq_handle as cmaq
+import setup_logging
+
+logger = setup_logging.get_logger( __file__ )
 
 def run_model( model_input ):
     """
@@ -18,7 +20,13 @@ def run_model( model_input ):
     output: ModelOutputData
     """
     #run the forward model
-    assert model_input.data.shape == (x_len, ), 'invalid model input'
-    out_data = model( model_input.data )
-    return ModelOutputData( out_data )
-
+    assert isinstance( model_input, ModelInputData )
+    cmaq.wipeout()
+    cmaq.run_fwd()
+    try:
+        output = ModelOutputData()
+    except AssertionError as assert_error:
+        logger.error( 'cmaq_fwd_failed. logs exported.' )
+        cmaq.cleanup()
+        raise assert_error
+    return ModelOutputData()

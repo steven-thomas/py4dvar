@@ -6,11 +6,14 @@ handles driver IO and the minimizer function
 from __future__ import print_function
 
 import numpy as np
+import sys
+import os
+import shutil
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import _get_root
 from fourdvar import datadef as d
-from fourdvar.util.file_handle import rmall
+import fourdvar.util.archive_handle as archive
 
 def setup():
     """
@@ -18,6 +21,7 @@ def setup():
     input: None
     output: None
     """
+    archive.setup()
     return None
 
 def cleanup():

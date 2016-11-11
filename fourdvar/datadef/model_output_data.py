@@ -4,21 +4,25 @@ used to construct the simulated observations.
 """
 
 import numpy as np
+import os
 
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-import fourdvar.util.file_handle as fh
-from fourdvar.util.dim_defn import x_len, nstep
+import fourdvar.util.netcdf_handle as ncf
+from fourdvar.util.cmaq_datadef_files import model_output_files as file_data
+from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.file_handle import ensure_path
 
 class ModelOutputData( InterfaceData ):
     """application
     """
     
     #add to the require set all the attributes that must be defined for a ModelOutputData to be valid.
-    require = InterfaceData.add_require( 'data', 'fname' )
-    
-    def __init__( self, data ):
+    #require = InterfaceData.add_require( 'data', 'fname' )
+    file_data = file_data
+
+    def __init__( self ):
         """
         application: create an instance of ModelOutputData
         input: user-defined
@@ -26,51 +30,41 @@ class ModelOutputData( InterfaceData ):
         
         eg: new_output =  datadef.ModelOutputData( filelist )
         """
-        #data is a numpy array, saved to file 'fname' in fourdvar/data
-        data = np.array( data, dtype='float64' )
-        assert data.shape == ( x_len, nstep+1 ), 'input data does not match model space'
-        self.data = data.copy()
-        self.fname = fh.create_array( self.__class__, self.data )
+        #just check all required files exist
+        for record in file_data.values():
+            assert os.path.isfile( record['actual'] ), 'missing {}'.format( record['actual'] )
         return None
     
-    def get_value( self, coord ):
+    def get_variable( self, file_label, varname ):
         """
-        application: return a single value from the provided lookup/co-ordinate
-        input: user-defined
-        output: scalar
-        
-        eg: conc_value = model_out.get_value( day, time, row, col, lay )
-        
-        notes: only used for accuracy testing.
+        extension: return an array of a single variable
+        input: string, string
+        output: numpy.ndarray
         """
-        return self.data[ tuple( coord ) ]
+        err_msg = 'file_label {} not in file_details'.format( file_label )
+        assert file_label in file_data.keys(), err_msg
+        return ncf.get_variable( file_data[file_label]['actual'], varname )
     
-    def set_value( self, coord, val ):
+    def archive( self, dirname=None ):
         """
-        application: change a single value from the provided lookup/co-ordinate
-        input: user-defined
+        extension: save copy of files to archive/experiment directory
+        input: string or None
         output: None
         
-        eg: model_out.set_value( new_conc, day, time, row, col, lay )
-        
-        notes: only used for accuracy testing. Should use same lookup as get_value
+        notes: this will overwrite any clash of namespace.
+        if input is None file will write to experiment directory
+        else it will create dirname in experiment directory and save there.
         """
-        self.data[ tuple( coord ) ] = val
-        fh.update_array( self.fname, self.data )
+        save_path = get_archive_path()
+        if dirname is not None:
+            save_path = os.path.join( save_path, dirname )
+        ensure_path( save_path, inc_file=False )
+        for record in file_data.values():
+            source = record['actual']
+            dest = os.path.join( save_path, record['archive'] )
+            ncf.copy_compress( source, dest )
         return None
     
-    def sum_square( self ):
-        """
-        application: return sum of squares
-        input: None
-        output: scalar
-        
-        eg: total = model_out.sum_square()
-        
-        notes: only used for accuracy testing.
-        """
-        return np.sum( self.data**2 )
-
     @classmethod
     def example( cls ):
         """
@@ -82,22 +76,9 @@ class ModelOutputData( InterfaceData ):
         
         notes: only used for testing.
         """
-        arglist = 1.0 + np.zeros(( x_len, nstep+1 ))
-        return cls( arglist )
-    
-    @classmethod
-    def clone( cls, source ):
-        """
-        application: copy a ModelOutputData.
-        input: ModelOutputData
-        output: ModelOutputData
-        
-        eg: model_out_copy = datadef.ModelOutputData.clone( current_model_out )
-        
-        notes: only used for testing. ensure that copy is independant (eg: uses copies of files, etc.)
-        """
-        assert isinstance( source, cls )
-        return cls( source.data.copy() )
+        for record in file_data.values():
+            ncf.create_from_template( record['template'], record['actual'], {} )
+        return cls()
     
     def cleanup( self ):
         """
@@ -109,6 +90,7 @@ class ModelOutputData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
-        fh.rm( self.fname )
+        for record in file_data.values():
+            os.remove( record['actual'] )
         return None
 

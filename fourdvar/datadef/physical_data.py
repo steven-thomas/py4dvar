@@ -8,8 +8,8 @@ import numpy as np
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-from fourdvar.util.file_handle import get_dict
-from fourdvar.util.dim_defn import x_len
+#from fourdvar.util.file_handle import get_dict
+#from fourdvar.util.dim_defn import x_len
 
 
 class PhysicalData( InterfaceData ):

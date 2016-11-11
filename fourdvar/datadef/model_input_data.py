@@ -6,20 +6,25 @@ Used to handle any resolution/format changes between the model and backgroud/pri
 # input class for the fwd model, generated from PhysicalData
 
 import numpy as np
+import os
 
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
-from fourdvar.util.dim_defn import x_len
+import fourdvar.util.netcdf_handle as ncf
+from fourdvar.util.cmaq_datadef_files import model_input_files as file_data
+from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.file_handle import ensure_path
 
 class ModelInputData( InterfaceData ):
     """application
     """
     
     #add to the require set all the attributes that must be defined for an ModelInputData to be valid.
-    require = InterfaceData.add_require( 'data' )
+    #require = InterfaceData.add_require( 'data' )
+    file_data = file_data
     
-    def __init__( self, data ):
+    def __init__( self, **kwargs ):
         """
         application: create an instance of ModelInputData
         input: user-defined
@@ -27,35 +32,49 @@ class ModelInputData( InterfaceData ):
         
         eg: new_model_in =  datadef.ModelInputData( filelist )
         """
-        #data is an array of x_len x-values
-        data = np.array( data, dtype='float64' )
-        assert data.shape == ( x_len, ), 'input data does not match model space'
-        self.data = data.copy()
+        #each input arg is a dictionary, matching to a record in file_details[class_name]
+        #arg name matches the record key
+        #arg value is a dictionary, keys are variable in file, values are numpy arrays
+        assert len(file_data) == len(kwargs), 'input args do not match file_details'
+        for label, data in kwargs.items():
+            assert label in file_data.keys(), '{} not in file_details'.format( label )
+            err_msg = "{} data doesn't match template.".format( label )
+            assert ncf.validate( file_data[ label ][ 'template' ], data ), err_msg
+
+        for label, record in file_data.items():
+            ncf.create_from_template( record[ 'template' ],
+                                      record[ 'actual' ],
+                                      kwargs[ label ] )
         return None
     
-    def get_value( self, i ):
+    def get_variable( self, file_label, varname ):
         """
-        application: return a single value from the provided lookup/co-ordinate
-        input: user-defined
-        output: scalar
-        
-        eg: conc_value = model_in.get_value( day, time, row, col, lay )
-        
-        notes: only used for accuracy testing.
+        extension: return an array of a single variable
+        input: string, string
+        output: numpy.ndarray
         """
-        return self.data[i]
+        err_msg = 'file_label {} not in file_details'.format( file_label )
+        assert file_label in file_data.keys(), err_msg
+        return ncf.get_variable( file_data[file_label]['actual'], varname )
     
-    def set_value( self, i, val ):
+    def archive( self, dirname=None ):
         """
-        application: change a single value from the provided lookup/co-ordinate to provided value
-        input: user-defined
+        extension: save copy of files to archive/experiment directory
+        input: string or None
         output: None
         
-        eg: model_in.set_value( new_conc, day, time, row, col, lay )
-        
-        notes: only used for accuracy testing. Should use same lookup as get_value.
+        notes: this will overwrite any clash of namespace.
+        if input is None file will write to experiment directory
+        else it will create dirname in experiment directory and save there.
         """
-        self.data[i] = val
+        save_path = get_archive_path()
+        if dirname is not None:
+            save_path = os.path.join( save_path, dirname )
+        ensure_path( save_path, inc_file=False )
+        for record in file_data.values():
+            source = record['actual']
+            dest = os.path.join( save_path, record['archive'] )
+            ncf.copy_compress( source, dest )
         return None
     
     @classmethod
@@ -69,22 +88,8 @@ class ModelInputData( InterfaceData ):
         
         notes: only used for testing.
         """
-        arglist = 1.0 + np.zeros( x_len )
-        return cls( arglist )
-    
-    @classmethod
-    def clone( cls, source ):
-        """
-        application: copy a ModelInputData.
-        input: ModelInputData
-        output: ModelInputData
-        
-        eg: model_in_copy = datadef.ModelInputData.clone( current_model_in )
-        
-        notes: only used for testing. ensure that copy is independant (eg: uses copies of files, etc.)
-        """
-        assert isinstance( source, cls )
-        return cls( source.data.copy() )
+        argdict = { label: {} for label in file_data.keys() }
+        return cls( **argdict )    
     
     def cleanup( self ):
         """
@@ -96,5 +101,5 @@ class ModelInputData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
+        pass
         return None
-

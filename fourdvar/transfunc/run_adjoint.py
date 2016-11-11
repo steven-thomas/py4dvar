@@ -7,10 +7,8 @@ eg: transform( adjoint_forcing_instance, datadef.SensitivityData ) == run_adjoin
 import numpy as np
 
 import _get_root
-from fourdvar.datadef import AdjointForcingData, SensitivityData, ModelOutputData
-from fourdvar.libshare.lorenz_63 import model_ad
-from fourdvar.util.dim_defn import x_len
-from fourdvar.util.file_handle import read_array
+from fourdvar.datadef import AdjointForcingData, SensitivityData
+import fourdvar.util.cmaq_handle as cmaq
 
 def run_adjoint( adjoint_forcing ):
     """
@@ -18,8 +16,8 @@ def run_adjoint( adjoint_forcing ):
     input: AdjointForcingData
     output: SensitivityData
     """
-    assert adjoint_forcing.data.shape[0] == x_len, 'invalid adjoint forcing'
-    xtraj = read_array( ModelOutputData )
-    out_data = model_ad( xtraj, adjoint_forcing.data )
-    return SensitivityData( out_data )
+    assert isinstance( adjoint_forcing, AdjointForcingData )
+    #should ensure that checkpoints exist first.
+    cmaq.run_bwd()
+    return SensitivityData()
 

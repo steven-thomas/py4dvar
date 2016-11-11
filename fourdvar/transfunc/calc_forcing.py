@@ -8,8 +8,8 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
-from fourdvar.libshare.obs_handle import mkfrc_map
-from fourdvar.util.file_handle import read_array
+#from fourdvar.libshare.obs_handle import mkfrc_map
+#from fourdvar.util.file_handle import read_array
 
 def calc_forcing( w_residual ):
     """

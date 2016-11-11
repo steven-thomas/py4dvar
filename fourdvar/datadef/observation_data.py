@@ -8,7 +8,7 @@ import _get_root
 from fourdvar.datadef.abstract._single_data import SingleData
 from fourdvar.datadef.abstract._extractable_data import ExtractableData
 
-from fourdvar.util.file_handle import get_dict
+#from fourdvar.util.file_handle import get_dict
 from fourdvar.util.dim_defn import nstep, obs_kinds
 
 class ObservationSingle( SingleData ):
