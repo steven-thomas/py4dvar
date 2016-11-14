@@ -11,14 +11,13 @@ from fourdvar.util.archive_handle import get_archive_path
 start_date = dt.date( 2007, 6, 10 )
 end_date = dt.date( 2007, 6, 13 )
 #end_date = dt.date( 2007, 6, 10 )
-#end_date = dt.date( 2007, 6, 11 )
 
 #No. of processors per column
-#npcol = 4
-npcol = 1
+#npcol = 1
+npcol = 4
 #No. of processors per row
-#nprow = 4
-nprow = 1
+#nprow = 1
+nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -164,6 +163,10 @@ bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
 
 curdir = os.path.realpath( os.curdir )
 archdir = os.path.join( get_archive_path(), 'cmaq_extra' )
+
+fwd_stdout_log = os.path.join( archdir, 'fwd_stdout.log' )
+bwd_stdout_log = os.path.join( archdir, 'bwd_stdout.log' )
+
 #format: [cmaq_path, storage_path, is_netcdf]
 #notes: storage_path==None means file is not kept.
 #<I> in storage_path is replaced with iteration number, therefore every iteration is stored

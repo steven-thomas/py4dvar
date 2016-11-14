@@ -15,6 +15,11 @@ import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
 def parse_env_dict( env_dict, date ):
+    """
+    extension: convert date patterns into values
+    input: dictionary (envvar_name: pattern_value), dt.date
+    output: dictionary (envvar_name: actual_value)
+    """
     ymd = date.strftime('%Y%m%d')
     yj = date.strftime('%Y%j')
     yesterday = ( date - dt.timedelta(days=1) ).strftime('%Y%m%d')
@@ -26,17 +31,34 @@ def parse_env_dict( env_dict, date ):
     return env_dict
 
 def load_env( env_dict ):
+    """
+    extension: load dictionary into environment variables
+    input: dictionary (envvar_name: value)
+    output: None
+    
+    notes: all names and values must be strings
+    """
     for name, value in env_dict.items():
         logger.debug( 'setenv {} = {}'.format( name, value ) )
         os.environ[ name ] = value
     return None
 
 def clean_env( env_dict ):
+    """
+    extension: remove dictionary keys from environment variables
+    input: dictionary (envvar_name: value)
+    output: None
+    """
     for name in env_dict.keys():
         del os.environ[ name ]
     return None
 
 def setup_run():
+    """
+    extension: setup all the constant environment variables
+    input: None
+    output: None
+    """
     env_dict = {}
     env_dict['NPCOL_NPROW'] = '{:} {:}'.format(cfg.npcol, cfg.nprow)
     env_dict['IOAPI_LOG_WRITE'] = 'T' if cfg.ioapi_logging else 'F'
@@ -122,6 +144,11 @@ def setup_run():
     return env_dict
 
 def run_fwd_single( date, is_first ):
+    """
+    extension: run cmaq fwd for a single day
+    input: dt.date, Boolean (is this day the first of the model)
+    output: None
+    """
     
     env_dict = setup_run()
 
@@ -159,12 +186,24 @@ def run_fwd_single( date, is_first ):
         #use mpi
         runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
     runlist.append( cfg.fwd_prog )
-    subprocess.call( runlist )
+    fh.ensure_path( cfg.fwd_stdout_log, inc_file=True )
+    with open( cfg.fwd_stdout_log, 'w' ) as stdout_file:
+        statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+    if statcode != 0:
+        msg = 'cmaq fwd failed on {}.'.format( date.strftime('%Y%m%d') )
+        logger.error( msg )
+        cleanup()
+        raise AssertionError( msg )
     
     clean_env( env_dict )
     return None
 
 def run_bwd_single( date, is_first ):
+    """
+    extension: run cmaq bwd for a single day
+    input: dt.date, Boolean (is this the first time called)
+    output: None
+    """
     
     env_dict = setup_run()
     
@@ -212,28 +251,54 @@ def run_bwd_single( date, is_first ):
         #use mpi
         runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
     runlist.append( cfg.bwd_prog )
-    subprocess.call( runlist )
-
+    fh.ensure_path( cfg.bwd_stdout_log, inc_file=True )
+    with open( cfg.bwd_stdout_log, 'w' ) as stdout_file:
+        statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+    if statcode != 0:
+        msg = 'cmaq bwd failed on {}.'.format( date.strftime('%Y%m%d') )
+        logger.error( msg )
+        cleanup()
+        raise AssertionError( msg )
+        
     clean_env( env_dict )
     return None
 
 def run_fwd():
+    """
+    extension: run cmaq fwd from current config
+    input: None
+    output: None
+    """
     cur_date = cfg.start_date
     isfirst = True
     while cur_date <= cfg.end_date:
         run_fwd_single(cur_date, isfirst)
         isfirst = False
         cur_date += dt.timedelta(days=1)
+    return None
 
 def run_bwd():
+    """
+    extension: run cmaq bwd from current config
+    input: None
+    output: None
+    """
     cur_date = cfg.end_date
     isfirst = True
     while cur_date >= cfg.start_date:
         run_bwd_single(cur_date, isfirst)
         isfirst = False
         cur_date -= dt.timedelta(days=1)
+    return None
 
 def cleanup():
+    """
+    extension: move/delete all files created by a run of cmaq
+    input: None
+    output: None
+    
+    notes: to move or delete file is set in cmaq_config
+    """
     fh.ensure_path( cfg.archdir, inc_file=False )
     nprocs = int( cfg.npcol )*int( cfg.nprow )
     for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
@@ -269,6 +334,11 @@ def cleanup():
     return None
 
 def wipeout():
+    """
+    extension: delete all files created by a run of cmaq
+    input: None
+    output: None
+    """
     for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
         cur_date = cfg.start_date
         while cur_date <= cfg.end_date:
