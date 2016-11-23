@@ -5,6 +5,7 @@ import datetime as dt
 import subprocess
 
 import _get_root
+import fourdvar.util.global_config as global_config
 import fourdvar.util.cmaq_config as cfg
 import fourdvar.util.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
@@ -188,6 +189,8 @@ def run_fwd_single( date, is_first ):
     runlist.append( cfg.fwd_prog )
     fh.ensure_path( cfg.fwd_stdout_log, inc_file=True )
     with open( cfg.fwd_stdout_log, 'w' ) as stdout_file:
+        msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
+        logger.info( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
     if statcode != 0:
         msg = 'cmaq fwd failed on {}.'.format( date.strftime('%Y%m%d') )
@@ -253,6 +256,8 @@ def run_bwd_single( date, is_first ):
     runlist.append( cfg.bwd_prog )
     fh.ensure_path( cfg.bwd_stdout_log, inc_file=True )
     with open( cfg.bwd_stdout_log, 'w' ) as stdout_file:
+        msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
+        logger.info( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
     if statcode != 0:
         msg = 'cmaq bwd failed on {}.'.format( date.strftime('%Y%m%d') )
@@ -269,12 +274,10 @@ def run_fwd():
     input: None
     output: None
     """
-    cur_date = cfg.start_date
     isfirst = True
-    while cur_date <= cfg.end_date:
+    for cur_date in global_config.get_datelist():
         run_fwd_single(cur_date, isfirst)
         isfirst = False
-        cur_date += dt.timedelta(days=1)
     return None
 
 def run_bwd():
@@ -283,12 +286,10 @@ def run_bwd():
     input: None
     output: None
     """
-    cur_date = cfg.end_date
     isfirst = True
-    while cur_date >= cfg.start_date:
+    for cur_date in global_config.get_datelist()[::-1]:
         run_bwd_single(cur_date, isfirst)
         isfirst = False
-        cur_date -= dt.timedelta(days=1)
     return None
 
 def cleanup():
@@ -302,8 +303,7 @@ def cleanup():
     fh.ensure_path( cfg.archdir, inc_file=False )
     nprocs = int( cfg.npcol )*int( cfg.nprow )
     for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
-        cur_date = cfg.start_date
-        while cur_date <= cfg.end_date:
+        for cur_date in global_config.get_datelist():
             ymd = cur_date.strftime('%Y%m%d')
             yj = cur_date.strftime('%Y%j')
             for proc_no in range(1, 1 + nprocs ):
@@ -330,7 +330,6 @@ def cleanup():
                     else:
                         shutil.copyfile( src, dst )
                 os.remove( src )
-            cur_date += dt.timedelta(days=1)
     return None
 
 def wipeout():
@@ -340,8 +339,7 @@ def wipeout():
     output: None
     """
     for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
-        cur_date = cfg.start_date
-        while cur_date <= cfg.end_date:
+        for cur_date in global_config.get_datelist():
             ymd = cur_date.strftime('%Y%m%d')
             yj = cur_date.strftime('%Y%j')
             rep_dict = { '<YYYYMMDD>': ymd, '<YYYYDDD>': yj }
@@ -350,5 +348,4 @@ def wipeout():
                 src = src.replace( old, new )
             if os.path.isfile( src ):
                 os.remove( src )
-            cur_date += dt.timedelta(days=1)
     return None

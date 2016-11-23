@@ -8,10 +8,9 @@ import os
 
 import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
-#from fourdvar.datadef.model_output_data import ModelOutputData
 
 import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_datadef_files import adjoint_forcing_files as file_data
+from fourdvar.util.cmaq_datadef_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -20,8 +19,7 @@ class AdjointForcingData( InterfaceData ):
     """
     
     #add to the require set all the attributes that must be defined for an AdjointForcingData to be valid.
-    #require = InterfaceData.add_require( 'data' )
-    file_data = file_data
+    require = InterfaceData.add_require( 'file_data' )
 
     def __init__( self, **kwargs ):
         """
@@ -34,13 +32,14 @@ class AdjointForcingData( InterfaceData ):
         #each input arg is a dictionary, matching to a record in file_details[class_name]
         #arg name matches the record key
         #arg value is a dictionary, keys are variable in file, values are numpy arrays
-        assert len(file_data) == len(kwargs), 'input args do not match file_details'
+        self.file_data = get_filedict( self.__class__.__name__ )
+        assert len(self.file_data) == len(kwargs), 'input args do not match file_details'
         for label, data in kwargs.items():
-            assert label in file_data.keys(), '{} not in file_details'.format( label )
+            assert label in self.file_data.keys(), '{} not in file_details'.format( label )
             err_msg = "{} data doesn't match template.".format( label )
-            assert ncf.validate( file_data[ label ][ 'template' ], data ), err_msg
+            assert ncf.validate( self.file_data[ label ][ 'template' ], data ), err_msg
         
-        for label, record in file_data.items():
+        for label, record in self.file_data.items():
             ncf.create_from_template( record[ 'template' ],
                                       record[ 'actual' ],
                                       kwargs[ label ] )
@@ -53,8 +52,8 @@ class AdjointForcingData( InterfaceData ):
         output: numpy.ndarray
         """
         err_msg = 'file_label {} not in file_details'.format( file_label )
-        assert file_label in file_data.keys(), err_msg
-        return ncf.get_variable( file_data[file_label]['actual'], varname )
+        assert file_label in self.file_data.keys(), err_msg
+        return ncf.get_variable( self.file_data[file_label]['actual'], varname )
     
     def archive( self, dirname=None ):
         """
@@ -70,7 +69,7 @@ class AdjointForcingData( InterfaceData ):
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
         ensure_path( save_path, inc_file=False )
-        for record in file_data.values():
+        for record in self.file_data.values():
             source = record['actual']
             dest = os.path.join( save_path, record['archive'] )
             ncf.copy_compress( source, dest )
@@ -87,7 +86,8 @@ class AdjointForcingData( InterfaceData ):
         
         notes: only used for testing.
         """
-        argdict = { label: {} for label in file_data.keys() }
+        filedict = get_filedict( cls.__name__ )
+        argdict = { label: {} for label in filedict.keys() }
         return cls( **argdict )
     
     @classmethod
@@ -116,7 +116,7 @@ class AdjointForcingData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
-        for record in file_data.values():
+        for record in self.file_data.values():
             os.remove( record['actual'] )
         return None
 

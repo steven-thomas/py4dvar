@@ -53,15 +53,18 @@ def create_from_template( source, dest, change ):
             ncf_file.variables[ var ][:] = data
     return None
 
-def get_variable( filepath, varname ):
+def get_variable( filepath, varname, group=None ):
     """
     extension: get all the values of a single variable
-    input: string (path/to/file.ncf), string
+    input: string (path/to/file.ncf), string, string (optional, group name or path)
     output: numpy.ndarray
     """
     with ncf.Dataset( filepath, 'r' ) as ncf_file:
-        assert varname in ncf_file.variables.keys(), '{} not in file'.format( varname )
-        result = ncf_file.variables[varname][:]
+        source = ncf_file
+        if group is not None:
+            for g in group.split( '/' ):
+                source = source.groups[ g ]
+        result = source.variables[ varname ][:]
     return result
 
 def get_attr( filepath, attrname ):

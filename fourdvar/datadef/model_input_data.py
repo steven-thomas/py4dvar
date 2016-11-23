@@ -12,7 +12,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_datadef_files import model_input_files as file_data
+from fourdvar.util.cmaq_datadef_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -21,8 +21,7 @@ class ModelInputData( InterfaceData ):
     """
     
     #add to the require set all the attributes that must be defined for an ModelInputData to be valid.
-    #require = InterfaceData.add_require( 'data' )
-    file_data = file_data
+    require = InterfaceData.add_require( 'file_data' )
     
     def __init__( self, **kwargs ):
         """
@@ -35,13 +34,29 @@ class ModelInputData( InterfaceData ):
         #each input arg is a dictionary, matching to a record in file_details[class_name]
         #arg name matches the record key
         #arg value is a dictionary, keys are variable in file, values are numpy arrays
-        assert len(file_data) == len(kwargs), 'input args do not match file_details'
+        self.file_data = get_filedict( self.__class__.__name__ )
+        msg = 'input args incompatible with file list'
+        assert set( self.file_data.keys() ) == set( kwargs.keys() ), msg
+        need_time = set()
         for label, data in kwargs.items():
-            assert label in file_data.keys(), '{} not in file_details'.format( label )
             err_msg = "{} data doesn't match template.".format( label )
-            assert ncf.validate( file_data[ label ][ 'template' ], data ), err_msg
-
-        for label, record in file_data.items():
+            assert ncf.validate( self.file_data[ label ][ 'template' ], data ), err_msg
+            for array in data.values():
+                if len( array.shape ) == 4 and array.shape[0] > 1:
+                    #data has a timestep (ie: not icon)
+                    need_time.add( (label, array.shape[0]) )
+        
+        #if file in need_time, check file TSTEP is compatible 
+        for label, nstep in need_time:
+            step_file = self.file_data[ label ][ 'template' ]
+            tstep = int( ncf.get_attr( step_file, 'TSTEP' ) )
+            tsec = 3600*(tstep//10000) + 60*((tstep//100)%100) + (tstep%100)
+            daysec = 24*60*60
+            assert daysec % tsec == 0, 'timestep must cleanly divide a day.'
+            msg = '{0} must have {1} timesteps.'.format( label, daysec//tsec )
+            assert nstep % (daysec//tsec) == 0, msg
+        
+        for label, record in self.file_data.items():
             ncf.create_from_template( record[ 'template' ],
                                       record[ 'actual' ],
                                       kwargs[ label ] )
@@ -53,9 +68,9 @@ class ModelInputData( InterfaceData ):
         input: string, string
         output: numpy.ndarray
         """
-        err_msg = 'file_label {} not in file_details'.format( file_label )
-        assert file_label in file_data.keys(), err_msg
-        return ncf.get_variable( file_data[file_label]['actual'], varname )
+        err_msg = 'file_label {} not in file_data'.format( file_label )
+        assert file_label in self.file_data.keys(), err_msg
+        return ncf.get_variable( self.file_data[file_label]['actual'], varname )
     
     def archive( self, dirname=None ):
         """
@@ -71,7 +86,7 @@ class ModelInputData( InterfaceData ):
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
         ensure_path( save_path, inc_file=False )
-        for record in file_data.values():
+        for record in self.file_data.values():
             source = record['actual']
             dest = os.path.join( save_path, record['archive'] )
             ncf.copy_compress( source, dest )
@@ -88,7 +103,8 @@ class ModelInputData( InterfaceData ):
         
         notes: only used for testing.
         """
-        argdict = { label: {} for label in file_data.keys() }
+        filedict = get_filedict( cls.__name__ )
+        argdict = { label: {} for label in filedict.keys() }
         return cls( **argdict )    
     
     def cleanup( self ):

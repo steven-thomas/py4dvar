@@ -1,16 +1,12 @@
 
 import os
-import datetime as dt
 
 import _get_root
 from fourdvar.util.archive_handle import get_archive_path
+import fourdvar.util.global_config as glob_cfg
 
 #notes: the patterns <YYYYMMDD> & <YYYYDDD> will be replaced
 #with the year, month and day of the current model run
-
-start_date = dt.date( 2007, 6, 10 )
-end_date = dt.date( 2007, 6, 13 )
-#end_date = dt.date( 2007, 6, 10 )
 
 #No. of processors per column
 #npcol = 1

@@ -5,7 +5,7 @@ import os
 import _get_root
 
 #levels in acending order: DEBUG, INFO, WARNING, ERROR, CRITICAL
-to_screen_level = logging.ERROR
+to_screen_level = logging.INFO
 to_file_level = logging.DEBUG
 
 #format strings:

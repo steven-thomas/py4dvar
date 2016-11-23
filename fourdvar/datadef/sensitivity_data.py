@@ -10,7 +10,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_datadef_files import sensitivity_files as file_data
+from fourdvar.util.cmaq_datadef_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -19,9 +19,8 @@ class SensitivityData( InterfaceData ):
     """
     
     #add to the require set all the attributes that must be defined for an AdjointForcingData to be valid.
-    #require = InterfaceData.add_require( 'data' )
-    file_data = file_data
-    
+    require = InterfaceData.add_require( 'file_data' )
+        
     def __init__( self ):
         """
         application: create an instance of SensitivityData
@@ -30,8 +29,9 @@ class SensitivityData( InterfaceData ):
         
         eg: new_sense =  datadef.SensitivityData( filelist )
         """
+        self.file_data = get_filedict( self.__class__.__name__ )
         #just check all required files exist
-        for record in file_data.values():
+        for record in self.file_data.values():
             assert os.path.isfile( record['actual'] ), 'missing {}'.format( record['actual'] )
         return None
     
@@ -42,8 +42,8 @@ class SensitivityData( InterfaceData ):
         output: numpy.ndarray
         """
         err_msg = 'file_label {} not in file_details'.format( file_label )
-        assert file_label in file_data.keys(), err_msg
-        return ncf.get_variable( file_data[file_label]['actual'], varname )
+        assert file_label in self.file_data.keys(), err_msg
+        return ncf.get_variable( self.file_data[file_label]['actual'], varname )
     
     def archive( self, dirname=None ):
         """
@@ -59,7 +59,7 @@ class SensitivityData( InterfaceData ):
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
         ensure_path( save_path, inc_file=False )
-        for record in file_data.values():
+        for record in self.file_data.values():
             source = record['actual']
             dest = os.path.join( save_path, record['archive'] )
             ncf.copy_compress( source, dest )
@@ -76,7 +76,8 @@ class SensitivityData( InterfaceData ):
         
         notes: only used for testing.
         """
-        for record in file_data.values():
+        filedict = get_filedict( cls.__name__ )
+        for record in filedict.values():
             ncf.create_from_template( record['template'], record['actual'], {} )
         return cls()
     
@@ -90,6 +91,6 @@ class SensitivityData( InterfaceData ):
         
         notes: called after test instance is no longer needed, used to delete files etc.
         """
-        for record in file_data.values():
+        for record in self.file_data.values():
             os.remove( record['actual'] )
         return None
