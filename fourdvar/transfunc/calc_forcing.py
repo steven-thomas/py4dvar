@@ -8,8 +8,7 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
-#from fourdvar.libshare.obs_handle import mkfrc_map
-#from fourdvar.util.file_handle import read_array
+import fourdvar.libshare.obs_handle as oh
 
 def calc_forcing( w_residual ):
     """
@@ -17,14 +16,15 @@ def calc_forcing( w_residual ):
     input: ObservationData  (weighted residuals)
     output: AdjointForcingData
     """
-    vallist = w_residual.get_vector( 'value' )
-    kindlist = w_residual.get_vector( 'kind' )
-    timelist = w_residual.get_vector( 'time' )
-    xtraj = read_array( ModelOutputData )
-    frc = np.zeros_like( xtraj )
-    for val, kind, time in zip( vallist, kindlist, timelist ):
-        sparse = mkfrc_map[ kind ]( xtraj[ :, time ], val )
-        for i,v in sparse.items():
-            frc[ i, time ] += v
-    return AdjointForcingData( frc )
-
+    
+    obs_by_date = oh.get_obs_by_date( w_residual )
+    kwargs = AdjointForcingData.get_kwargs_dict()
+    for ymd, obslist in obs_by_date.items():
+        spcs_dict = kwargs[ 'force.'+ymd ]
+        for obs in obslist:
+            for coord,weight in obs.weight_grid.items():
+                if str( coord[0] ) == ymd:
+                    step,lay,row,col,spc = coord[1:]
+                    w_val = obs.value * weight
+                    spcs_dict[spc][step,lay,row,col] += w_val
+    return AdjointForcingData( **kwargs )

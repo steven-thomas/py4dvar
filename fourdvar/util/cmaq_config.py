@@ -2,7 +2,6 @@
 import os
 
 import _get_root
-from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.global_config as glob_cfg
 
 #notes: the patterns <YYYYMMDD> & <YYYYDDD> will be replaced
@@ -156,55 +155,24 @@ emis_scale_sense_file = os.path.join( output_path,
 fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
 bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
 
-
 curdir = os.path.realpath( os.curdir )
-archdir = os.path.join( get_archive_path(), 'cmaq_extra' )
 
-fwd_stdout_log = os.path.join( archdir, 'fwd_stdout.log' )
-bwd_stdout_log = os.path.join( archdir, 'bwd_stdout.log' )
+#temporary, change when reworking archive system
+fwd_stdout_log = os.path.join( output_path, 'fwd_stdout.log' )
+bwd_stdout_log = os.path.join( output_path, 'bwd_stdout.log' )
 
-#format: [cmaq_path, storage_path, is_netcdf]
-#notes: storage_path==None means file is not kept.
-#<I> in storage_path is replaced with iteration number, therefore every iteration is stored
-#is_netcdf==True means storage uses netcdf_handle.copy_compress
+#list of templates of all files created by cmaq
+#cmaq_handle.wipeout resolves and deletes all listed files.
 created_files = [
-    [ os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+fwd_appl ), None, False ],
-    [ os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+bwd_appl ), None, False ],
-    [ os.path.join( curdir, 'N_SPC_EMIS.dat' ), None, False ],
-    [ fwd_logfile, os.path.join( archdir, os.path.basename( fwd_logfile ) ), False ],
-    [ bwd_logfile, os.path.join( archdir, os.path.basename( bwd_logfile ) ), False ],
-    [ floor_file, os.path.join( archdir, 'FLOOR.<I>.<YYYYMMDD>' ), False ],
-    [ chem_chk, os.path.join( archdir, os.path.basename( chem_chk ) ), True ],
-    [ vdiff_chk, os.path.join( archdir, os.path.basename( vdiff_chk ) ), True ],
-    [ aero_chk, os.path.join( archdir, os.path.basename( aero_chk ) ), True ],
-    [ ha_rhoj_chk, os.path.join( archdir, os.path.basename( ha_rhoj_chk ) ), True ],
-    [ va_rhoj_chk, os.path.join( archdir, os.path.basename( va_rhoj_chk ) ), True ],
-    [ hadv_chk, os.path.join( archdir, os.path.basename( hadv_chk ) ), True ],
-    [ vadv_chk, os.path.join( archdir, os.path.basename( vadv_chk ) ), True ],
-    [ emis_chk, os.path.join( archdir, os.path.basename( emis_chk ) ), True ],
-    [ emist_chk, os.path.join( archdir, os.path.basename( emist_chk ) ), True ],
-    [ fwd_xfirst_file, None, False ],
-    [ bwd_xfirst_file, None, False ],
-    [ conc_file, os.path.join( archdir, os.path.basename( conc_file ) ), True ],
-    [ avg_conc_file, os.path.join( archdir, os.path.basename( avg_conc_file ) ), True ],
-    [ last_grid_file, os.path.join( archdir, os.path.basename( last_grid_file ) ), True ],
-    [ drydep_file, os.path.join( archdir, os.path.basename( drydep_file ) ), True ],
-    [ wetdep1_file, os.path.join( archdir, os.path.basename( wetdep1_file ) ), True ],
-    [ wetdep2_file, os.path.join( archdir, os.path.basename( wetdep2_file ) ), True ],
-    [ ssemis_file, os.path.join( archdir, os.path.basename( ssemis_file ) ), True ],
-    [ aerovis_file, os.path.join( archdir, os.path.basename( aerovis_file ) ), True ],
-    [ aerodiam_file, os.path.join( archdir, os.path.basename( aerodiam_file ) ), True ],
-    [ ipr1_file, os.path.join( archdir, os.path.basename( ipr1_file ) ), True ],
-    [ ipr2_file, os.path.join( archdir, os.path.basename( ipr2_file ) ), True ],
-    [ ipr3_file, os.path.join( archdir, os.path.basename( ipr3_file ) ), True ],
-    [ irr1_file, os.path.join( archdir, os.path.basename( irr1_file ) ), True ],
-    [ irr2_file, os.path.join( archdir, os.path.basename( irr2_file ) ), True ],
-    [ irr3_file, os.path.join( archdir, os.path.basename( irr3_file ) ), True ],
-    [ rj1_file, os.path.join( archdir, os.path.basename( rj1_file ) ), True ],
-    [ rj2_file, os.path.join( archdir, os.path.basename( rj2_file ) ), True ],
-    [ conc_sense_file, os.path.join( archdir, os.path.basename( conc_sense_file ) ), True ],
-    [ emis_sense_file, os.path.join( archdir, os.path.basename( emis_sense_file ) ), True ],
-    [ emis_scale_sense_file,
-      os.path.join( archdir, os.path.basename( emis_scale_sense_file ) ), True ],
-    [ force_file, os.path.join( archdir, os.path.basename( force_file ) ), True ]
-]
+    os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+fwd_appl ),
+    os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+bwd_appl ),
+    os.path.join( curdir, 'N_SPC_EMIS.dat' ),
+    fwd_logfile, bwd_logfile, floor_file, chem_chk, vdiff_chk,
+    aero_chk, ha_rhoj_chk, va_rhoj_chk, hadv_chk, vadv_chk,
+    emis_chk, emist_chk, fwd_xfirst_file, bwd_xfirst_file,
+    conc_file, avg_conc_file, last_grid_file, drydep_file,
+    wetdep1_file, wetdep2_file, ssemis_file, aerovis_file,
+    aerodiam_file, ipr1_file, ipr2_file, ipr3_file,
+    irr1_file, irr2_file, irr3_file, rj1_file, rj2_file,
+    conc_sense_file, emis_sense_file, emis_scale_sense_file,
+    force_file, fwd_stdout_log, bwd_stdout_log ]

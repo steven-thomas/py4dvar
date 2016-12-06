@@ -9,9 +9,11 @@ import datetime as dt
 
 import _get_root
 from fourdvar.datadef import PhysicalData, ModelInputData
+from fourdvar.util.date_handle import replace_date
 import fourdvar.util.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.global_config as global_config
+import fourdvar.libshare.cmaq_handle as cmaq
 
 def prepare_model( physical_data ):
     """
@@ -31,7 +33,8 @@ def prepare_model( physical_data ):
     p_daysize = physical_data.nstep // len( dlist )
     assert m_daysize % p_daysize == 0, 'physical & model input emis TSTEP incompatible.'
     
-    for i,day in enumerate( dlist ):
+    emis_pattern = 'emis.<YYYYMMDD>'
+    for i,date in enumerate( dlist ):
         spcs_dict = {}
         start = i * p_daysize
         end = (i+1) * p_daysize
@@ -39,8 +42,11 @@ def prepare_model( physical_data ):
             phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
             mod_data = np.repeat( phys_data, m_daysize // p_daysize, axis=0 )
             spcs_dict[ spcs_name ] = mod_data
-        emis_argname = 'emis.' + day.strftime( '%Y%m%d' )
+        emis_argname = replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
+    
+    #may want to remove this line in future.
+    cmaq.wipeout()
     
     return ModelInputData( **model_input_args )
 

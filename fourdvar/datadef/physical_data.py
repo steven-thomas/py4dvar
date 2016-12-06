@@ -29,10 +29,11 @@ class PhysicalData( InterfaceData ):
     nlays_emis = None  #No. layers for emis_data
     nrows = None       #No. rows for all data
     ncols = None       #No. columns for all data
-    spcs = None        #No. species for all data
+    spcs = None        #list of species for all data
+    icon_unc = None    #dict of icon uncertainty values
+    emis_unc = None    #dict of emis uncertainty values
     
-    icon_archive_name = 'icon_grid.pickle'
-    emis_archive_name = 'emis_grid.pickle'
+    archive_name = 'physical_data.pickle'
     
     def __init__( self, icon_dict, emis_dict ):
         """
@@ -47,10 +48,7 @@ class PhysicalData( InterfaceData ):
         InterfaceData.__init__( self )
         
         #params must all be set and not None (usally using cls.from_file)
-        par_name = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-        for p in par_name:
-            msg = 'missing definition for {0}.{1}'.format( self.__class__.__name__, p )
-            assert getattr( self, p ) is not None, msg
+        self.assert_params()
         
         assert set( icon_dict.keys() ) == set( self.spcs ), 'invalid icon spcs.'
         assert set( emis_dict.keys() ) == set( self.spcs ), 'invalid emis spcs.'
@@ -92,8 +90,7 @@ class PhysicalData( InterfaceData ):
         save_path = get_archive_path()
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
-        save_obj( self.icon, os.path.join( save_path, self.icon_archive_name ) )
-        save_obj( self.emis, os.path.join( save_path, self.emis_archive_name ) )
+        save_obj( self, os.path.join( save_path, self.archive_name ) )
         return None
     
     @classmethod
@@ -106,18 +103,21 @@ class PhysicalData( InterfaceData ):
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
         #get all data/parameters from file
+        unc = lambda spc: spc + '_UNC'
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
         step = int( ncf.get_attr( filename, 'TSTEP' ) )
-        varlist = ncf.get_attr( filename, 'VAR-LIST' )
-        varlen = 16
-        spcs = [varlist[i:i+varlen].strip() for i in range(0, len(varlist), varlen)]
         start_date = dt.datetime.strptime( sdate, '%Y%j' ).date()
         tsec = 3600*(step//10000) + 60*((step//100)%100) + step%100
-        icon_dict = {}
-        emis_dict = {}
-        for spcs_name in spcs:
-            icon_dict[ spcs_name ] = ncf.get_variable( filename, spcs_name, group='icon' )
-            emis_dict[ spcs_name ] = ncf.get_variable( filename, spcs_name, group='emis' )
+        spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
+        unc_list = [ unc( spc ) for spc in spcs_list ]
+        
+        icon_dict = ncf.get_variable( filename, spcs_list, group='icon' )
+        emis_dict = ncf.get_variable( filename, spcs_list, group='emis' )
+        icon_unc = ncf.get_variable( filename, unc_list, group='icon' )
+        emis_unc = ncf.get_variable( filename, unc_list, group='emis' )
+        for spc in spcs_list:
+            icon_unc[ spc ] = icon_unc.pop( unc( spc ) )
+            emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
         icon_shape = [ i.shape for i in icon_dict.values() ]
@@ -132,6 +132,12 @@ class PhysicalData( InterfaceData ):
         daysec = 24*60*60
         assert daysec % tsec == 0, 'tsec must cleanly divide a day.'
         assert estep % (daysec//tsec) == 0, 'nstep must cleanly divide into days.'
+        for spc in spcs_list:
+            msg = 'Uncertainty values are invalid for this data.'
+            assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
+            assert emis_unc[ spc ].shape == emis_dict[ spc ].shape, msg
+            assert ( icon_unc[ spc ] > 0 ).all(), msg
+            assert ( emis_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values and ensure old values are the same or None.
         end_date  = start_date + dt.timedelta( seconds=(tsec*estep - daysec) )
@@ -141,8 +147,10 @@ class PhysicalData( InterfaceData ):
         assert not bad_end, 'cannot change end_date.'
         cfg.start_date = start_date
         cfg.end_date = end_date
-        par_name = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-        par_val = [tsec, estep, ilays, elays, irows, icols, spcs]
+        par_name = ['tsec','nstep','nlays_icon','nlays_emis',
+                    'nrows','ncols','spcs','icon_unc','emis_unc']
+        par_val = [tsec, estep, ilays, elays,
+                   irows, icols, spcs_list, icon_unc, emis_unc]
         for name, val in zip( par_name, par_val ):
             old_val = getattr( cls, name )
             msg = 'cannot change {0}.{1}'.format( cls.__name__, name )
@@ -161,10 +169,40 @@ class PhysicalData( InterfaceData ):
         eg: mock_phys = datadef.PhysicalData.example()
         
         notes: only used for testing.
+        must have global_config dates & PhysicalData parameters already defined.
         """
-        pass
-        #return cls( icon_dict, emis_dict )
+        icon_val = 0
+        emis_val = 0
         
+        msg = 'Must set global_config start_date & end_date.'
+        assert cfg.start_date is not None and cfg.end_date is not None, msg
+        #params must all be set and not None (usally using cls.from_file)
+        cls.assert_params()
+        
+        icon_val += np.zeros((cls.nlays_icon, cls.nrows, cls.ncols))
+        emis_val += np.zeros((cls.nstep, cls.nlays_emis, cls.nrows, cls.ncols))
+        icon_dict = { spc: icon_val.copy() for spc in cls.spcs }
+        emis_dict = { spc: emis_val.copy() for spc in cls.spcs }
+        return cls( icon_dict, emis_dict )
+    
+    @classmethod
+    def assert_params( cls ):
+        """
+        extension: assert that all needed physical parameters are valid.
+        input: None
+        output: None
+        
+        notes: method raises assertion error if None valued parameter is found.
+        """
+        par_name = ['tsec','nstep','nlays_icon','nlays_emis',
+                    'nrows','ncols','spcs','icon_unc','emis_unc']
+        for param in par_name:
+            msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
+            assert getattr( cls, param ) is not None, msg
+        assert (24*60*60) % cls.tsec == 0, 'invalid step size (tsec).'
+        assert cls.nstep % ( (24*60*60) // cls.tsec ) == 0, 'invalid step count (nstep).'
+        return None
+    
     def cleanup( self ):
         """
         application: called when physical data instance is no longer required

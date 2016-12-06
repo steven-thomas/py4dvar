@@ -1,67 +1,75 @@
 """
-extension: functions used by the obs_operator and make_forcing transforms
-contains the original and adjoint function for every kind of observation
-functions are saved to maps obsop_map & mkfrc_map for easy importing/referencing
-
-for every original function:
-    input: x - the state of the model at the time of observation.
-    output: obs_val - the value of the simulated observation
-
-for every adjoint function:
-    input: x - the state of the model at the time of observation.
-           val - the value of the weighted residual of the observation.
-    output: sparse - a dictionary to simulate a sparse matrix of adjoint forcing values
-
-The tangent linear functions are not used.
+extension: functions used by both obs_operator and make_forcing tranforms
 """
+
 import numpy as np
 
 import _get_root
-from fourdvar.util.dim_defn import nstep
+import fourdvar.datadef as datadef
+from fourdvar.util.date_handle import replace_date
+import fourdvar.util.file_handle as fh
+import fourdvar.util.netcdf_handle as ncf
+import fourdvar.util.global_config as global_config
+import setup_logging
 
-def first( x ):
-    return x[0]
-def first_tl( x, x_tl ):
-    return { 0:x_tl[0] }
-def first_ad( x, val ):
-    return { 0:val }
+logger = setup_logging.get_logger( __file__ )
 
-def second( x ):
-    return x[1]
-def second_tl( x, x_tl ):
-    return { 1:x_tl[1] }
-def second_ad( x, val ):
-    return { 1:val }
+def get_valid_obsdata( obsmeta_path, grid_path ):
+    """
+    extension: get the obsmeta dict and ensure it's compatible with the grid
+    input: string (path/to/obsmeta.pickle), string (path/to/template.ncf)
+    output: dict OR None
+    
+    notes: returns the obsmeta dict IF it matches the provided grid
+    if obsmeta griddata does not match it returns None instead
+    """
+    griddata = fh.load_obj( obsmeta_path, close=False )
+    obsdata = fh.load_obj( obsmeta_path, close=True )
+    
+    valid = ncf.match_attr( grid_path, griddata, griddata.keys() )
+    if valid is False:
+        msg = '{0} incompatible with {1}.'.format( obsmeta_path, grid_path )
+        logger.error( msg )
+        return None
+    return obsdata
 
-def third( x ):
-    return x[2]
-def third_tl( x, x_tl ):
-    return { 2:x_tl[2] }
-def third_ad( x, val ):
-    return { 2:val }
+def get_obs_by_date( obs_set ):
+    """
+    extension: get dictionary of single obs with keys YYYYMMDD
+    input: ObservationData
+    output: { int(YYYYMMDD) : list( SingleObs ) }
+    
+    notes: a SingleObs can appear in multiple different days.
+    a SingleObs belongs to a day if that day appears in its weight_grid.
+    Only days within the model's run are included.
+    Obs with days that are outside the model are set to valid=False
+    """
+    valid_obs = [ o for o in obs_set.dataset if o.valid is True ]
+    tag = '<YYYYMMDD>'
+    valid_dates = set( replace_date(tag,d) for d in global_config.get_datelist() )
+    obs_by_date = { d : [] for d in valid_dates }
+    for obs in valid_obs:
+        dates = set( str(coord[0]) for coord in o.weight_grid.keys() )
+        if dates <= valid_dates:
+            #'dates' is a subset of 'valid_dates'
+            for d in dates:
+                obs_by_date[ d ].append( obs )
+        else:
+            obs.valid = False
+        
+    return obs_by_date
 
-def squarefirst( x ):
-    return x[0]**2
-def squarefirst_tl( x, x_tl ):
-    return { 0:2.0*x[0]*x_tl[0] }
-def squarefirst_ad( x, val ):
-    return { 0:2.0*x[0]*val }
-
-def firstbysecond( x ):
-    return x[0]*x[1]
-def firstbysecond_tl( x, x_tl ):
-    return { 0:x[1]*x_tl[0], 1:x[0]*x_tl[1] }
-def firstbysecond_ad( x, val ):
-    return { 0:x[1]*val, 1:x[0]*val }
-
-def sumall( x ):
-    return x.sum()
-def sumall_tl( x, x_tl ):
-    return { i:x_tl[i] for i,v in enumerate( x ) }
-def sumall_ad( x, val ):
-    return { i:val for i,v in enumerate( x ) }
-
-
-obsop_map = { 0:first, 1:second, 2:third, 3:squarefirst, 4:firstbysecond, 5:sumall }
-mkfrc_map = { 0:first_ad, 1:second_ad, 2:third_ad, 3:squarefirst_ad, 4:firstbysecond_ad, 5:sumall_ad }
-
+def get_obs_spcs( obslist ):
+    """
+    extension: list all the spcs in a set of observations
+    input: ObservationData <OR> list of ObservationSingle
+    output: list of strings ( [spcs] )
+    """
+    
+    if isinstance( obslist, datadef.ObservationData ):
+        obslist = [ o for o in obslist.dataset if o.valid is True ]
+    all_spcs = set()
+    for obs in obslist:
+        spcs = set( str( coord[-1] ) for coord in obs.weight_grid.keys() )
+        all_spcs = all_spcs.union( spcs )
+    return sorted( list( all_spcs ) )

@@ -56,15 +56,21 @@ def create_from_template( source, dest, change ):
 def get_variable( filepath, varname, group=None ):
     """
     extension: get all the values of a single variable
-    input: string (path/to/file.ncf), string, string (optional, group name or path)
-    output: numpy.ndarray
+    input: string (path/to/file.ncf), string <OR> list, string (optional)
+    output: numpy.ndarray OR dict
+    
+    notes: group allows chosing netCDF4 groups, leave as None to use root
+    if varname is a string an array is returned, otherwise a dict is.
     """
     with ncf.Dataset( filepath, 'r' ) as ncf_file:
         source = ncf_file
         if group is not None:
             for g in group.split( '/' ):
                 source = source.groups[ g ]
-        result = source.variables[ varname ][:]
+        if str(varname) == varname:
+            result = source.variables[ varname ][:]
+        else:
+            result = { k:v[:] for k,v in source.variables.items() if k in varname }
     return result
 
 def get_attr( filepath, attrname ):
@@ -77,6 +83,16 @@ def get_attr( filepath, attrname ):
         assert attrname in ncf_file.ncattrs(), '{} not in file'.format( attrname )
         result = ncf_file.getncattr( attrname )
     return result
+
+def get_all_attr( filepath ):
+    """
+    extension: get a dict of all global attributes
+    input: string (path/to/file.ncf)
+    output: dict { str(attr_name) : attr_val }
+    """
+    with ncf.Dataset( filepath, 'r' ) as f:
+        attr_dict = { name : f.getncattr( name ) for name in f.ncattrs() }
+    return attr_dict
 
 def copy_compress( source, dest ):
     """
@@ -107,3 +123,29 @@ def set_date( filepath, date ):
         ncf_file.variables['TFLAG'][:] = tflag
         ncf_file.setncattr( 'SDATE', yj )
     return None
+
+def match_attr( src1, src2, attrlist=None ):
+    """
+    extension: check that attributes listed are the same for each src
+    input: string <OR> dict, string <OR> dict, list
+    output: bool
+    
+    notes: input sources can be either paths to netcdf files
+    or dicts {attr_name : attr_val}.
+    if attrlist is None the intersection of src attr_names is used
+    """
+    if str(src1) == src1:
+        src1 = get_all_attr( src1 )
+    if str(src2) == src2:
+        src2 = get_all_attr( src2 )
+    if attrlist is None:
+        attrlist = set( src1.keys() ) & set( src2.keys() )
+    elif str( attrlist ) == attrlist:
+        attrlist = [ attrlist ]
+    for key in attrlist:
+        match = ( src1[ key ] == src2[ key ] )
+        if ( isinstance( match, np.ndarray ) ):
+            match = match.all()
+        if match is False:
+            return False
+    return True

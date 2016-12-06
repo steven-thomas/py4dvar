@@ -10,6 +10,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
+import fourdvar.util.template_defn as template
 from fourdvar.util.cmaq_datadef_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
@@ -74,6 +75,22 @@ class AdjointForcingData( InterfaceData ):
             dest = os.path.join( save_path, record['archive'] )
             ncf.copy_compress( source, dest )
         return None
+    
+    @classmethod
+    def get_kwargs_dict( cls ):
+        """
+        extension: get a dict that will work as kwarg input
+        input: None
+        output: { file_label : { spcs : np.ndarray(<zeros>) } }
+        """
+        file_labels = get_filedict( cls.__name__ ).keys()
+        spcs = ncf.get_attr( template.force, 'VAR-LIST' ).split()
+        shape = ncf.get_variable( template.force, spcs[0] ).shape
+        argdict = {}
+        for label in file_labels:
+            data = { spc: np.zeros( shape ) for spc in spcs }
+            argdict[ label ] = data
+        return argdict
 
     @classmethod
     def example( cls ):

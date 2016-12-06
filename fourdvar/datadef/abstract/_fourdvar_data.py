@@ -43,7 +43,7 @@ class FourDVarData( object ):
         try:
             obj_iter = obj.items()
         except AttributeError:
-            if isinstance( obj, str ):
+            if str( obj ) == obj:
                 return True
             try:
                 obj_iter = enumerate( obj )

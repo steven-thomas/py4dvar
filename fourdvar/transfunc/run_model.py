@@ -8,7 +8,7 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ModelInputData, ModelOutputData
-import fourdvar.util.cmaq_handle as cmaq
+import fourdvar.libshare.cmaq_handle as cmaq
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )

@@ -15,7 +15,7 @@ transmap = {
     ( d.ModelOutputData, d.ObservationData ): t.obs_operator,
     ( d.ObservationData, d.AdjointForcingData ): t.calc_forcing,
     ( d.AdjointForcingData, d.SensitivityData ): t.run_adjoint,
-    ( d.SensitivityData, d.UnknownData ): t.condition_adjoint
+    ( d.SensitivityData, d.PhysicalData ): t.map_sense
     }
 
 def transform( input_instance, output_class ):

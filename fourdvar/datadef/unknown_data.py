@@ -9,8 +9,6 @@ import _get_root
 from fourdvar.datadef.abstract._single_data import SingleData
 from fourdvar.datadef.abstract._extractable_data import ExtractableData
 
-from fourdvar.util.dim_defn import x_len
-
 class UnknownSingle( SingleData ):
     """framework: single point in the unknown vector space"""
     def __init__( self, val ):
@@ -36,7 +34,6 @@ class UnknownData( ExtractableData ):
         eg: new_unknown =  datadef.UnknownData( [ val1, val2, ... ] )
         """
         val_arr = np.array( vals, dtype='float64' )
-        assert val_arr.shape == ( x_len, ), 'input data does not match model space'
         dataset = [ UnknownSingle( val ) for val in val_arr ]
         ExtractableData.__init__( self, dataset )
         return None
@@ -67,8 +64,8 @@ class UnknownData( ExtractableData ):
         
         notes: only used for testing.
         """
-        arglist = [ 1 for x in range( x_len ) ]
-        return cls( arglist )
+        #return cls( arglist )
+        return None
     
     @classmethod
     def clone( cls, source ):

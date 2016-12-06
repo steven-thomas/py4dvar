@@ -2,9 +2,11 @@
 import os
 import _get_root
 
-template_root = os.path.join( '/', 'home', '563', 'spt563',
+data_root = os.path.join( '/', 'home', '563', 'spt563',
                               'fourdvar', 'cmaq_vsn1',
-                              'fourdvar', 'data', 'templates' )
+                              'fourdvar', 'data' )
+
+template_root = os.path.join( data_root, 'templates' )
 
 storage = os.path.join( template_root, 'dated_versions' )
 
@@ -23,3 +25,5 @@ dated = {
     sense_emis: os.path.join( storage, 'sense_emis_<YYYYMMDD>.ncf' ),
     sense_conc: os.path.join( storage, 'sense_conc_<YYYYMMDD>.ncf' )
 }
+
+obsmeta = os.path.join( data_root, 'obsmeta_processed.pickle' )

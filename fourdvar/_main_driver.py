@@ -30,7 +30,7 @@ def cost_func( vector ):
     simulated = transform( model_out, d.ObservationData )
     
     residual = d.ObservationData.get_residual( observed, simulated )
-    w_residual = d.ObservationData.weight( residual )
+    w_residual = d.ObservationData.error_weight( residual )
     
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
     un_vector = np.array( unknown.get_vector( 'value' ) )
@@ -66,11 +66,12 @@ def gradient_func( vector ):
     simulated = transform( model_out, d.ObservationData )
     
     residual = d.ObservationData.get_residual( observed, simulated )
-    w_residual = d.ObservationData.weight( residual )
+    w_residual = d.ObservationData.error_weight( residual )
     
     adj_forcing = transform( w_residual, d.AdjointForcingData )
     sensitivity = transform( adj_forcing, d.SensitivityData )
-    un_gradient = transform( sensitivity, d.UnknownData )
+    phys_sense = transform( sensitivity, d.PhysicalData )
+    un_gradient = transform( phys_sense, d.UnknownData )
     
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
     un_vector = np.array( unknown.get_vector( 'value' ) )
@@ -86,6 +87,7 @@ def gradient_func( vector ):
     w_residual.cleanup()
     adj_forcing.cleanup()
     sensitivity.cleanup()
+    phys_sense.cleanup()
     un_gradient.cleanup()
     
     return np.array( gradient )

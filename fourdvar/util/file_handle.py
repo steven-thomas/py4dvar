@@ -4,9 +4,14 @@ in this example all files are saved to and read from the fourdvar/data directory
 """
 
 import os
+import sys
 import numpy as np
 import cPickle as pickle
-import sys
+
+import _get_root
+import setup_logging
+
+logger = setup_logging.get_logger( __file__ )
 
 def ensure_path( path, inc_file=False ):
     """
@@ -53,31 +58,56 @@ def empty_dir( path ):
         os.rmdir( d )
     return None
 
-def save_obj( obj, filepath, txt_extn='.txt', pickle_extn='.pickle', default='pickle' ):
+open_files = {}
+
+def save_obj( obj, filepath, overwrite=True ):
     """
-    extension: save a python object to a file, use internal flags for file-type
-    input: Object, string (path/to/file.extension)
+    extension: save a python object to a pickle file
+    input: Object, string (path/to/file.pickle), bool
     output: None
     
-    notes: if namespace clash old file is overwritten.
-    use file extension to find type, else use default.
-    default must be either 'txt' or 'pickle'.
-    if saving as txt, str(obj) is saved and some information may be lost.
+    notes: if overwrite is False obj is appended to end of file
     """
-    assert default in ['txt', 'pickle']
+    global open_files
+    fpath = os.path.realpath( filepath )
+    if fpath in open_files.keys() and overwrite is True:
+        msg = 'cannot overwrite {}. file already open for reading.'.format( fpath )
+        raise IOError( msg )
     ensure_path( os.path.dirname( filepath ) )
-    option = default
-    if filepath.endswith( txt_extn ):
-        option = 'txt'
-    elif filepath.endswith( pickle_extn ):
-        option = 'pickle'
-    if option == 'txt':
-        with open( filepath, 'w' ) as f:
-            f.write( str( obj ) )
-            f.write( '\n' )
-    elif option == 'pickle':
-        with open( filepath, 'w' ) as f:
-            pickle.dump( obj, f )
+    if overwrite is True:
+        mode = 'wb'
     else:
-        raise ValueError( 'unable to save {}. reason unknown.'.format( filepath ) )
+        mode = 'ab'
+    with open( filepath, mode ) as f:
+        pickle.dump( obj, f )
     return None
+
+def load_obj( filepath, close=True ):
+    """
+    extension: load a python object from a pickle file
+    input: string (path/to/file.pickle), bool (close file afterwards)
+    output: Object
+    
+    notes: if EOF is found then None is returned and file is automatically closed
+    but an error is NOT raised.
+    """
+    global open_files
+    fpath = os.path.realpath( filepath )
+    if fpath in open_files.keys():
+        f = open_files[ fpath ]
+    else:
+        f = open( fpath, 'rb' )
+    try:
+        obj = pickle.load( f )
+    except EOFError:
+        obj = None
+        close = True
+        logger.info( 'EOF of {} reached. closing file.'.format( fpath ) )
+    if close is True:
+        if fpath in open_files.keys():
+            del open_files[ fpath ]
+        f.close()
+    else:
+        open_files[ fpath ] = f
+    return obj
+

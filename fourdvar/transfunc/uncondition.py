@@ -17,5 +17,34 @@ def uncondition( unknown ):
     
     notes: this function must apply the prior error covariance
     """
-    return PhysicalData( unknown.get_vector( 'value' ) )
+    PhysicalData.assert_params()
+    p = PhysicalData
+    icon_len = p.nlays_icon * p.nrows * p.ncols
+    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    total_len = len( p.spcs ) * ( icon_len + emis_len )
+    del p
+    
+    vals = np.array( unknown.get_vector( 'value' ) )
+    icon_dict = {}
+    emis_dict = {}
+    i = 0
+    for spc in PhysicalData.spcs:
+        icon = vals[ i:i+icon_len ]
+        i += icon_len
+        emis = vals[ i:i+emis_len ]
+        i += emis_len
+        
+        p = PhysicalData
+        icon = icon.reshape(( p.nlays_icon, p.nrows, p.ncols, ))
+        emis = emis.reshape(( p.nstep, p.nlays_emis, p.nrows, p.ncols, ))
+        icon = icon * p.icon_unc[ spc ]
+        emis = emis * p.emis_unc[ spc ]
+        del p
+        
+        icon_dict[ spc ] = icon
+        emis_dict[ spc ] = emis
+    
+    assert i == total_len, 'Some physical data left unassigned!'
+    
+    return PhysicalData( icon_dict, emis_dict )
 

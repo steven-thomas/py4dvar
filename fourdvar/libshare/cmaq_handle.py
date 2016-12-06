@@ -5,6 +5,7 @@ import datetime as dt
 import subprocess
 
 import _get_root
+from fourdvar.util.date_handle import replace_date
 import fourdvar.util.global_config as global_config
 import fourdvar.util.cmaq_config as cfg
 import fourdvar.util.template_defn as template
@@ -21,15 +22,7 @@ def parse_env_dict( env_dict, date ):
     input: dictionary (envvar_name: pattern_value), dt.date
     output: dictionary (envvar_name: actual_value)
     """
-    ymd = date.strftime('%Y%m%d')
-    yj = date.strftime('%Y%j')
-    yesterday = ( date - dt.timedelta(days=1) ).strftime('%Y%m%d')
-    tomorrow = ( date + dt.timedelta(days=1) ).strftime('%Y%m%d')
-    rep_dict = {'<YYYYMMDD>': ymd, '<YYYYDDD>': yj,
-                '<YESTERDAY>': yesterday, '<TOMORROW>': tomorrow}
-    for old, new in rep_dict.items():
-        env_dict = { key: value.replace( old, new ) for key, value in env_dict.items() }
-    return env_dict
+    return { k: replace_date( v, date ) for k,v in env_dict.items() }
 
 def load_env( env_dict ):
     """
@@ -192,10 +185,10 @@ def run_fwd_single( date, is_first ):
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
         logger.info( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+        logger.info( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq fwd failed on {}.'.format( date.strftime('%Y%m%d') )
         logger.error( msg )
-        cleanup()
         raise AssertionError( msg )
     
     clean_env( env_dict )
@@ -259,10 +252,10 @@ def run_bwd_single( date, is_first ):
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
         logger.info( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+        logger.info( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq bwd failed on {}.'.format( date.strftime('%Y%m%d') )
         logger.error( msg )
-        cleanup()
         raise AssertionError( msg )
         
     clean_env( env_dict )
@@ -291,61 +284,20 @@ def run_bwd():
         run_bwd_single(cur_date, isfirst)
         isfirst = False
     return None
-
-def cleanup():
-    """
-    extension: move/delete all files created by a run of cmaq
-    input: None
-    output: None
     
-    notes: to move or delete file is set in cmaq_config
-    """
-    fh.ensure_path( cfg.archdir, inc_file=False )
-    nprocs = int( cfg.npcol )*int( cfg.nprow )
-    for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
-        for cur_date in global_config.get_datelist():
-            ymd = cur_date.strftime('%Y%m%d')
-            yj = cur_date.strftime('%Y%j')
-            for proc_no in range(1, 1 + nprocs ):
-                pn = '{:03}'.format( proc_no )
-                rep_dict = { '<YYYYMMDD>': ymd, '<YYYYDDD>': yj, '<PROC_NO>': pn }
-                src = src_pattern
-                for old, new in rep_dict.items():
-                    src = src.replace( old, new )
-                if not os.path.isfile( src ):
-                    #ignore missing file
-                    continue
-                if dst_pattern is not None:
-                    #store file
-                    dst = dst_pattern
-                    for old, new in rep_dict.items():
-                        dst = dst.replace( old, new )
-                    if '<I>' in dst:
-                        i = 1
-                        while os.path.isfile( dst.replace('<I>','iter'+str(i)) ):
-                            i += 1
-                        dst = dst.replace('<I>','iter'+str(i))
-                    if is_ncf is True:
-                        ncf.copy_compress( src, dst )
-                    else:
-                        shutil.copyfile( src, dst )
-                os.remove( src )
-    return None
-
 def wipeout():
     """
     extension: delete all files created by a run of cmaq
     input: None
     output: None
     """
-    for (src_pattern, dst_pattern, is_ncf) in cfg.created_files:
-        for cur_date in global_config.get_datelist():
-            ymd = cur_date.strftime('%Y%m%d')
-            yj = cur_date.strftime('%Y%j')
-            rep_dict = { '<YYYYMMDD>': ymd, '<YYYYDDD>': yj }
-            src = src_pattern
-            for old, new in rep_dict.items():
-                src = src.replace( old, new )
-            if os.path.isfile( src ):
-                os.remove( src )
+    nprocs = int( cfg.npcol ) * int( cfg.nprow )
+    for file_pattern in cfg.created_files:
+        for date in global_config.get_datelist():
+            dated_pattern = replace_date( file_pattern, date )
+            for proc_no in range( 1, 1+nprocs ):
+                pn = '{:03}'.format( proc_no )
+                fname = dated_pattern.replace( '<PROC_NO>', pn )
+                if os.path.isfile( fname ):
+                    os.remove( fname )
     return None

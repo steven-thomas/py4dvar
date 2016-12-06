@@ -1,0 +1,4 @@
+
+- Rework archive handler.
+- logging: try/except -> traceback to log
+- extra commented sections of cmaq runscript

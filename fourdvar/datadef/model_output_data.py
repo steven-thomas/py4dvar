@@ -20,6 +20,12 @@ class ModelOutputData( InterfaceData ):
     
     #add to the require set all the attributes that must be defined for a ModelOutputData to be valid.
     require = InterfaceData.add_require( 'file_data' )
+    
+    #list of attributes that must match between actual and template
+    checklist = [ 'SDATE', 'STIME', 'TSTEP', 'NTHIK', 'NCOLS', 'NROWS', 'NLAYS',
+                  'NVARS', 'GDTYP', 'P_ALP', 'P_BET', 'P_GAM', 'XCENT', 'YCENT',
+                  'XORIG', 'YORIG', 'XCELL', 'YCELL',
+                  'VGTYP', 'VGTOP', 'VGLVLS', 'VAR-LIST' ]
 
     def __init__( self ):
         """
@@ -29,11 +35,15 @@ class ModelOutputData( InterfaceData ):
         
         eg: new_output =  datadef.ModelOutputData( filelist )
         """
-        #just check all required files exist
+        #check all required files exist and match attributes with templates
         self.file_data = get_filedict( self.__class__.__name__ )
         for record in self.file_data.values():
-            assert os.path.isfile( record['actual'] ), 'missing {}'.format( record['actual'] )
-        #OPTIONAL: convert daily files into single arrays?
+            actual = record[ 'actual' ]
+            template = record[ 'template' ]
+            msg = 'missing {}'.format( actual )
+            assert os.path.isfile( actual ), msg
+            msg = '{} is incompatible with template {}.'.format( actual, template )
+            assert ncf.match_attr( actual, template, self.checklist ) is True, msg
         return None
     
     def get_variable( self, file_label, varname ):

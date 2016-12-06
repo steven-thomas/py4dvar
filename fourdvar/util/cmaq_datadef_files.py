@@ -2,6 +2,7 @@
 import datetime as dt
 
 import _get_root
+from fourdvar.util.date_handle import replace_date
 import fourdvar.util.file_handle as fh
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.template_defn as template
@@ -60,37 +61,37 @@ def build_filedict():
         'archive': 'icon.ncf'
         }
 
-    for cur_date in global_config.get_datelist():
-        ymd = cur_date.strftime( '%Y%m%d' )
+    for date in global_config.get_datelist():
         dated_vsn = template.dated.copy()
         for src_path, dpat_path in template.dated.items():
-            date_path = dpat_path.replace( '<YYYYMMDD>', ymd )
+            date_path = replace_date( dpat_path, date )
             dated_vsn[ src_path ] = date_path
             ncf.copy_compress( src_path, date_path )
-            ncf.set_date( date_path, cur_date )
-            
+            ncf.set_date( date_path, date )
+        
+        ymd = replace_date( '<YYYYMMDD>', date )
         model_input_files['emis.'+ymd] = {
-            'actual': cmaq_config.emis_file.replace( '<YYYYMMDD>', ymd ),
+            'actual': replace_date( cmaq_config.emis_file, date ),
             'template': dated_vsn[ template.emis ],
             'archive': 'emis.' + ymd + '.ncf'
             }
         model_output_files['conc.'+ymd] = {
-            'actual': cmaq_config.conc_file.replace( '<YYYYMMDD>', ymd ),
+            'actual': replace_date( cmaq_config.conc_file, date ),
             'template': dated_vsn[ template.conc ],
             'archive': 'conc.' + ymd + '.ncf'
             }
         adjoint_forcing_files['force.'+ymd] = {
-            'actual': cmaq_config.force_file.replace( '<YYYYMMDD>', ymd ),
+            'actual': replace_date( cmaq_config.force_file, date ),
             'template': dated_vsn[ template.force ],
             'archive': 'force.' + ymd + '.ncf'
             }
         sensitivity_files['emis.'+ymd] = {
-            'actual': cmaq_config.emis_sense_file.replace( '<YYYYMMDD>', ymd ),
+            'actual': replace_date( cmaq_config.emis_sense_file, date ),
             'template': dated_vsn[ template.sense_emis ],
             'archive': 'sense_emis.' + ymd + '.ncf'
             }
         sensitivity_files['conc.'+ymd] = {
-            'actual': cmaq_config.conc_sense_file.replace( '<YYYYMMDD>', ymd ),
+            'actual': replace_date( cmaq_config.conc_sense_file, date ),
             'template': dated_vsn[ template.sense_conc ],
             'archive': 'sense_conc.' + ymd + '.ncf'
             }

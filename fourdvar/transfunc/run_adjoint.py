@@ -8,7 +8,7 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import AdjointForcingData, SensitivityData
-import fourdvar.util.cmaq_handle as cmaq
+import fourdvar.libshare.cmaq_handle as cmaq
 
 def run_adjoint( adjoint_forcing ):
     """

@@ -30,7 +30,7 @@ def cleanup():
     input: None
     output: None
     """
-    rmall()
+    #cmaq.wipeout()?
     return None
 
 def get_background():
@@ -39,7 +39,9 @@ def get_background():
     input: None
     output: PhysicalData (prior estimate)
     """
-    bg_physical = d.PhysicalData.from_file( 'background.csv' )
+    test_prior = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/prior.ncf'
+    #test_prior = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/prior_1day.ncf'
+    bg_physical = d.PhysicalData.from_file( test_prior )
     return bg_physical
 
 def get_observed():
@@ -48,7 +50,8 @@ def get_observed():
     input: None
     output: ObservationData
     """
-    observed = d.ObservationData.from_file( 'observed.csv' )
+    #observed = d.ObservationData.from_file( 'observed.csv' )
+    observed = d.ObservationData.example()
     return observed
 
 def minim( cost_func, grad_func, init_guess ):
@@ -70,7 +73,8 @@ def display( out_physical, metadata ):
     """
     
     print( '\n\nRESULTS!\n' )
-    print( out_physical.data )
+    #print( out_physical.icon )
+    #print( out_physical.emis )
     for m in metadata:
         print( m )
     return None
