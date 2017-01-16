@@ -10,17 +10,16 @@ from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
 
-#set up prior/background and observed data
-bg_physical = user_driver.get_background()
-bg_unknown = transform( bg_physical, d.UnknownData )
-observed = user_driver.get_observed()
-
 def cost_func( vector ):
     """
     framework: cost function used by minimizer
     input: numpy.ndarray
     output: scalar
     """
+    #set up prior/background and observed data
+    bg_physical = user_driver.get_background()
+    bg_unknown = transform( bg_physical, d.UnknownData )
+    observed = user_driver.get_observed()
     
     unknown = d.UnknownData( vector )
     
@@ -34,7 +33,8 @@ def cost_func( vector ):
     
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
     un_vector = np.array( unknown.get_vector( 'value' ) )
-    bg_cost = np.sum( ( un_vector - bg_vector )**2 )
+    #question: half only this bit or entire cost?
+    bg_cost = 0.5 * np.sum( ( un_vector - bg_vector )**2 )
     
     res_vector = np.array( residual.get_vector( 'value' ) )
     wres_vector = np.array( w_residual.get_vector( 'value' ) )
@@ -57,7 +57,11 @@ def gradient_func( vector ):
     input: numpy.ndarray
     output: numpy.ndarray
     """
-    #gradient function of minimizer, input and output must be numpy arrays
+    #set up prior/background and observed data
+    bg_physical = user_driver.get_background()
+    bg_unknown = transform( bg_physical, d.UnknownData )
+    observed = user_driver.get_observed()
+    
     unknown = d.UnknownData( vector )
     
     physical = transform( unknown, d.PhysicalData )
@@ -98,13 +102,17 @@ def get_answer():
     input: None
     output: None (user_driver.display should print/save output as desired)
     """
+    #set up background unknowns
+    bg_physical = user_driver.get_background()
+    bg_unknown = transform( bg_physical, d.UnknownData )
+    
     user_driver.setup()
     start_vector = np.array( bg_unknown.get_vector( 'value' ) )
     min_output = user_driver.minim( cost_func, gradient_func, start_vector )
     out_vector = min_output[0]
     out_unknown = d.UnknownData( out_vector )
     out_physical = transform( out_unknown, d.PhysicalData )
-    user_driver.display( out_physical, min_output[1:] )
+    user_driver.post_process( out_physical, min_output[1:] )
     out_unknown.cleanup()
     out_physical.cleanup()
     user_driver.cleanup()

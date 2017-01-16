@@ -15,12 +15,31 @@ import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.global_config as global_config
 import fourdvar.libshare.cmaq_handle as cmaq
 
+#value to convert units for each days emissions
+unit_convert = None
+
+def get_unit_convert():
+    """
+    extension: get unit conversion value
+    input: None
+    output: scalar
+    
+    notes: PhysicalData.emis units = mol/(s*m^2)
+           ModelInputData.emis units = mol/s
+    """
+    xcell = ncf.get_attr( template.emis, 'XCELL' )
+    ycell = ncf.get_attr( template.emis, 'YCELL' )
+    return  float(xcell*ycell)
+
 def prepare_model( physical_data ):
     """
     application: change resolution/formatting of physical data for input in forward model
     input: PhysicalData
     output: ModelInputData
     """
+    global unit_convert
+    if unit_convert is None:
+        unit_convert = get_unit_convert()
     
     model_input_args = { 'icon': {} }
     #physical icon had no time dimensions, model input icon has time dimension of len 1
@@ -41,7 +60,7 @@ def prepare_model( physical_data ):
         for spcs_name in physical_data.spcs:
             phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
             mod_data = np.repeat( phys_data, m_daysize // p_daysize, axis=0 )
-            spcs_dict[ spcs_name ] = mod_data
+            spcs_dict[ spcs_name ] = mod_data * unit_convert
         emis_argname = replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
     

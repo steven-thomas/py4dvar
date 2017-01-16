@@ -112,7 +112,8 @@ bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
 icon_file = os.path.join( cmaq_data, 'icon', 'ICON_CMAQ-CO2test_profile' )
-bcon_file = os.path.join( cmaq_data, 'bcon', 'BCON_CMAQ-CO2test_profile' )
+#bcon_file = os.path.join( cmaq_data, 'bcon', 'BCON_CMAQ-CO2test_profile' )
+bcon_file = os.path.join( cmaq_data, 'bcon', 'bcon_CO2only.<YYYYMMDD>.ncf' )
 emis_file = os.path.join( cmaq_data, 'emis', 'emis_CMAQ-CO2test_<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>' )
 #required met data, use unknown

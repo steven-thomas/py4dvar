@@ -9,11 +9,16 @@ import numpy as np
 import sys
 import os
 import shutil
+import cPickle as pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import _get_root
 from fourdvar import datadef as d
 import fourdvar.util.archive_handle as archive
+import fourdvar.libshare.cmaq_handle as cmaq
+
+observed = None
+background = None
 
 def setup():
     """
@@ -22,6 +27,10 @@ def setup():
     output: None
     """
     archive.setup()
+    bg = get_background()
+    obs = get_observed()
+    bg.archive( 'background' )
+    obs.archive( 'observed' )
     return None
 
 def cleanup():
@@ -30,7 +39,7 @@ def cleanup():
     input: None
     output: None
     """
-    #cmaq.wipeout()?
+    cmaq.wipeout()
     return None
 
 def get_background():
@@ -39,10 +48,15 @@ def get_background():
     input: None
     output: PhysicalData (prior estimate)
     """
-    test_prior = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/prior.ncf'
-    #test_prior = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/prior_1day.ncf'
-    bg_physical = d.PhysicalData.from_file( test_prior )
-    return bg_physical
+    global background
+    
+    data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
+    #bg_file = 'os.path.join( data_dir, 'prior.ncf' )
+    bg_file = os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
+    
+    if background is None:
+        background = d.PhysicalData.from_file( bg_file )
+    return background
 
 def get_observed():
     """
@@ -50,8 +64,13 @@ def get_observed():
     input: None
     output: ObservationData
     """
-    #observed = d.ObservationData.from_file( 'observed.csv' )
-    observed = d.ObservationData.example()
+    global observed
+    
+    data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
+    obs_file = os.path.join( data_dir, 'obsvals_processed.pickle' )
+    
+    if observed is None:
+        observed = d.ObservationData.from_file( obs_file )
     return observed
 
 def minim( cost_func, grad_func, init_guess ):
@@ -60,22 +79,22 @@ def minim( cost_func, grad_func, init_guess ):
     input: cost function, gradient function, prior estimate / background
     output: list (1st element is numpy.ndarray of solution, the rest are user-defined)
     """
+    start_cost = cost_func( init_guess )
+    start_grad = grad_func( init_guess )
+    start_dict = {'start_cost': start_cost, 'start_grad': start_grad }
     
     answer = minimize( cost_func, init_guess, grad_func )
     #check answer warnflag, etc for success
+    answer = list( answer ) + [ start_dict ]
     return answer
 
-def display( out_physical, metadata ):
+def post_process( out_physical, metadata ):
     """
-    application: how to display/save results of minimizer
+    application: how to handle/save results of minimizer
     input: PhysicalData (solution), list (user-defined output of minim)
     output: None
     """
-    
-    print( '\n\nRESULTS!\n' )
-    #print( out_physical.icon )
-    #print( out_physical.emis )
-    for m in metadata:
-        print( m )
+    out_physical.archive( 'final_solution' )
+    with open( os.path.join( archive.get_archive_path(), 'ans_details.pickle' ), 'w' ) as f:
+        pickle.dump( metadata, f )
     return None
-

@@ -31,8 +31,6 @@ class ObservationSingle( SingleData ):
         """
         # time is in No. of steps (int)
         #kwargs[ 'value' ] = np.float64( kwargs[ 'value'] )
-        #kwargs[ 'time' ] = int( kwargs[ 'time' ] )
-        #kwargs[ 'kind' ] = int( kwargs[ 'kind' ] )
         
         #this statement must be called.
         SingleData.__init__( self, **kwargs )
@@ -41,7 +39,7 @@ class ObservationSingle( SingleData ):
 class ObservationData( ExtractableData ):
     """application: vector of observations, observed or simulated"""
     
-    archive_name = 'sim_obs.pickle'
+    archive_name = 'obsset.pickle'
     
     def __init__( self, obs_list ):
         """
@@ -53,6 +51,10 @@ class ObservationData( ExtractableData ):
         
         notes: Currently input is a list of dicts, each dict contains the attributes of an observation.
         """
+        #a 'valid'==False obs might not have a value, it needs one.
+        for obs in obs_list:
+            if obs['valid'] is False and 'value' not in obs.keys():
+                obs[ 'value' ] == None
         dataset = [ ObservationSingle( **obs_dict ) for obs_dict in obs_list ]
         
         #this statement must be called.
@@ -161,15 +163,10 @@ class ObservationData( ExtractableData ):
         
         eg: observed = datadef.ObservationData.from_file( "saved_obs.data" )
         """
-        #o_dict = get_dict( filename )
-        #lengths = [ len( v ) for v in o_dict.values() ]
-        #assert ObservationSingle.require.issubset( set( o_dict.keys() ) ), 'invalid file headings'
-        #assert all( [ i == lengths[0] for i in lengths[1:] ] ), 'invalid file content'
-        #arglist = []
-        #for j in range( lengths[0] ):
-        #    arglist.append( { k:o_dict[k][j] for k in o_dict.keys() } )
-        #return cls( arglist )
-        return None
+        #griddata used for processing, maybe want to remember/store?
+        __ = fh.load_obj( filename, close=False )
+        obs_list = fh.load_obj( filename, close=True )
+        return cls( obs_list )
     
     @classmethod
     def load_blank( cls, obs_list ):

@@ -49,9 +49,9 @@ def get_obs_by_date( obs_set ):
     valid_dates = set( replace_date(tag,d) for d in global_config.get_datelist() )
     obs_by_date = { d : [] for d in valid_dates }
     for obs in valid_obs:
-        dates = set( str(coord[0]) for coord in o.weight_grid.keys() )
+        dates = set( str(coord[0]) for coord in obs.weight_grid.keys() )
         if dates <= valid_dates:
-            #'dates' is a subset of 'valid_dates'
+            #'dates' is a subset of 'valid_dates' -> every date in the obs is valid
             for d in dates:
                 obs_by_date[ d ].append( obs )
         else:

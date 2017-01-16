@@ -1,0 +1,10 @@
+
+How to use the logging feature:
+- check/modify the display settings in 'root/setup_logging.py'
+- within module of interest ensure near the top of the file are the lines
+  > import _get_root
+  > import setup_logging
+  > logger = set_logging.get_logger( __file__ )
+- use the logger to print as desired eg:
+  > logger.debug( 'var x == 1.0' )
+  > logger.error( 'unable to open file a.txt' )

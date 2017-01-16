@@ -87,7 +87,7 @@ class SensitivityData( InterfaceData ):
         
         notes: only used for testing.
         """
-        filedict = get_filedict( cls.__name__ )
+        filedict = get_filedict( cls.__name__, )
         for record in filedict.values():
             ncf.create_from_template( record['template'], record['actual'], {} )
         return cls()

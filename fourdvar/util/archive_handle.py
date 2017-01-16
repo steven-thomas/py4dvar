@@ -8,12 +8,12 @@ import fourdvar.util.file_handle as fh
 #Settings
 root_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/archive'
 
-experiment = 'example_test'
+experiment = 'example_full_test'
 description = """This is a test of the system.
 this should contain a description of the experiment setting
 with enough detail for replication.
 """
-auto_overwrite = False
+auto_overwrite = True
 
 #For temporary section
 dir_extn = '_vsn<I>'

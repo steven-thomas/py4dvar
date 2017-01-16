@@ -2,6 +2,14 @@
 import _get_root
 import datetime as dt
 
+#constants used in calculations:
+#molar weight of dry air (precision matches cmaq
+mwair = 28.9628 #g/mol
+#convert proportion to ppm
+ppm_scale = 1E6 #unitless
+#convert g to kg
+kg_scale = 1E-3 #kg/g
+
 #note: every day in model starts at midnight (000000) and runs for 24 hours
 
 start_date = None

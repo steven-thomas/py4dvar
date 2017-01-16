@@ -107,7 +107,7 @@ def copy_compress( source, dest ):
     shutil.copyfile( source, dest )
     return None
 
-def set_date( filepath, date ):
+def set_date( filepath, start_date ):
     """
     extension: set the date in TFLAG variable & SDATE attribute
     input: string (path/file.ncf), datetime.date
@@ -115,13 +115,17 @@ def set_date( filepath, date ):
     
     notes: changes are made to file in place.
     """
-    yj = np.int32( date.strftime( '%Y%j' ) )
-    logger.debug( 'set {} to date {}.'.format( filepath, str(yj) ) )
+    yj = lambda date: np.int32( date.strftime( '%Y%j' ) )
     with ncf.Dataset( filepath, 'a' ) as ncf_file:
-        tflag = ncf_file.variables['TFLAG'][:]
-        tflag[:,:,0] = yj
-        ncf_file.variables['TFLAG'][:] = tflag
-        ncf_file.setncattr( 'SDATE', yj )
+        tflag = ncf_file.variables[ 'TFLAG' ][:]
+        tflag_date = tflag[ :, :, 0 ]
+        base_date = tflag_date[ 0, 0 ]
+        date_offset = tflag_date - base_date
+        for i in range( date_offset.max() + 1 ):
+            date = start_date + dt.timedelta( days=i )
+            tflag_date[ date_offset==i ] = yj( date )
+        ncf_file.variables[ 'TFLAG' ][:] = tflag
+        ncf_file.setncattr( 'SDATE', yj( start_date ) )
     return None
 
 def match_attr( src1, src2, attrlist=None ):
