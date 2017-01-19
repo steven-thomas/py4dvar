@@ -33,12 +33,12 @@ def cost_func( vector ):
     
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
     un_vector = np.array( unknown.get_vector( 'value' ) )
-    #question: half only this bit or entire cost?
+    
     bg_cost = 0.5 * np.sum( ( un_vector - bg_vector )**2 )
     
     res_vector = np.array( residual.get_vector( 'value' ) )
     wres_vector = np.array( w_residual.get_vector( 'value' ) )
-    ob_cost = np.sum( res_vector * wres_vector )
+    ob_cost = 0.5 * np.sum( res_vector * wres_vector )
     cost = bg_cost + ob_cost
     
     unknown.cleanup()

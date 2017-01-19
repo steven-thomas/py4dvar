@@ -38,7 +38,7 @@ def get_unit_convert():
     lay_thick = [ lay_sigma[ i ] - lay_sigma[ i+1 ] for i in range( len( lay_sigma ) - 1 ) ]
     lay_thick = np.array(lay_thick).reshape(( 1, len(lay_thick), 1, 1 ))
     
-    const = 1.0 / ( global_config.ppm_scale * global_config.kg_scale * global_config.mwair )
+    const = global_config.ppm_scale * global_config.kg_scale * global_config.mwair
     
     for date in global_config.get_datelist():
         met_file = replace_date( cmaq_config.met_cro_3d, date )
@@ -49,7 +49,9 @@ def get_unit_convert():
         assert target_shape[0] >= rhoj.shape[0], 'incompatible timesteps'
         assert target_shape[0] % rhoj.shape[0] == 0, 'incompatible timesteps'
         reps = target_shape[0] // rhoj.shape[0]
-        unit_array = rhoj.repeat( reps, axis=0 ) * lay_thick * const
+        
+        unit_array = const / ( rhoj.repeat( reps, axis=0 ) * lay_thick )
+        
         day_label = replace_date( unit_key, date )
         unit_dict[ day_label ] = unit_array
     return unit_dict
