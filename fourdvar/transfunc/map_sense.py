@@ -1,13 +1,13 @@
 """
 application: convert output of adjoint function to sensitivities to physical variables
 like all transform in transfunc this is referenced from the transform function
-eg: transform( sensitivity_instance, datadef.PhysicalData ) == condition_adjoint( sensitivity_instance )
+eg: transform( sensitivity_instance, datadef.PhysicalAdjointData ) == condition_adjoint( sensitivity_instance )
 """
 
 import numpy as np
 
 import _get_root
-from fourdvar.datadef import SensitivityData, PhysicalData
+from fourdvar.datadef import SensitivityData, PhysicalAdjointData
 from fourdvar.util.date_handle import replace_date
 import fourdvar.util.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
@@ -24,7 +24,7 @@ def get_unit_convert():
     output: dict ('units.<YYYYMMDD>': np.ndarray( shape_of( template.sense_emis ) )
     
     notes: SensitivityData.emis units = CF/(ppm/s)
-           PhysicalData.emis units = CF/(mol/(s*m^2))
+           PhysicalAdjointData.emis units = CF/(mol/(s*m^2))
     """
     global unit_key
     unit_dict = {}
@@ -60,7 +60,7 @@ def map_sense( sensitivity ):
     """
     application: map adjoint sensitivities to physical grid of unknowns.
     input: SensitivityData
-    output: PhysicalData
+    output: PhysicalAdjointData
     """
     global unit_convert_dict
     global unit_key
@@ -69,21 +69,21 @@ def map_sense( sensitivity ):
     
     #check that:
     #- global_config dates exist
-    #- PhysicalData params exist
+    #- PhysicalAdjointData params exist
     #- template.emis & template.sense_emis are compatible
     #- template.icon & template.sense_conc are compatible
     datelist = global_config.get_datelist()
-    PhysicalData.assert_params()
+    PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
-    test_spc = PhysicalData.spcs[0]
+    test_spc = PhysicalAdjointData.spcs[0]
     mod_shape = ncf.get_variable( template.emis, test_spc ).shape    
     
     #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
     #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
     #emis_dict = { spcs: np.ndarray( nstep, nlays_emis, nrows, ncols ) }
     
-    #create blank constructors for PhysicalData
-    p = PhysicalData
+    #create blank constructors for PhysicalAdjointData
+    p = PhysicalAdjointData
     icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
     icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
@@ -94,24 +94,24 @@ def map_sense( sensitivity ):
     icon_label = replace_date( 'conc.<YYYYMMDD>', datelist[0] )
     icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
     icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
-    for spc in PhysicalData.spcs:
+    for spc in PhysicalAdjointData.spcs:
         data = icon_vars[ spc ][ 0, :, :, : ]
         ilays, irows, icols = data.shape
-        msg = 'conc_sense and PhysicalData.{} are incompatible'
-        assert ilays >= PhysicalData.nlays_icon, msg.format( 'nlays_icon' )
-        assert irows == PhysicalData.nrows, msg.format( 'nrows' )
-        assert icols == PhysicalData.ncols, msg.format( 'ncols' )
-        icon_dict[ spc ] = data[ 0:PhysicalData.nlays_icon, :, : ].copy()
+        msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
+        assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
+        assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
+        assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
+        icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
     
-    p_daysize = (24*60*60) / PhysicalData.tsec
+    p_daysize = (24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( datelist ):
         label = replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
-        sense_data_dict = ncf.get_variable( sense_fname, PhysicalData.spcs )
+        sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
         start = i * p_daysize
         end = (i+1) * p_daysize
-        for spc in PhysicalData.spcs:
+        for spc in PhysicalAdjointData.spcs:
             #note: sensitivity has 1 extra step at end of day. model_input does NOT.
             #slice off that extra step
             unit_convert = unit_convert_dict[ replace_date( unit_key, date ) ]
@@ -128,14 +128,14 @@ def map_sense( sensitivity ):
             tmp = np.array([ sdata[ i::fac, 0:mlay ,... ]
                              for i in range( fac ) ]).mean( axis=0 )
             #adjoint prepare_model
-            msg = 'ModelInputData and PhysicalData.{} are incompatible.'
+            msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
             assert (mstep >= p_daysize) and (mstep % p_daysize == 0), msg.format('nstep')
-            assert mlay >= PhysicalData.nlays_emis, msg.format( 'nlays_emis' )
-            assert mrow == PhysicalData.nrows, msg.format( 'nrows' )
-            assert mcol == PhysicalData.ncols, msg.format( 'ncols' )
+            assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
+            assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
+            assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
             fac = mstep // p_daysize
-            pdata = np.array([ tmp[ i::fac, 0:PhysicalData.nlays_emis, ... ]
+            pdata = np.array([ tmp[ i::fac, 0:PhysicalAdjointData.nlays_emis, ... ]
                                for i in range( fac ) ]).sum( axis=0 )
             emis_dict[ spc ][ start:end, ... ] = pdata.copy()
     
-    return PhysicalData( icon_dict, emis_dict )
+    return PhysicalAdjointData( icon_dict, emis_dict )

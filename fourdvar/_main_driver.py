@@ -74,7 +74,7 @@ def gradient_func( vector ):
     
     adj_forcing = transform( w_residual, d.AdjointForcingData )
     sensitivity = transform( adj_forcing, d.SensitivityData )
-    phys_sense = transform( sensitivity, d.PhysicalData )
+    phys_sense = transform( sensitivity, d.PhysicalAdjointData )
     un_gradient = transform( phys_sense, d.UnknownData )
     
     bg_vector = np.array( bg_unknown.get_vector( 'value' ) )

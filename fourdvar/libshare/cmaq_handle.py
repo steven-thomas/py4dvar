@@ -1,5 +1,6 @@
 
 import os
+import glob
 import shutil
 import datetime as dt
 import subprocess
@@ -291,13 +292,17 @@ def wipeout():
     input: None
     output: None
     """
-    nprocs = int( cfg.npcol ) * int( cfg.nprow )
-    for file_pattern in cfg.created_files:
-        for date in global_config.get_datelist():
-            dated_pattern = replace_date( file_pattern, date )
-            for proc_no in range( 1, 1+nprocs ):
-                pn = '{:03}'.format( proc_no )
-                fname = dated_pattern.replace( '<PROC_NO>', pn )
-                if os.path.isfile( fname ):
-                    os.remove( fname )
+    #cfg.cwd_logs, cfg.output_path
+    #delete every file that matches a pattern in cfg.cwd_logs
+    for file_pattern in cfg.cwd_logs:
+        file_list = glob.glob( file_pattern )
+        for file_name in file_list:
+            full_file_name = os.path.realpath( file_name )
+            if os.path.isfile( full_file_name ):
+                os.remove( full_file_name )
+    #delete every file in output path, leave directories untouched
+    for file_name in os.listdir( cfg.output_path ):
+        full_file_name = os.path.realpath( os.path.join( cfg.output_path, file_name ) )
+        if os.path.isfile( full_file_name ):
+            os.remove( full_file_name )
     return None

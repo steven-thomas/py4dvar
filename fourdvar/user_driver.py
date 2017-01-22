@@ -17,6 +17,7 @@ from fourdvar import datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.libshare.cmaq_handle as cmaq
 
+data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/truth'
 observed = None
 background = None
 
@@ -49,8 +50,8 @@ def get_background():
     output: PhysicalData (prior estimate)
     """
     global background
+    global data_dir
     
-    data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
     #bg_file = 'os.path.join( data_dir, 'prior.ncf' )
     bg_file = os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
     
@@ -65,9 +66,9 @@ def get_observed():
     output: ObservationData
     """
     global observed
+    global data_dir
     
-    data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
-    obs_file = os.path.join( data_dir, 'obsvals_processed.pickle' )
+    obs_file = os.path.join( data_dir, 'obsvals_truth.pickle' )
     
     if observed is None:
         observed = d.ObservationData.from_file( obs_file )
@@ -94,7 +95,7 @@ def post_process( out_physical, metadata ):
     input: PhysicalData (solution), list (user-defined output of minim)
     output: None
     """
-    out_physical.archive( 'final_solution' )
+    out_physical.archive( 'final_solution.ncf' )
     with open( os.path.join( archive.get_archive_path(), 'ans_details.pickle' ), 'w' ) as f:
         pickle.dump( metadata, f )
     return None

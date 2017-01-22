@@ -9,6 +9,7 @@ import datetime as dt
 import netCDF4 as ncf
 
 import _get_root
+import fourdvar.util.global_config as cfg
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -153,3 +154,58 @@ def match_attr( src1, src2, attrlist=None ):
         if match is False:
             return False
     return True
+
+def phys_archive( phys, path ):
+    """
+    extension: convert a physical_data object into a netCDF file
+    input: PhysicalData (or PhysicalAdjointData), string(path/to/file.ncf)
+    """
+    rootgrp = ncf.Dataset( path, 'w' )
+    icon = rootgrp.createGroup( 'icon' )
+    emis = rootgrp.createGroup( 'emis' )
+    
+    sdate = int( cfg.start_date.strftime( '%Y%j' ) )
+    rootgrp.setncattr( 'SDATE', sdate )
+    
+    m,s = divmod( phys.tsec, 60 )
+    h,m = divmod( m, 60 )
+    hms = int( '{:02}{:02}{:02}'.format( h, m, s ) )
+    rootgrp.setncattr( 'TSTEP', hms )
+    
+    var_list = [ '{:<16}'.format(s) for s in phys.spcs ]
+    var_list = ''.join( var_list )
+    rootgrp.setncattr( 'VAR-LIST', var_list )
+    
+    rootgrp.createDimension( 'ROW', phys.nrows )
+    rootgrp.createDimension( 'COL', phys.ncols )
+    icon.createDimension( 'LAY', phys.nlays_icon )
+    emis.createDimension( 'LAY', phys.nlays_emis )
+    emis.createDimension( 'TSTEP', None )
+    
+    icon_units = '{:<16}'.format( phys.icon_units )
+    emis_units = '{:<16}'.format( phys.emis_units )
+    for spc in phys.spcs:
+        unc = spc + '_UNC'
+        
+        ivar = icon.createVariable( spc, 'f4', ('LAY','ROW','COL',) )
+        iunc = icon.createVariable( unc, 'f4', ('LAY','ROW','COL',) )
+        evar = emis.createVariable( spc, 'f4', ('TSTEP','LAY','ROW','COL',) )
+        eunc = emis.createVariable( unc, 'f4', ('TSTEP','LAY','ROW','COL',) )
+        
+        ivar.long_name = '{:<16}'.format( spc )
+        iunc.long_name = '{:<16}'.format( unc )
+        evar.long_name = '{:<16}'.format( spc )
+        eunc.long_name = '{:<16}'.format( unc )
+        
+        ivar.units = icon_units
+        iunc.units = icon_units
+        evar.units = emis_units
+        eunc.units = emis_units
+        
+        ivar[:] = phys.icon[ spc ]
+        iunc[:] = phys.icon_unc[ spc ]
+        evar[:] = phys.emis[ spc ]
+        eunc[:] = phys.emis_unc[ spc ]
+    
+    rootgrp.close()
+    return None

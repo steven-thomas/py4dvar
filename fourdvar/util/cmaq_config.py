@@ -162,18 +162,7 @@ curdir = os.path.realpath( os.curdir )
 fwd_stdout_log = os.path.join( output_path, 'fwd_stdout.log' )
 bwd_stdout_log = os.path.join( output_path, 'bwd_stdout.log' )
 
-#list of templates of all files created by cmaq
-#cmaq_handle.wipeout resolves and deletes all listed files.
-created_files = [
-    os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+fwd_appl ),
-    os.path.join( curdir, 'CTM_LOG_<PROC_NO>.'+bwd_appl ),
-    os.path.join( curdir, 'N_SPC_EMIS.dat' ),
-    fwd_logfile, bwd_logfile, floor_file, chem_chk, vdiff_chk,
-    aero_chk, ha_rhoj_chk, va_rhoj_chk, hadv_chk, vadv_chk,
-    emis_chk, emist_chk, fwd_xfirst_file, bwd_xfirst_file,
-    conc_file, avg_conc_file, last_grid_file, drydep_file,
-    wetdep1_file, wetdep2_file, ssemis_file, aerovis_file,
-    aerodiam_file, ipr1_file, ipr2_file, ipr3_file,
-    irr1_file, irr2_file, irr3_file, rj1_file, rj2_file,
-    conc_sense_file, emis_sense_file, emis_scale_sense_file,
-    force_file, fwd_stdout_log, bwd_stdout_log ]
+#shell/glob patterns for log files produces in cwd during cmaq run
+#used by cmaq_handle.wipeout()
+cwd_logs = [ os.path.join( curdir, 'CTM_LOG_*' ),
+             os.path.join( curdir, 'N_SPC_EMIS.dat' ) ]

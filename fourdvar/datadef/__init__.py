@@ -17,4 +17,4 @@ from fourdvar.datadef.model_output_data import ModelOutputData
 from fourdvar.datadef.observation_data import ObservationData
 from fourdvar.datadef.adjoint_forcing_data import AdjointForcingData
 from fourdvar.datadef.sensitivity_data import SensitivityData
-
+from fourdvar.datadef.physical_adjoint_data import PhysicalAdjointData
