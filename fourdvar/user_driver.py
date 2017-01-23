@@ -13,9 +13,10 @@ import cPickle as pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import _get_root
-from fourdvar import datadef as d
+import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.libshare.cmaq_handle as cmaq
+from fourdvar._transform import transform
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -23,6 +24,7 @@ logger = setup_logging.get_logger( __file__ )
 data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/truth'
 observed = None
 background = None
+iter_num = 0
 
 def setup():
     """
@@ -81,6 +83,19 @@ def get_observed():
         assert observed.check_meta() is True, msg
     return observed
 
+def callback_func( current_vector ):
+    """
+    extension: called once for every iteration of minimizer
+    input: np.array
+    output: None
+    """
+    global iter_num
+    iter_num += 1
+    current_unknown = d.UnknownData( current_vector )
+    current_physical = transform( current_unknown, d.PhysicalData )
+    current_physical.archive( 'iter{:04}.ncf'.format( iter_num ) )
+    return None
+
 def minim( cost_func, grad_func, init_guess ):
     """
     application: the minimizer function
@@ -91,7 +106,8 @@ def minim( cost_func, grad_func, init_guess ):
     start_grad = grad_func( init_guess )
     start_dict = {'start_cost': start_cost, 'start_grad': start_grad }
     
-    answer = minimize( cost_func, init_guess, grad_func )
+    answer = minimize( cost_func, init_guess,
+                       fprime=grad_func, callback=callback_func )
     #check answer warnflag, etc for success
     answer = list( answer ) + [ start_dict ]
     return answer
