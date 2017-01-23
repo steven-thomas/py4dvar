@@ -13,6 +13,7 @@ from fourdvar.datadef.abstract._extractable_data import ExtractableData
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.file_handle as fh
 import fourdvar.util.template_defn as template
+import fourdvar.util.netcdf_handle as ncf
 
 class ObservationSingle( SingleData ):
     """application
@@ -41,7 +42,7 @@ class ObservationData( ExtractableData ):
     
     archive_name = 'obsset.pickle'
     
-    def __init__( self, obs_list ):
+    def __init__( self, griddata, obs_list ):
         """
         application: create an instance of ObservationData
         input: user-defined.
@@ -59,6 +60,7 @@ class ObservationData( ExtractableData ):
         
         #this statement must be called.
         ExtractableData.__init__( self, dataset )
+        self.griddata = deepcopy( griddata )
         return None
     
     def get_vector( self, attr='value', inc_invalid=False ):
@@ -74,37 +76,61 @@ class ObservationData( ExtractableData ):
             valid = ExtractableData.get_vector( self, 'valid' )
             output = [ val for val,flag in zip( output, valid ) if flag is True ]
         return output
-    
-    def perturb( self ):
-        """
-        application: change every value randomly based on observation error covariance
-        input: None
-        output: None
         
-        eg: test_obs.perturb()
-        
-        notes: only used for accuracy testing
-        """
-        #for obs in self.dataset:
-        #    obs.value += np.random.normal(0,1)
-        return None
-    
-    def archive( self, dirname=None ):
+    def archive( self, pathname=None ):
         """
         extension: save a copy of data to archive/experiment directory
-        input: string or None
+        input: string or None(path/to/save.pickle)
         output: None
 
         notes: this will overwrite any clash in namespace.
-        if input is None file will write to experiment directory
-        else it will create dirname in experiment directory and save there.
+        if input is None file will use default name.
+        output file is in acceptable format for from_file method.
         """
         save_path = get_archive_path()
-        if dirname is not None:
-            save_path = os.path.join( save_path, dirname )
-        fh.save_obj( self, os.path.join( save_path, self.archive_name ) )
+        if pathname is None:
+            pathname = self.archive_name
+        save_path = os.path.join( save_path, pathname )
+        
+        obs_list = [ deepcopy( obs.__dict__ ) for obs in self.dataset ]
+        fh.save_obj( self.griddata, save_path, overwrite=True )
+        fh.save_obj( obs_list, save_path, overwrite=False )
         return None
-
+    
+    def check_grid( self, other_grid=template.conc ):
+        """
+        extension: check that griddata matches other
+        input: string(path/to/conc.ncf) <OR> dict
+        output: Boolean
+        """
+        attr_list = self.griddata.keys()
+        return ncf.match_attr( self.griddata, other_grid, attr_list )
+    
+    def check_meta( self, other=None ):
+        """
+        extension: check that 2 ObservationData have compatible metadata
+        input: ObservationData
+        output: Boolean
+        """
+        if other is None:
+            other = ObservationData.load_blank( template.obsmeta )
+        #must have the same griddata
+        if self.check_grid( other.griddata ) is False:
+            return False
+        
+        for s_obs, o_obs in zip( self.dataset, other.dataset ):
+            s_obs = deepcopy( s_obs.__dict__ )
+            o_obs = deepcopy( o_obs.__dict__ )
+            #handle special attributes: valid & value are allowed to be different.
+            s_obs.pop( 'valid' )
+            o_obs.pop( 'valid' )
+            s_obs.pop( 'value' )
+            o_obs.pop( 'value' )
+            
+            shared_attr = list( set( s_obs.keys() ) & set( o_obs.keys() ) )
+            if ncf.match_attr( s_obs, o_obs, shared_attr ) is False:
+                return False
+        return True
     
     @classmethod
     def error_weight( cls, res ):
@@ -129,7 +155,10 @@ class ObservationData( ExtractableData ):
         output: ObservationData
         
         eg: residual = datadef.ObservationData.get_residual( observed_obs, simulated_obs )
-        """        
+        """
+        
+        observed.check_meta( simulated )
+        
         arglist = []
         for obs, sim in zip( observed.dataset, simulated.dataset ):
             obs = deepcopy( obs.__dict__ )
@@ -140,19 +169,11 @@ class ObservationData( ExtractableData ):
             value = (sval - oval) if valid is True else None
             
             res_dict = { 'valid': valid, 'value': value }
-            
-            #all_attr = set( obs.keys() ) | set( sim.keys() )
-            shared_attr = set( obs.keys() ) & set( sim.keys() )
-            for attr in shared_attr:
-                msg = 'cannot find residual. Observations incompatible.'
-                assert obs[ attr ] == sim[ attr ], msg
-                res_dict[ attr ] = obs[ attr ]
-            for attr in ( set( obs.keys() ) - shared_attr ):
-                res_dict[ attr ] = obs[ attr ]
-            for attr in ( set( sim.keys() ) - shared_attr ):
-                res_dict[ attr ] = sim[ attr ]
+            res_dict.update( obs )
+            res_dict.update( sim )
             arglist.append( res_dict )
-        return cls( arglist )
+        griddata = deepcopy( observed.griddata )
+        return cls( griddata, arglist )
     
     @classmethod
     def from_file( cls, filename ):
@@ -163,22 +184,23 @@ class ObservationData( ExtractableData ):
         
         eg: observed = datadef.ObservationData.from_file( "saved_obs.data" )
         """
-        #griddata used for processing, maybe want to remember/store?
-        __ = fh.load_obj( filename, close=False )
+        griddata = fh.load_obj( filename, close=False )
         obs_list = fh.load_obj( filename, close=True )
-        return cls( obs_list )
+        return cls( griddata, obs_list )
     
     @classmethod
-    def load_blank( cls, obs_list ):
+    def load_blank( cls, filename ):
         """
         extension: create an ObservationData with None values
         input: iterable of dicts
         output: ObservationData
         """
+        griddata = fh.load_obj( filename, close=False )
+        obs_list = fh.load_obj( filename, close=True )
         for obs_dict in obs_list:
             obs_dict[ 'value' ] = None
-        return cls( obs_list )
-
+        return cls( griddata, obs_list )
+    
     @classmethod
     def example( cls ):
         """
@@ -192,10 +214,7 @@ class ObservationData( ExtractableData ):
         """
         example_value = 1
         
-        obsmeta_path = template.obsmeta
-        __ = fh.load_obj( obsmeta_path, close=False )
-        obs_list = fh.load_obj( obsmeta_path, close=True )
-        obs_set = cls.load_blank( obs_list )
+        obs_set = cls.load_blank( template.obsmeta )
         for obs in obs_set.dataset:
             if obs.valid is True:
                 obs.value = example_value

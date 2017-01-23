@@ -14,25 +14,6 @@ import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
 
-def get_valid_obsdata( obsmeta_path, grid_path ):
-    """
-    extension: get the obsmeta dict and ensure it's compatible with the grid
-    input: string (path/to/obsmeta.pickle), string (path/to/template.ncf)
-    output: dict OR None
-    
-    notes: returns the obsmeta dict IF it matches the provided grid
-    if obsmeta griddata does not match it returns None instead
-    """
-    griddata = fh.load_obj( obsmeta_path, close=False )
-    obsdata = fh.load_obj( obsmeta_path, close=True )
-    
-    valid = ncf.match_attr( grid_path, griddata, griddata.keys() )
-    if valid is False:
-        msg = '{0} incompatible with {1}.'.format( obsmeta_path, grid_path )
-        logger.error( msg )
-        return None
-    return obsdata
-
 def get_obs_by_date( obs_set ):
     """
     extension: get dictionary of single obs with keys YYYYMMDD

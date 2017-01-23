@@ -17,6 +17,9 @@ from fourdvar import datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.libshare.cmaq_handle as cmaq
 
+import setup_logging
+logger = setup_logging.get_logger( __file__ )
+
 data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/truth'
 observed = None
 background = None
@@ -30,8 +33,8 @@ def setup():
     archive.setup()
     bg = get_background()
     obs = get_observed()
-    bg.archive( 'background' )
-    obs.archive( 'observed' )
+    bg.archive( 'prior.ncf' )
+    obs.archive( 'observed.pickle' )
     return None
 
 def cleanup():
@@ -72,6 +75,10 @@ def get_observed():
     
     if observed is None:
         observed = d.ObservationData.from_file( obs_file )
+        msg = 'Observed dataset does not match template griddata.'
+        assert observed.check_grid() is True, msg
+        msg = 'Observed dataset does not match template obsmeta.'
+        assert observed.check_meta() is True, msg
     return observed
 
 def minim( cost_func, grad_func, init_guess ):

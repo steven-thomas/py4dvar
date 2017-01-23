@@ -12,8 +12,6 @@ import fourdvar.libshare.obs_handle as oh
 import fourdvar.util.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 
-#from fourdvar.libshare.obs_handle import obsop_map
-
 def obs_operator( model_output ):
     """
     application: simulate set of observations from output of the forward model
@@ -21,10 +19,9 @@ def obs_operator( model_output ):
     output: ObservationData
     """
     
-    obsdata = oh.get_valid_obsdata( template.obsmeta, template.conc )
-    assert obsdata is not None, 'failed to get obsmeta data.'
-    
-    sim_obs = ObservationData.load_blank( obsdata )
+    sim_obs = ObservationData.load_blank( template.obsmeta )
+    msg = 'obsmeta and conc templates have different griddata'
+    assert sim_obs.check_grid( template.conc ) is True, msg
     
     obs_by_date = oh.get_obs_by_date( sim_obs )
     
