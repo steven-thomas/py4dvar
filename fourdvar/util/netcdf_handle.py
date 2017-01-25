@@ -148,10 +148,7 @@ def match_attr( src1, src2, attrlist=None ):
     elif str( attrlist ) == attrlist:
         attrlist = [ attrlist ]
     for key in attrlist:
-        match = ( src1[ key ] == src2[ key ] )
-        if ( isinstance( match, np.ndarray ) ):
-            match = match.all()
-        if match is False:
+        if np.all( src1[ key ] == src2[ key ] ) is False:
             return False
     return True
 

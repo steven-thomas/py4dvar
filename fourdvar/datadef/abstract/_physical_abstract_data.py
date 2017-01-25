@@ -17,6 +17,9 @@ from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import save_obj
 import fourdvar.util.global_config as cfg
 
+import setup_logging
+logger = setup_logging.get_logger( __file__ )
+
 class PhysicalAbstractData( InterfaceData ):
     """Parent for PhysicalData and PhysicalAdjointData
     """
@@ -160,10 +163,19 @@ class PhysicalAbstractData( InterfaceData ):
                     'nrows','ncols','spcs','icon_unc','emis_unc']
         par_val = [tsec, estep, ilays, elays,
                    irows, icols, spcs_list, icon_unc, emis_unc]
+        #list of cls variables that from_file can change
+        par_mutable = ['icon_unc', 'emis_unc']
         for name, val in zip( par_name, par_val ):
             old_val = getattr( cls, name )
-            msg = 'cannot change {0}.{1}'.format( cls.__name__, name )
-            assert old_val is None or old_val == val, msg
+            if old_val is not None:
+                #param already defined, ensure no clash.
+                if name in par_mutable:
+                    #parameter is mutable, affect applied globally
+                    msg = 'Any change to PhysicalAbstractData.{} is applied globally!'.format( name )
+                    logger.warn( msg )
+                else:
+                    msg = 'cannot change PhysicalAbstractData.{}'.format( name )
+                    assert np.all( old_val == val ), msg
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
