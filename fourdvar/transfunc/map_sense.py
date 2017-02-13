@@ -30,8 +30,7 @@ def get_unit_convert():
     unit_dict = {}
     #all spcs have same shape, get from 1st
     tmp_spc = ncf.get_attr( template.sense_emis, 'VAR-LIST' ).split()[0]
-    #sensitivity has one extra step at end of day, slice it off
-    target_shape = ncf.get_variable( template.sense_emis, tmp_spc )[ :-1, ... ].shape
+    target_shape = ncf.get_variable( template.sense_emis, tmp_spc )[:].shape
     #layer thickness constant between files
     lay_sigma = list( ncf.get_attr( template.sense_emis, 'VGLVLS' ) )
     #layer thickness measured in scaled pressure units
@@ -42,15 +41,16 @@ def get_unit_convert():
     
     for date in global_config.get_datelist():
         met_file = replace_date( cmaq_config.met_cro_3d, date )
-        #met file has one extra step at end of day, slice it off
         #slice off any extra layers above area of interest
-        rhoj = ncf.get_variable( met_file, 'DENSA_J' )[ :-1, :len( lay_thick ), ... ]
+        rhoj = ncf.get_variable( met_file, 'DENSA_J' )[ :, :len( lay_thick ), ... ]
         #assert timesteps are compatible
-        assert target_shape[0] >= rhoj.shape[0], 'incompatible timesteps'
-        assert target_shape[0] % rhoj.shape[0] == 0, 'incompatible timesteps'
-        reps = target_shape[0] // rhoj.shape[0]
+        assert (target_shape[0]-1) >= (rhoj.shape[0]-1), 'incompatible timesteps'
+        assert (target_shape[0]-1) % (rhoj.shape[0]-1) == 0, 'incompatible timesteps'
+        reps = (target_shape[0]-1) // (rhoj.shape[0]-1)
         
-        unit_array = const / ( rhoj.repeat( reps, axis=0 ) * lay_thick )
+        rhoj_mapped = rhoj[ :-1, ... ].repeat( reps, axis=0 )
+        rhoj_mapped = np.append( rhoj_mapped, rhoj[ -1:, ... ], axis=0 )
+        unit_array = const / ( rhoj_mapped * lay_thick )
         
         day_label = replace_date( unit_key, date )
         unit_dict[ day_label ] = unit_array
@@ -112,30 +112,30 @@ def map_sense( sensitivity ):
         start = i * p_daysize
         end = (i+1) * p_daysize
         for spc in PhysicalAdjointData.spcs:
-            #note: sensitivity has 1 extra step at end of day. model_input does NOT.
-            #slice off that extra step
             unit_convert = unit_convert_dict[ replace_date( unit_key, date ) ]
-            sdata = sense_data_dict[ spc ][ :-1, ... ] * unit_convert
+            sdata = sense_data_dict[ spc ][:] * unit_convert
             sstep, slay, srow, scol = sdata.shape
             #recast to match mod_shape
             mstep, mlay, mrow, mcol = mod_shape
             msg = 'emis_sense and ModelInputData {} are incompatible.'
-            assert (sstep >= mstep) and (sstep % mstep == 0), msg.format( 'TSTEP' )
+            assert ((sstep-1) >= (mstep-1)) and ((sstep-1) % (mstep-1) == 0), msg.format( 'TSTEP' )
             assert slay >= mlay, msg.format( 'NLAYS' )
             assert srow == mrow, msg.format( 'NROWS' )
             assert scol == mcol, msg.format( 'NCOLS' )
-            fac = sstep // mstep
-            tmp = np.array([ sdata[ i::fac, 0:mlay ,... ]
+            fac = (sstep-1) // (mstep-1)
+            tmp = np.array([ sdata[ i:-1:fac, 0:mlay, ... ]
                              for i in range( fac ) ]).mean( axis=0 )
+            tmp = np.append( tmp, sdata[ -1:, 0:mlay, ... ], axis=0 )
             #adjoint prepare_model
             msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert (mstep >= p_daysize) and (mstep % p_daysize == 0), msg.format('nstep')
+            assert ((mstep-1) >= p_daysize) and ((mstep-1) % p_daysize == 0), msg.format('nstep')
             assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
             assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
             assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = mstep // p_daysize
-            pdata = np.array([ tmp[ i::fac, 0:PhysicalAdjointData.nlays_emis, ... ]
+            fac = (mstep-1) // p_daysize
+            pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
                                for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc ][ start:end, ... ] = pdata.copy()
+            pdata = np.append( pdata, tmp[ -1:, 0:PhysicalAdjointData.nlays_emis, ... ], axis=0 )
+            emis_dict[ spc ][ start:end+1, ... ] = pdata.copy()
     
     return PhysicalAdjointData( icon_dict, emis_dict )

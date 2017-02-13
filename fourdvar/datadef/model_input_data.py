@@ -53,8 +53,8 @@ class ModelInputData( InterfaceData ):
             tsec = 3600*(tstep//10000) + 60*((tstep//100)%100) + (tstep%100)
             daysec = 24*60*60
             assert daysec % tsec == 0, 'timestep must cleanly divide a day.'
-            msg = '{0} must have {1} timesteps.'.format( label, daysec//tsec )
-            assert nstep % (daysec//tsec) == 0, msg
+            msg = '{0} must have {1} timesteps.'.format( label, daysec//tsec + 1 )
+            assert (nstep-1) % (daysec//tsec) == 0, msg
         
         for label, record in self.file_data.items():
             ncf.create_from_template( record[ 'template' ],

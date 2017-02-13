@@ -47,10 +47,10 @@ def prepare_model( physical_data ):
         model_input_args['icon'][spcs] = icon_array.reshape( (1,)+icon_array.shape )
     
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
-    m_daysize = ncf.get_variable( template.emis, physical_data.spcs[0] ).shape[0]
+    m_daysize = ncf.get_variable( template.emis, physical_data.spcs[0] ).shape[0] - 1
     dlist = global_config.get_datelist()
-    p_daysize = physical_data.nstep // len( dlist )
-    assert m_daysize % p_daysize == 0, 'physical & model input emis TSTEP incompatible.'
+    p_daysize = (physical_data.nstep-1) // len( dlist )
+    assert (m_daysize) % (p_daysize) == 0, 'physical & model input emis TSTEP incompatible.'
     
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( dlist ):
@@ -60,6 +60,7 @@ def prepare_model( physical_data ):
         for spcs_name in physical_data.spcs:
             phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
             mod_data = np.repeat( phys_data, m_daysize // p_daysize, axis=0 )
+            mod_data = np.append( mod_data, physical_data.emis[ spcs_name ][ end:end+1, ... ], axis=0 )
             spcs_dict[ spcs_name ] = mod_data * unit_convert
         emis_argname = replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
