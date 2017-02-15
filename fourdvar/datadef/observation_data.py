@@ -11,9 +11,13 @@ from fourdvar.datadef.abstract._single_data import SingleData
 from fourdvar.datadef.abstract._extractable_data import ExtractableData
 
 from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.date_handle import replace_date
 import fourdvar.util.file_handle as fh
 import fourdvar.util.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
+import setup_logging
+
+logger = setup_logging.get_logger( __file__ )
 
 class ObservationSingle( SingleData ):
     """application
@@ -60,7 +64,10 @@ class ObservationData( ExtractableData ):
         
         #this statement must be called.
         ExtractableData.__init__( self, dataset )
+        #include data on the netCDF grid used for weighting index
         self.griddata = deepcopy( griddata )
+        #date range last used for self.make_valid()
+        self.valid_dates = None
         return None
     
     def get_vector( self, attr='value', inc_invalid=False ):
@@ -105,6 +112,48 @@ class ObservationData( ExtractableData ):
         """
         attr_list = self.griddata.keys()
         return ncf.match_attr( self.griddata, other_grid, attr_list )
+    
+    def make_valid( self, datelist ):
+        """
+        extension: ensure that every valid obs in within domain.
+                   make obs invalid otherwise.
+        input: list  ( from global_config.get_datelist() )
+        output: None (changes in place)
+        """
+        #check make_valid has not already been run for these dates
+        if self.valid_dates == datelist:
+            return None
+        
+        nlays = self.griddata['NLAYS']
+        nrows = self.griddata['NROWS']
+        ncols = self.griddata['NCOLS']
+        spc_list = self.griddata['VAR-LIST'].split()
+        t = int( self.griddata['TSTEP'] )
+        tsec = 60*60*(t//10000) + 60*((t%10000)//100) + (t%100)
+        nstep = (60*60*24 // tsec) + 1
+        dates = [ int( replace_date('<YYYYMMDD>',d) ) for d in datelist ]
+        
+        max_ind_list = [nstep,nlays,nrows,ncols]
+        valid_obs = [ o for o in self.dataset if o.valid is True ]
+        for obs in valid_obs:
+            keep = True
+            for coord in obs.weight_grid.keys():
+                day,step,lay,row,col,spc = coord
+                ind_list = [step,lay,row,col]
+                if (day == dates[0]) and (step == 0):
+                    #special case: forcing offset will shift data off grid
+                    keep = False
+                if (day not in dates) or (spc not in spc_list):
+                    keep = False
+                for val,max_val in zip( ind_list, max_ind_list ):
+                    if not (0 <= val < max_val):
+                        keep = False
+                if keep is False:
+                    break
+            if keep is False:
+                obs.valid = False
+        self.valid_dates = datelist
+        return None
     
     def check_meta( self, other=None ):
         """
@@ -173,7 +222,14 @@ class ObservationData( ExtractableData ):
             res_dict.update( sim )
             arglist.append( res_dict )
         griddata = deepcopy( observed.griddata )
-        return cls( griddata, arglist )
+        residual = cls( griddata, arglist )
+        if observed.valid_dates is None:
+            residual.valid_dates = simulated.valid_dates
+        elif simulated.valid_dates is None:
+            residual.valid_dates = observed.valid_dates
+        elif observed.valid_dates == simulated.valid_dates:
+            residual.valid_dates = observed.valid_dates
+        return residual
     
     @classmethod
     def from_file( cls, filename ):
