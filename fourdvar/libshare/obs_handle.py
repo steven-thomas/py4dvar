@@ -18,21 +18,26 @@ def get_obs_by_date( obs_set ):
     """
     extension: get dictionary of single obs with keys YYYYMMDD
     input: ObservationData
-    output: { str(YYYYMMDD) : list( SingleObs ) }
+    output: { int(YYYYMMDD) : list( SingleObs ) }
     
     notes: a SingleObs can appear in multiple different days.
     a SingleObs belongs to a day if that day appears in its weight_grid.
     Only days within the model's run are included.
     Obs with days that are outside the model are set to valid=False
     """
-    #ensure only obs within the domain are 'valid'
-    obs_set.make_valid( global_config.get_datelist() )    
     valid_obs = [ o for o in obs_set.dataset if o.valid is True ]
-    obs_by_date = {}
+    tag = '<YYYYMMDD>'
+    valid_dates = set( replace_date(tag,d) for d in global_config.get_datelist() )
+    obs_by_date = { d : [] for d in valid_dates }
     for obs in valid_obs:
         dates = set( str(coord[0]) for coord in obs.weight_grid.keys() )
-        for d in dates:
-            obs_by_date[d] = obs_by_date.get( d, [] ) + [obs]
+        if dates <= valid_dates:
+            #'dates' is a subset of 'valid_dates' -> every date in the obs is valid
+            for d in dates:
+                obs_by_date[ d ].append( obs )
+        else:
+            obs.valid = False
+        
     return obs_by_date
 
 def get_obs_spcs( obslist ):

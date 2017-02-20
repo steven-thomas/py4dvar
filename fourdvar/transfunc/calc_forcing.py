@@ -19,28 +19,12 @@ def calc_forcing( w_residual ):
     
     obs_by_date = oh.get_obs_by_date( w_residual )
     kwargs = AdjointForcingData.get_kwargs_dict()
-    carryover = {}
-    
-    ymdlist = sorted( obs_by_date.keys(), reverse=True )
-    for ymd in ymdlist:
-        obslist = obs_by_date[ ymd ]
+    for ymd, obslist in obs_by_date.items():
         spcs_dict = kwargs[ 'force.'+ymd ]
-        
-        for loc, tot in carryover.items():
-            spc,lay,row,col = loc
-            spcs_dict[spc][-2,lay,row,col] += tot
-        carryover = {}
-        
         for obs in obslist:
             for coord,weight in obs.weight_grid.items():
                 if str( coord[0] ) == ymd:
-                    conc_step,lay,row,col,spc = coord[1:]
+                    step,lay,row,col,spc = coord[1:]
                     w_val = obs.value * weight
-                    #forcing slices are offset from conc slices
-                    frc_step = conc_step - 1
-                    if frc_step == -1:
-                        cur_tot = carryover.get( (spc,lay,row,col), 0 )
-                        carryover[ (spc,lay,row,col) ] = cur_tot + w_val
-                    else:
-                        spcs_dict[spc][frc_step,lay,row,col] += w_val
+                    spcs_dict[spc][step,lay,row,col] += w_val
     return AdjointForcingData( **kwargs )
