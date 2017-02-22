@@ -24,6 +24,9 @@ def get_filedict( clsname ):
             template: path to the template file used to construct actual.
             archive: filename to use when saving an archvied copy of file.
     """
+    msg = 'Must set global_config.{}'
+    assert global_config.start_date is not None, msg.format('start_date')
+    assert global_config.end_date is not None, msg.format('end_date')
     global all_files
     global firsttime
     if firsttime is True:

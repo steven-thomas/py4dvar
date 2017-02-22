@@ -77,6 +77,24 @@ class ModelOutputData( InterfaceData ):
         return None
     
     @classmethod
+    def load( cls, dirname ):
+        """
+        extension: create a ModelOutputData from previous archived files
+        input: string (path/to/file)
+        output: ModelOutputData
+        
+        notes: this function assumes the filenames match archive default names
+        """
+        pathname = os.path.realpath( dirname )
+        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
+        filedict = get_filedict( cls.__name__ )
+        for record in filedict.values():
+            source = os.path.join( pathname, record['archive'] )
+            dest = record['actual']
+            ncf.copy_compress( source, dest )
+        return cls()
+    
+    @classmethod
     def example( cls ):
         """
         application: return a valid example with arbitrary values.

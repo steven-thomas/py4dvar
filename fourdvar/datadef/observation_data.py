@@ -164,9 +164,10 @@ class ObservationData( ExtractableData ):
             obs = deepcopy( obs.__dict__ )
             sim = deepcopy( sim.__dict__ )
             #handle special attributes:
-            valid = (obs.pop( 'valid' ) is True) and (sim.pop( 'valid' ) is True)
-            oval, sval = obs.pop( 'value' ), sim.pop( 'value' )
-            value = (sval - oval) if valid is True else None
+            ovalid, svalid = obs.pop( 'valid' ), sim.pop( 'valid' )
+            ovalue, svalue = obs.pop( 'value' ), sim.pop( 'value' )
+            valid = (ovalid is True) and (svalid is True)
+            value = (svalue - ovalue) if valid is True else None
             
             res_dict = { 'valid': valid, 'value': value }
             res_dict.update( obs )
