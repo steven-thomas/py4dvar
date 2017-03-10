@@ -222,9 +222,9 @@ def run_bwd_single( date, is_first ):
     env_dict['ADJ_FORCE'] = cfg.force_file
 
     if cfg.sense_sync is True:
-        env_dict['LGRID_OUTPUT_FREQ'] = 'SYNC_STEP'
+        env_dict['ADJ_LGRID_FREQ'] = 'SYNC_STEP'
     else:
-        env_dict['LGRID_OUTPUT_FREQ'] = cfg.sense_sync
+        env_dict['ADJ_LGRID_FREQ'] = 'OUTPUT_STEP'
     
     frclays = str(int(ncf.get_attr( template.force, 'NLAYS' ) ) )
     if cfg.force_lays.strip().lower() == 'template':
