@@ -8,7 +8,7 @@ import fourdvar.util.file_handle as fh
 #Settings
 root_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/archive'
 
-experiment = 'verbose_grad'
+experiment = 'pert_pert'
 description = """This is a test of the system.
 this should contain a description of the experiment setting
 with enough detail for replication.

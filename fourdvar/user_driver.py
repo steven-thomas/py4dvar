@@ -21,7 +21,7 @@ from fourdvar._transform import transform
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
-data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/truth'
+data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
 observed = None
 background = None
 iter_num = 0
@@ -57,8 +57,8 @@ def get_background():
     global background
     global data_dir
     
-    #bg_file = 'os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
-    bg_file = os.path.join( data_dir, 'phys_CO2only_4day.ncf' )
+    bg_file = os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
+    #bg_file = os.path.join( data_dir, 'phys_CO2only_4day.ncf' )
     
     if background is None:
         background = d.PhysicalData.from_file( bg_file )
@@ -73,7 +73,7 @@ def get_observed():
     global observed
     global data_dir
     
-    obs_file = os.path.join( data_dir, 'obsvals_truth.pickle' )
+    obs_file = os.path.join( data_dir, 'obsvals_pert.pickle' )
     
     if observed is None:
         observed = d.ObservationData.from_file( obs_file )

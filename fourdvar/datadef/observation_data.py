@@ -33,6 +33,11 @@ class ObservationSingle( SingleData ):
         # time is in No. of steps (int)
         #kwargs[ 'value' ] = np.float64( kwargs[ 'value'] )
         
+        #cmaq doesn't use forcing values at slice 0 therefore any obs at slice 0 are invalid
+        t = set( c[1] for c in kwargs['weight_grid'].keys() )
+        if 0 in t:
+            kwargs['valid'] = False
+        
         #this statement must be called.
         SingleData.__init__( self, **kwargs )
         return None
