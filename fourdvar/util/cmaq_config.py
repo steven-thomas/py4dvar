@@ -167,7 +167,7 @@ curdir = os.path.realpath( os.curdir )
 fwd_stdout_log = os.path.join( output_path, 'fwd_stdout.log' )
 bwd_stdout_log = os.path.join( output_path, 'bwd_stdout.log' )
 
-#shell/glob patterns for log files produces in cwd during cmaq run
-#used by cmaq_handle.wipeout()
+#list of patterns of logs created by cmaq in curent working dir
+#cmaq_handle.wipeout resolves and deletes all listed files.
 cwd_logs = [ os.path.join( curdir, 'CTM_LOG_*' ),
              os.path.join( curdir, 'N_SPC_EMIS.dat' ) ]
