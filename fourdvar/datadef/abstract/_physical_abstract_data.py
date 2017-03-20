@@ -114,12 +114,15 @@ class PhysicalAbstractData( InterfaceData ):
         
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
-        #get all data/parameters from file
+        daysec = 24*60*60
         unc = lambda spc: spc + '_UNC'
+        
+        #get all data/parameters from file
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
-        step = int( ncf.get_attr( filename, 'TSTEP' ) )
+        tstep = ncf.get_attr( filename, 'TSTEP' )
+        day, step = int(tstep[0]), int(tstep[1])
         start_date = dt.datetime.strptime( sdate, '%Y%j' ).date()
-        tsec = 3600*(step//10000) + 60*((step//100)%100) + (step)%100
+        tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
         
@@ -141,9 +144,9 @@ class PhysicalAbstractData( InterfaceData ):
         estep, elays, erows, ecols = emis_shape[ 0 ]
         assert irows == erows, 'icon & emis must match rows.'
         assert icols == ecols, 'icon & emis must match columns.'
-        daysec = 24*60*60
-        assert daysec % tsec == 0, 'tsec must cleanly divide a day.'
-        assert (estep-1) % (daysec//tsec) == 0, 'nstep must cleanly divide into days.'
+        
+        assert max(daysec,tsec) % min(daysec,tsec) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
+        assert (tsec >= daysec) or (estep % (daysec//tsec) == 0), 'nstep must cleanly divide into days.'
         for spc in spcs_list:
             msg = 'Uncertainty values are invalid for this data.'
             assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
@@ -152,7 +155,7 @@ class PhysicalAbstractData( InterfaceData ):
             assert ( emis_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values and ensure old values are the same or None.
-        end_date  = start_date + dt.timedelta( seconds=(tsec*(estep-1) - daysec) )
+        end_date  = start_date + dt.timedelta( seconds=(tsec*(estep) - daysec) )
         bad_start = cfg.start_date is not None and cfg.start_date != start_date
         bad_end = cfg.end_date is not None and cfg.end_date != end_date
         assert not bad_start, 'cannot change start_date.'
@@ -221,8 +224,8 @@ class PhysicalAbstractData( InterfaceData ):
         for param in par_name:
             msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
             assert getattr( cls, param ) is not None, msg
-        assert (24*60*60) % cls.tsec == 0, 'invalid step size (tsec).'
-        assert (cls.nstep-1) % ( (24*60*60) // cls.tsec ) == 0, 'invalid step count (nstep).'
+        assert max(24*60*60,cls.tsec) % min(24*60*60,cls.tsec) == 0, 'invalid step size (tsec).'
+        assert (cls.tsec>=24*60*60) or (cls.nstep % ((24*60*60)//cls.tsec) == 0), 'invalid step count (nstep).'
         return None
     
     def cleanup( self ):

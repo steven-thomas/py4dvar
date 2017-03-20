@@ -8,10 +8,10 @@ import fourdvar.util.file_handle as fh
 #Settings
 root_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/archive'
 
-experiment = 'pert_pert'
+experiment = 'multi_layer'
 description = """This is a test of the system.
-this should contain a description of the experiment setting
-with enough detail for replication.
+Testing the minimizing of averaged emissions
+using 4-layer ray observations.
 """
 auto_overwrite = True
 

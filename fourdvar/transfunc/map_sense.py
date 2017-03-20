@@ -103,14 +103,16 @@ def map_sense( sensitivity ):
         assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
         icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
     
-    p_daysize = (24*60*60) / PhysicalAdjointData.tsec
+    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( datelist ):
         label = replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
-        start = i * p_daysize
-        end = (i+1) * p_daysize
+        start = int( i * p_daysize )
+        end = int( (i+1) * p_daysize )
+        if start == end:
+            end += 1
         for spc in PhysicalAdjointData.spcs:
             unit_convert = unit_convert_dict[ replace_date( unit_key, date ) ]
             sdata = sense_data_dict[ spc ][:] * unit_convert
@@ -123,19 +125,17 @@ def map_sense( sensitivity ):
             assert srow == mrow, msg.format( 'NROWS' )
             assert scol == mcol, msg.format( 'NCOLS' )
             fac = (sstep-1) // (mstep-1)
-            tmp = np.array([ sdata[ i:-1:fac, 0:mlay, ... ]
+            tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
                              for i in range( fac ) ]).mean( axis=0 )
-            tmp = np.append( tmp, sdata[ -1:, 0:mlay, ... ], axis=0 )
             #adjoint prepare_model
             msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= p_daysize) and ((mstep-1) % p_daysize == 0), msg.format('nstep')
+            assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
             assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
             assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
             assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = (mstep-1) // p_daysize
+            fac = (mstep-1) // (end-start)
             pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
                                for i in range( fac ) ]).sum( axis=0 )
-            pdata = np.append( pdata, tmp[ -1:, 0:PhysicalAdjointData.nlays_emis, ... ], axis=0 )
-            emis_dict[ spc ][ start:end+1, ... ] = pdata.copy()
+            emis_dict[ spc ][ start:end, ... ] += pdata.copy()
     
     return PhysicalAdjointData( icon_dict, emis_dict )

@@ -10,6 +10,9 @@ from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
 
+import setup_logging
+logger = setup_logging.get_logger( __file__ )
+
 def cost_func( vector ):
     """
     framework: cost function used by minimizer
@@ -93,6 +96,8 @@ def gradient_func( vector ):
     sensitivity.cleanup()
     phys_sense.cleanup()
     un_gradient.cleanup()
+    
+    logger.info( 'gradient norm = {}'.format( np.linalg.norm(gradient) ) )
     
     return np.array( gradient )
 

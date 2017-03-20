@@ -164,10 +164,11 @@ def phys_archive( phys, path ):
     sdate = int( cfg.start_date.strftime( '%Y%j' ) )
     rootgrp.setncattr( 'SDATE', sdate )
     
-    m,s = divmod( phys.tsec, 60 )
-    h,m = divmod( m, 60 )
+    minute,second = divmod( phys.tsec, 60 )
+    hour,minute = divmod( minute, 60 )
+    day,hour = divmod( hour, 24 )
     hms = int( '{:02}{:02}{:02}'.format( h, m, s ) )
-    rootgrp.setncattr( 'TSTEP', hms )
+    rootgrp.setncattr( 'TSTEP', np.array( [day, hms] ) )
     
     var_list = [ '{:<16}'.format(s) for s in phys.spcs ]
     var_list = ''.join( var_list )

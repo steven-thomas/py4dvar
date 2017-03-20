@@ -232,6 +232,12 @@ def run_bwd_single( date, is_first ):
     else:
         env_dict['NLAYS_FRC'] = cfg.force_lays
     
+    emsensl = str(int(ncf.get_attr( template.sense_emis, 'NLAYS' ) ) )
+    if cfg.sense_emis_lays.strip().lower() == 'template':
+        env_dict['CTM_EMSENSL'] = emsensl
+    else:
+        env_dict['CTM_EMSENSL'] = cfg.sense_emis_lays
+    
     if is_first is not True:
         prev_conc = cfg.conc_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )
         prev_emis = cfg.emis_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )

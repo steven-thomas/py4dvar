@@ -18,7 +18,7 @@ nprow = 4
 #extra ioapi write logging
 ioapi_logging = False
 
-#sync range, use unknown
+#max & min No. seconds per sync (science) step
 maxsync = 600
 minsync = 600
 
@@ -33,6 +33,11 @@ emis_lays = 'template'
 #number of forcing layers to use.
 #'template' means value calculated from template files.
 force_lays = 'template'
+
+#number of emission sensitivity layers to use.
+#'template' means value calculated from template files.
+#note: should always be >= emis_lays
+sense_emis_lays = 'template'
 
 #kzmin, use unknown
 kzmin = False
@@ -68,14 +73,14 @@ bwd_appl = 'bwd_CO2only.<YYYYMMDD>'
 #emis_date, use unknown
 emisdate = '<YYYYMMDD>'
 
-#sync sensitivity output to timestep (required)
-#DO NOT TOUCH
-sense_sync = True
+#output sensitivity on each sync (science) step
+#WARNING: this option must match the sensitivity template files
+sense_sync = False
 
 #date and time model parameters
 stdate = '<YYYYDDD>' #use unknown
 sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
-runlen = [24,0,0] #duration of single run [hours, minutes, seconds]
+runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
 
