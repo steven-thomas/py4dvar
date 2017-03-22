@@ -184,9 +184,9 @@ def run_fwd_single( date, is_first ):
     fh.ensure_path( cfg.fwd_stdout_log, inc_file=True )
     with open( cfg.fwd_stdout_log, 'w' ) as stdout_file:
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
-        logger.info( msg )
+        logger.debug( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
-        logger.info( 'external process finished.' )
+        logger.debug( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq fwd failed on {}.'.format( date.strftime('%Y%m%d') )
         logger.error( msg )
@@ -257,9 +257,9 @@ def run_bwd_single( date, is_first ):
     fh.ensure_path( cfg.bwd_stdout_log, inc_file=True )
     with open( cfg.bwd_stdout_log, 'w' ) as stdout_file:
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
-        logger.info( msg )
+        logger.debug( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
-        logger.info( 'external process finished.' )
+        logger.debug( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq bwd failed on {}.'.format( date.strftime('%Y%m%d') )
         logger.error( msg )

@@ -57,8 +57,9 @@ def get_background():
     global background
     global data_dir
     
-    bg_file = os.path.join( data_dir, 'prior_1emis.ncf' )
+    #bg_file = os.path.join( data_dir, 'prior_1emis.ncf' )
     #bg_file = os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
+    bg_file = os.path.join( data_dir, 'prior_1emis_0val.ncf' )
     
     if background is None:
         background = d.PhysicalData.from_file( bg_file )
@@ -73,7 +74,8 @@ def get_observed():
     global observed
     global data_dir
     
-    obs_file = os.path.join( data_dir, 'obsvals_pert.pickle' )
+    #obs_file = os.path.join( data_dir, 'obsvals_pert.pickle' )
+    obs_file = os.path.join( data_dir, 'truth', 'obsvals_truth.pickle' )
     
     if observed is None:
         observed = d.ObservationData.from_file( obs_file )
@@ -94,6 +96,9 @@ def callback_func( current_vector ):
     current_unknown = d.UnknownData( current_vector )
     current_physical = transform( current_unknown, d.PhysicalData )
     current_physical.archive( 'iter{:04}.ncf'.format( iter_num ) )
+    
+    logger.info( 'iter_num = {}'.format( iter_num ) )
+    
     return None
 
 def minim( cost_func, grad_func, init_guess ):

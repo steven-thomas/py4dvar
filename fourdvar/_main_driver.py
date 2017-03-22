@@ -52,6 +52,8 @@ def cost_func( vector ):
     residual.cleanup()
     w_residual.cleanup()
     
+    logger.info( 'cost = {}'.format( cost ) )
+    
     return cost
 
 def gradient_func( vector ):
