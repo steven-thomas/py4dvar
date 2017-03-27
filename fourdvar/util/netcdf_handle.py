@@ -5,11 +5,10 @@ extension: toolkit for interacting with netCDF files
 import numpy as np
 import os
 import shutil
-import datetime as dt
 import netCDF4 as ncf
 
 import _get_root
-import fourdvar.util.global_config as cfg
+import fourdvar.util.date_handle as dt
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -123,7 +122,7 @@ def set_date( filepath, start_date ):
         base_date = tflag_date[ 0, 0 ]
         date_offset = tflag_date - base_date
         for i in range( date_offset.max() + 1 ):
-            date = start_date + dt.timedelta( days=i )
+            date = dt.add_days( start_date, i )
             tflag_date[ date_offset==i ] = yj( date )
         ncf_file.variables[ 'TFLAG' ][:] = tflag
         ncf_file.setncattr( 'SDATE', yj( start_date ) )
@@ -152,58 +151,38 @@ def match_attr( src1, src2, attrlist=None ):
             return False
     return True
 
-def phys_archive( phys, path ):
+def create( path=None, parent=None, name=None,
+            attr={}, dim={}, var={}, is_root=True ):
     """
-    extension: convert a physical_data object into a netCDF file
-    input: PhysicalData (or PhysicalAdjointData), string(path/to/file.ncf)
+    extension: create a new netCDF group or file
+    input: string, ncf obj, string, dict, dict, dict, bool
+    output: ncf.Dataset obj
+    
+    notes: path = file path for ncf object, not required if is_root is False
+           parent = ncf obj for parent group, not required if is_root is True
+           name = name of group, not required if is_root is True
+           attr = dict of attributes {attr_name: attr_value}
+           dim = dict of dimensions {dim_name: dim_size}
+           var = dict of variables {var_name: ( var_dtype, var_dimension, var_value)}
+           is_root = is the group being create a root group (new file)
+           
+           If namespace clash this function will overwrite existing files!
     """
-    rootgrp = ncf.Dataset( path, 'w' )
-    icon = rootgrp.createGroup( 'icon' )
-    emis = rootgrp.createGroup( 'emis' )
-    
-    sdate = int( cfg.start_date.strftime( '%Y%j' ) )
-    rootgrp.setncattr( 'SDATE', sdate )
-    
-    minute,second = divmod( phys.tsec, 60 )
-    hour,minute = divmod( minute, 60 )
-    day,hour = divmod( hour, 24 )
-    hms = int( '{:02}{:02}{:02}'.format( h, m, s ) )
-    rootgrp.setncattr( 'TSTEP', np.array( [day, hms] ) )
-    
-    var_list = [ '{:<16}'.format(s) for s in phys.spcs ]
-    var_list = ''.join( var_list )
-    rootgrp.setncattr( 'VAR-LIST', var_list )
-    
-    rootgrp.createDimension( 'ROW', phys.nrows )
-    rootgrp.createDimension( 'COL', phys.ncols )
-    icon.createDimension( 'LAY', phys.nlays_icon )
-    emis.createDimension( 'LAY', phys.nlays_emis )
-    emis.createDimension( 'TSTEP', None )
-    
-    icon_units = '{:<16}'.format( phys.icon_units )
-    emis_units = '{:<16}'.format( phys.emis_units )
-    for spc in phys.spcs:
-        unc = spc + '_UNC'
-        
-        ivar = icon.createVariable( spc, 'f4', ('LAY','ROW','COL',) )
-        iunc = icon.createVariable( unc, 'f4', ('LAY','ROW','COL',) )
-        evar = emis.createVariable( spc, 'f4', ('TSTEP','LAY','ROW','COL',) )
-        eunc = emis.createVariable( unc, 'f4', ('TSTEP','LAY','ROW','COL',) )
-        
-        ivar.long_name = '{:<16}'.format( spc )
-        iunc.long_name = '{:<16}'.format( unc )
-        evar.long_name = '{:<16}'.format( spc )
-        eunc.long_name = '{:<16}'.format( unc )
-        
-        ivar.units = icon_units
-        iunc.units = icon_units
-        evar.units = emis_units
-        eunc.units = emis_units
-        
-        ivar[:] = phys.icon[ spc ]
-        iunc[:] = phys.icon_unc[ spc ]
-        evar[:] = phys.emis[ spc ]
-        eunc[:] = phys.emis_unc[ spc ]
-    
-    rootgrp.close()
-    return None
+    if is_root is True:
+        assert path is not None, 'root group must have a path'
+        grp = ncf.Dataset( path, 'w' )
+    elif is_root is False:
+        assert parent is not None, 'child group must have a parent'
+        assert name is not None, 'child group must have a name'
+        grp = parent.createGroup( name )
+    else:
+        raise ValueError( 'is_root must be boolean' )
+    for attr_name, attr_value in attr.items():
+        grp.setncattr( attr_name, attr_value )
+    for dim_name, dim_size in dim.items():
+        grp.createDimension( dim_name, dim_size )
+    for var_name, var_value in var.items():
+        var_type, var_dim, var_arr = var_value
+        v = grp.createVariable( var_name, var_type, var_dim )
+        v[:] = var_arr
+    return grp

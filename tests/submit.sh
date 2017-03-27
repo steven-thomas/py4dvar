@@ -22,5 +22,5 @@ module load pythonlib/netCDF4
 module load pythonlib/matplotlib
 module load hdf5
 
-#python test_minim.py >& test_minim_output.txt
-python test_verbose_grad.py >& output_verbose_grad.txt
+python test_minim.py >& test_minim_output.txt
+#python test_verbose_grad.py >& output_verbose_grad.txt

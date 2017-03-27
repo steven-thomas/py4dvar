@@ -8,7 +8,7 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
-import fourdvar.libshare.obs_handle as oh
+import fourdvar.util.obs_handle as obs_handle
 
 def calc_forcing( w_residual ):
     """
@@ -17,7 +17,7 @@ def calc_forcing( w_residual ):
     output: AdjointForcingData
     """
     
-    obs_by_date = oh.get_obs_by_date( w_residual )
+    obs_by_date = obs_handle.get_obs_by_date( w_residual )
     kwargs = AdjointForcingData.get_kwargs_dict()
     for ymd, obslist in obs_by_date.items():
         spcs_dict = kwargs[ 'force.'+ymd ]

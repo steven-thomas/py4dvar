@@ -10,7 +10,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.template_defn as template
+import fourdvar.params.template_defn as template
 from fourdvar.util.cmaq_datadef_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path

@@ -2,7 +2,6 @@
 import os
 
 import _get_root
-import fourdvar.util.global_config as glob_cfg
 
 #notes: the patterns <YYYYMMDD> & <YYYYDDD> will be replaced
 #with the year, month and day of the current model run

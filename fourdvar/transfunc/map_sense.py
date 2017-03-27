@@ -8,11 +8,10 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import SensitivityData, PhysicalAdjointData
-from fourdvar.util.date_handle import replace_date
-import fourdvar.util.template_defn as template
+import fourdvar.util.date_handle as dt
+import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.global_config as global_config
-import fourdvar.util.cmaq_config as cmaq_config
+import fourdvar.params.cmaq_config as cmaq_config
 
 unit_key = 'units.<YYYYMMDD>'
 unit_convert_dict = None
@@ -27,6 +26,15 @@ def get_unit_convert():
            PhysicalAdjointData.emis units = CF/(mol/(s*m^2))
     """
     global unit_key
+    
+    #physical constants:
+    #molar weight of dry air (precision matches cmaq)
+    mwair = 28.9628
+    #convert proportion to ppm
+    ppm_scale = 1E6
+    #convert g to kg
+    kg_scale = 1E-3
+    
     unit_dict = {}
     #all spcs have same shape, get from 1st
     tmp_spc = ncf.get_attr( template.sense_emis, 'VAR-LIST' ).split()[0]
@@ -37,10 +45,8 @@ def get_unit_convert():
     lay_thick = [ lay_sigma[ i ] - lay_sigma[ i+1 ] for i in range( len( lay_sigma ) - 1 ) ]
     lay_thick = np.array(lay_thick).reshape(( 1, len(lay_thick), 1, 1 ))
     
-    const = global_config.ppm_scale * global_config.kg_scale * global_config.mwair
-    
-    for date in global_config.get_datelist():
-        met_file = replace_date( cmaq_config.met_cro_3d, date )
+    for date in dt.get_datelist():
+        met_file = dt.replace_date( cmaq_config.met_cro_3d, date )
         #slice off any extra layers above area of interest
         rhoj = ncf.get_variable( met_file, 'DENSA_J' )[ :, :len( lay_thick ), ... ]
         #assert timesteps are compatible
@@ -50,9 +56,9 @@ def get_unit_convert():
         
         rhoj_mapped = rhoj[ :-1, ... ].repeat( reps, axis=0 )
         rhoj_mapped = np.append( rhoj_mapped, rhoj[ -1:, ... ], axis=0 )
-        unit_array = const / ( rhoj_mapped * lay_thick )
+        unit_array = (ppm_scale*kg_scale*mwair) / (rhoj_mapped*lay_thick)
         
-        day_label = replace_date( unit_key, date )
+        day_label = dt.replace_date( unit_key, date )
         unit_dict[ day_label ] = unit_array
     return unit_dict
 
@@ -68,11 +74,11 @@ def map_sense( sensitivity ):
         unit_convert_dict = get_unit_convert()
     
     #check that:
-    #- global_config dates exist
+    #- date_handle dates exist
     #- PhysicalAdjointData params exist
     #- template.emis & template.sense_emis are compatible
     #- template.icon & template.sense_conc are compatible
-    datelist = global_config.get_datelist()
+    datelist = dt.get_datelist()
     PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
     test_spc = PhysicalAdjointData.spcs[0]
@@ -91,7 +97,7 @@ def map_sense( sensitivity ):
     del p
     
     #construct icon_dict
-    icon_label = replace_date( 'conc.<YYYYMMDD>', datelist[0] )
+    icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
     icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
     icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
     for spc in PhysicalAdjointData.spcs:
@@ -106,7 +112,7 @@ def map_sense( sensitivity ):
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( datelist ):
-        label = replace_date( emis_pattern, date )
+        label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
         start = int( i * p_daysize )
@@ -114,7 +120,7 @@ def map_sense( sensitivity ):
         if start == end:
             end += 1
         for spc in PhysicalAdjointData.spcs:
-            unit_convert = unit_convert_dict[ replace_date( unit_key, date ) ]
+            unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
             sdata = sense_data_dict[ spc ][:] * unit_convert
             sstep, slay, srow, scol = sdata.shape
             #recast to match mod_shape

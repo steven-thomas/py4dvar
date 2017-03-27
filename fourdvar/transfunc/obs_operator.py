@@ -8,8 +8,8 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ModelOutputData, ObservationData
-import fourdvar.libshare.obs_handle as oh
-import fourdvar.util.template_defn as template
+import fourdvar.util.obs_handle as obs_handle
+import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 
 def obs_operator( model_output ):
@@ -23,11 +23,11 @@ def obs_operator( model_output ):
     msg = 'obsmeta and conc templates have different griddata'
     assert sim_obs.check_grid( template.conc ) is True, msg
     
-    obs_by_date = oh.get_obs_by_date( sim_obs )
+    obs_by_date = obs_handle.get_obs_by_date( sim_obs )
     
     for ymd, obslist in obs_by_date.items():
         conc_file = model_output.file_data['conc.'+ymd]['actual']
-        spcs = oh.get_obs_spcs( obslist )
+        spcs = obs_handle.get_obs_spcs( obslist )
         var_dict = ncf.get_variable( conc_file, spcs )
         for obs in obslist:
             if obs.value is None:

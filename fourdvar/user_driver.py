@@ -15,7 +15,7 @@ from scipy.optimize import fmin_l_bfgs_b as minimize
 import _get_root
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
-import fourdvar.libshare.cmaq_handle as cmaq
+import fourdvar.util.cmaq_handle as cmaq
 from fourdvar._transform import transform
 
 import setup_logging

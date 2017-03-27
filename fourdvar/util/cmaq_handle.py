@@ -1,15 +1,12 @@
 
 import os
 import glob
-import shutil
-import datetime as dt
 import subprocess
 
 import _get_root
-from fourdvar.util.date_handle import replace_date
-import fourdvar.util.global_config as global_config
-import fourdvar.util.cmaq_config as cfg
-import fourdvar.util.template_defn as template
+import fourdvar.util.date_handle as dt
+import fourdvar.params.cmaq_config as cfg
+import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.file_handle as fh
 
@@ -23,7 +20,7 @@ def parse_env_dict( env_dict, date ):
     input: dictionary (envvar_name: pattern_value), dt.date
     output: dictionary (envvar_name: actual_value)
     """
-    return { k: replace_date( v, date ) for k,v in env_dict.items() }
+    return { k: dt.replace_date( v, date ) for k,v in env_dict.items() }
 
 def load_env( env_dict ):
     """
@@ -275,7 +272,7 @@ def run_fwd():
     output: None
     """
     isfirst = True
-    for cur_date in global_config.get_datelist():
+    for cur_date in dt.get_datelist():
         run_fwd_single(cur_date, isfirst)
         isfirst = False
     return None
@@ -287,7 +284,7 @@ def run_bwd():
     output: None
     """
     isfirst = True
-    for cur_date in global_config.get_datelist()[::-1]:
+    for cur_date in dt.get_datelist()[::-1]:
         run_bwd_single(cur_date, isfirst)
         isfirst = False
     return None

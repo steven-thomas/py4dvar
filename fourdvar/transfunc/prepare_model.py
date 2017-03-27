@@ -5,15 +5,13 @@ eg: transform( physical_instance, datadef.ModelInputData ) == prepare_model( phy
 """
 
 import numpy as np
-import datetime as dt
 
 import _get_root
 from fourdvar.datadef import PhysicalData, ModelInputData
-from fourdvar.util.date_handle import replace_date
-import fourdvar.util.template_defn as template
+import fourdvar.util.date_handle as dt
+import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.global_config as global_config
-import fourdvar.libshare.cmaq_handle as cmaq
+import fourdvar.util.cmaq_handle as cmaq
 
 #value to convert units for each days emissions
 unit_convert = None
@@ -48,7 +46,7 @@ def prepare_model( physical_data ):
     
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
     m_daysize = ncf.get_variable( template.emis, physical_data.spcs[0] ).shape[0] - 1
-    dlist = global_config.get_datelist()
+    dlist = dt.get_datelist()
     p_daysize = float(physical_data.nstep) / len( dlist )
     assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'
     
@@ -64,7 +62,7 @@ def prepare_model( physical_data ):
             mod_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
             mod_data = np.append( mod_data, np.zeros((1,) + mod_data.shape[1:]), axis=0 )
             spcs_dict[ spcs_name ] = mod_data * unit_convert
-        emis_argname = replace_date( emis_pattern, date )
+        emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
     
     #may want to remove this line in future.

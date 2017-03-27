@@ -6,10 +6,9 @@ import numpy as np
 
 import _get_root
 import fourdvar.datadef as datadef
-from fourdvar.util.date_handle import replace_date
+import fourdvar.util.date_handle as dt
 import fourdvar.util.file_handle as fh
 import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.global_config as global_config
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -27,7 +26,7 @@ def get_obs_by_date( obs_set ):
     """
     valid_obs = [ o for o in obs_set.dataset if o.valid is True ]
     tag = '<YYYYMMDD>'
-    valid_dates = set( replace_date(tag,d) for d in global_config.get_datelist() )
+    valid_dates = set( dt.replace_date(tag,date) for date in dt.get_datelist() )
     obs_by_date = { d : [] for d in valid_dates }
     for obs in valid_obs:
         dates = set( str(coord[0]) for coord in obs.weight_grid.keys() )

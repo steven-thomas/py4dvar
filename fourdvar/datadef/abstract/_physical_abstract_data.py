@@ -6,7 +6,6 @@ therefore most of their code is here.
 """
 
 import numpy as np
-import datetime as dt
 import os
 
 import _get_root
@@ -15,7 +14,7 @@ from fourdvar.datadef.abstract._interface_data import InterfaceData
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import save_obj
-import fourdvar.util.global_config as cfg
+import fourdvar.util.date_handle as dt
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -42,7 +41,7 @@ class PhysicalAbstractData( InterfaceData ):
     archive_name = 'physical_abstract_data.ncf' #default archive filename
     icon_units = 'NA' #units to attach to netCDF archive
     emis_units = 'NA'
-        
+    
     def __init__( self, icon_dict, emis_dict ):
         """
         application: create an instance of PhysicalData
@@ -95,6 +94,8 @@ class PhysicalAbstractData( InterfaceData ):
         if input is None file will write default archive_name.
         output is a netCDF file compatible with from_file method.
         """
+        unc = lambda spc: spc + '_UNC'
+        
         save_path = get_archive_path()
         if path is None:
             path = self.archive_name
@@ -102,7 +103,36 @@ class PhysicalAbstractData( InterfaceData ):
         if os.path.isfile( save_path ):
             os.remove( save_path )
         #construct netCDF file
-        ncf.phys_archive( self, save_path )
+        attr_dict = { 'SDATE': int( dt.replace_date('<YYYYDDD>',dt.start_date) ) }
+        minute, second = divmod( self.tsec, 60 )
+        hour, minute = divmod( minute, 60 )
+        day, hour = divmod( hour, 24 )
+        hms = int( '{:02}{:02}{:02}'.format( hour, minute, second ) )
+        attr_dict[ 'TSTEP' ] = np.array( [day, hms] )
+        var_list =''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
+        attr_dict[ 'VAR-LIST' ] = var_list
+        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
+        
+        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
+                           is_root=True )
+        
+        icon_dim = { 'LAY': self.nlays_icon }
+        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
+        icon_var = {}
+        emis_var = {}
+        for spc in self.spcs:
+            icon_var[ spc ] = ( 'f4', ('LAY','ROW','COL',), self.icon[ spc ] )
+            icon_var[ unc(spc) ] = ( 'f4', ('LAY','ROW','COL'),
+                                     self.icon_unc[ spc ] )
+            emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+                                self.emis[ spc ] )
+            emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+                                     self.emis_unc[ spc ] )
+        ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
+                    is_root=False )
+        ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
+                    is_root=False )
+        root.close()
         return None
     
     @classmethod
@@ -121,7 +151,6 @@ class PhysicalAbstractData( InterfaceData ):
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
         tstep = ncf.get_attr( filename, 'TSTEP' )
         day, step = int(tstep[0]), int(tstep[1])
-        start_date = dt.datetime.strptime( sdate, '%Y%j' ).date()
         tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
@@ -154,14 +183,9 @@ class PhysicalAbstractData( InterfaceData ):
             assert ( icon_unc[ spc ] > 0 ).all(), msg
             assert ( emis_unc[ spc ] > 0 ).all(), msg
         
-        #assign new param values and ensure old values are the same or None.
-        end_date  = start_date + dt.timedelta( seconds=(tsec*(estep) - daysec) )
-        bad_start = cfg.start_date is not None and cfg.start_date != start_date
-        bad_end = cfg.end_date is not None and cfg.end_date != end_date
-        assert not bad_start, 'cannot change start_date.'
-        assert not bad_end, 'cannot change end_date.'
-        cfg.start_date = start_date
-        cfg.end_date = end_date
+        #assign new param values.
+        dt.set_start_date( sdate, method='<YYYYDDD>' )
+        dt.set_end_date( (tsec*(estep) - daysec), method='start+tsec' )
         par_name = ['tsec','nstep','nlays_icon','nlays_emis',
                     'nrows','ncols','spcs','icon_unc','emis_unc']
         par_val = [tsec, estep, ilays, elays,
@@ -194,13 +218,13 @@ class PhysicalAbstractData( InterfaceData ):
         eg: mock_phys = datadef.PhysicalData.example()
         
         notes: only used for testing.
-        must have global_config dates & PhysicalData parameters already defined.
+        must have date_handle dates & PhysicalData parameters already defined.
         """
         icon_val = 0
         emis_val = 0
         
-        msg = 'Must set global_config start_date & end_date.'
-        assert cfg.start_date is not None and cfg.end_date is not None, msg
+        msg = 'Must set date_handle start_date & end_date.'
+        assert dt.start_date is not None and dt.end_date is not None, msg
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
         

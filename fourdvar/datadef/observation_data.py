@@ -12,7 +12,7 @@ from fourdvar.datadef.abstract._extractable_data import ExtractableData
 
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.file_handle as fh
-import fourdvar.util.template_defn as template
+import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 
 class ObservationSingle( SingleData ):
