@@ -10,7 +10,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_datadef_files import get_filedict
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -22,8 +22,8 @@ class SensitivityData( InterfaceData ):
     require = InterfaceData.add_require( 'file_data' )
 
     #list of attributes that must match between actual and template
-    checklist = [ 'SDATE', 'STIME', 'TSTEP', 'NTHIK', 'NCOLS', 'NROWS', 'NLAYS',
-                  'NVARS', 'GDTYP', 'P_ALP', 'P_BET', 'P_GAM', 'XCENT', 'YCENT',
+    checklist = [ 'STIME', 'TSTEP', 'NCOLS', 'NROWS', 'NLAYS', 'NVARS',
+                  'GDTYP', 'P_ALP', 'P_BET', 'P_GAM', 'XCENT', 'YCENT',
                   'XORIG', 'YORIG', 'XCELL', 'YCELL',
                   'VGTYP', 'VGTOP', 'VGLVLS', 'VAR-LIST' ]
         
@@ -89,7 +89,8 @@ class SensitivityData( InterfaceData ):
         """
         filedict = get_filedict( cls.__name__, )
         for record in filedict.values():
-            ncf.create_from_template( record['template'], record['actual'], {} )
+            ncf.create_from_template( record['template'], record['actual'],
+                                      var_change={}, date=record['date'] )
         return cls()
     
     def cleanup( self ):

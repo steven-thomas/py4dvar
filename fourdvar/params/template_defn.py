@@ -8,8 +8,7 @@ data_root = os.path.join( '/', 'home', '563', 'spt563',
 
 template_root = os.path.join( data_root, 'templates' )
 
-storage = os.path.join( template_root, 'dated_versions' )
-
+#filepaths to template netCDF files used by CMAQ & fourdvar
 emis = os.path.join( template_root, 'emis_template.ncf' )
 icon = os.path.join( template_root, 'icon_template.ncf' )
 conc = os.path.join( template_root, 'conc_template.ncf' )
@@ -17,13 +16,6 @@ force = os.path.join( template_root, 'force_template.ncf' )
 sense_emis = os.path.join( template_root, 'sense_emis_template.ncf' )
 sense_conc = os.path.join( template_root, 'sense_conc_template.ncf' )
 
-icon_store = os.path.join( storage, 'icon.ncf' )
-dated = {
-    emis: os.path.join( storage, 'emis_<YYYYMMDD>.ncf' ),
-    conc: os.path.join( storage, 'conc_<YYYYMMDD>.ncf' ),
-    force: os.path.join( storage, 'force_<YYYYMMDD>.ncf' ),
-    sense_emis: os.path.join( storage, 'sense_emis_<YYYYMMDD>.ncf' ),
-    sense_conc: os.path.join( storage, 'sense_conc_<YYYYMMDD>.ncf' )
-}
-
+#file used to get metadata (location, time, etc.) for simulated observations
+#can just be the observations datafile.
 obsmeta = os.path.join( data_root, 'obsmeta_processed.pickle' )

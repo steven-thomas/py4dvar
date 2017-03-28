@@ -34,23 +34,27 @@ def validate( filepath, dataset ):
                 return False
     return True
 
-def create_from_template( source, dest, change ):
+def create_from_template( source, dest, var_change={}, date=None ):
     """
     extension: create a new copy of a netCDF file, with new variable data
-    input: string (path/to/old.ncf), string (path/to/new.ncf), dict
+    input: string (path/to/old.ncf), string (path/to/new.ncf), dict, date obj
     output: None
     
-    notes: change is a dict of variables to overwrite
-      key = name of variable to change
-      value = numpy.ndarray of new values (must match shape)
+    notes: var_change is a dict of variables to overwrite
+        key = name of variable to change
+        value = numpy.ndarray of new values (must match shape)
+      date is the date to set the new file to (SDATE & TFLAG),
+        if None date is left unmodified
     if dest already exists it is overwritten.
     """
-    assert validate( source, change ), 'changes to template are invalid'
+    assert validate( source, var_change ), 'changes to template are invalid'
     logger.debug( 'copy {} to {}.'.format( source, dest ) )
     shutil.copyfile( source, dest )
     with ncf.Dataset( dest, 'a' ) as ncf_file:
-        for var, data in change.items():
+        for var, data in var_change.items():
             ncf_file.variables[ var ][:] = data
+        if date is not None:
+            set_date( ncf_file, date )
     return None
 
 def get_variable( filepath, varname, group=None ):
@@ -107,25 +111,34 @@ def copy_compress( source, dest ):
     shutil.copyfile( source, dest )
     return None
 
-def set_date( filepath, start_date ):
+def set_date( fileobj, start_date ):
     """
     extension: set the date in TFLAG variable & SDATE attribute
-    input: string (path/file.ncf), datetime.date
+    input: string (path/file.ncf) OR netCDF file obj, datetime.date
     output: None
     
     notes: changes are made to file in place.
     """
-    yj = lambda date: np.int32( date.strftime( '%Y%j' ) )
-    with ncf.Dataset( filepath, 'a' ) as ncf_file:
+    def _set_ncfobj_date( ncf_file, sdate ):
+        yj = lambda date: np.int32( dt.replace_date('<YYYYDDD>', date) )
         tflag = ncf_file.variables[ 'TFLAG' ][:]
         tflag_date = tflag[ :, :, 0 ]
         base_date = tflag_date[ 0, 0 ]
         date_offset = tflag_date - base_date
         for i in range( date_offset.max() + 1 ):
-            date = dt.add_days( start_date, i )
+            date = dt.add_days( sdate, i )
             tflag_date[ date_offset==i ] = yj( date )
         ncf_file.variables[ 'TFLAG' ][:] = tflag
-        ncf_file.setncattr( 'SDATE', yj( start_date ) )
+        ncf_file.setncattr( 'SDATE', yj( sdate ) )
+        return None
+    
+    if str( fileobj ) == fileobj:
+        #provided with filepath
+        with ncfDataset( fileobj, 'a' ) as ncf_file:
+            _set_ncfobj_date( ncf_file, start_date )
+    else:
+        #provided with file object
+        _set_ncfobj_date( fileobj, start_date )
     return None
 
 def match_attr( src1, src2, attrlist=None ):

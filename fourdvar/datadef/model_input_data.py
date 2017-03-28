@@ -12,7 +12,7 @@ import _get_root
 from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_datadef_files import get_filedict
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -59,7 +59,8 @@ class ModelInputData( InterfaceData ):
         for label, record in self.file_data.items():
             ncf.create_from_template( record[ 'template' ],
                                       record[ 'actual' ],
-                                      kwargs[ label ] )
+                                      var_change=kwargs[ label ],
+                                      date=record[ 'date' ] )
         return None
     
     def get_variable( self, file_label, varname ):
@@ -115,7 +116,9 @@ class ModelInputData( InterfaceData ):
         
         eg: old_model_in.cleanup()
         
-        notes: called after test instance is no longer needed, used to delete files etc.
+        notes: called after test instance is no longer needed,
+               used to delete files etc.
         """
-        pass
+        for record in self.file_data.values():
+            os.remove( record['actual'] )
         return None

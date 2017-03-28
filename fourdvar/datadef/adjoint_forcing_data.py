@@ -11,7 +11,7 @@ from fourdvar.datadef.abstract._interface_data import InterfaceData
 
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.params.template_defn as template
-from fourdvar.util.cmaq_datadef_files import get_filedict
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -43,7 +43,8 @@ class AdjointForcingData( InterfaceData ):
         for label, record in self.file_data.items():
             ncf.create_from_template( record[ 'template' ],
                                       record[ 'actual' ],
-                                      kwargs[ label ] )
+                                      var_change=kwargs[ label ],
+                                      date=record[ 'date' ] )
         return None
     
     def get_variable( self, file_label, varname ):
@@ -106,22 +107,6 @@ class AdjointForcingData( InterfaceData ):
         filedict = get_filedict( cls.__name__ )
         argdict = { label: {} for label in filedict.keys() }
         return cls( **argdict )
-    
-    @classmethod
-    def from_model( cls, m_out ):
-        """
-        application: return valid forcing copied from model output.
-        input: ModelOutputData
-        output: AdjointForcingData
-        
-        eg: new_forcing = datadef.AdjointForcingData.from_model( modelout )
-        
-        notes: only used for accuracy testing.
-        """
-        #generate forcing directly from model_output
-        #assert isinstance( m_out, ModelOutputData )
-        #return cls( m_out.data.copy() )
-        pass
     
     def cleanup( self ):
         """
