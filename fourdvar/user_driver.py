@@ -58,8 +58,8 @@ def get_background():
     global data_dir
     
     #bg_file = os.path.join( data_dir, 'prior_1emis.ncf' )
-    #bg_file = os.path.join( data_dir, 'prior_CO2only_4day.ncf' )
-    bg_file = os.path.join( data_dir, 'prior_1emis_0val.ncf' )
+    bg_file = os.path.join( data_dir, 'test_prior.ncf' )
+    #bg_file = os.path.join( data_dir, 'prior_1emis_0val.ncf' )
     
     if background is None:
         background = d.PhysicalData.from_file( bg_file )

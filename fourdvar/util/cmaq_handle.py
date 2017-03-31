@@ -19,8 +19,17 @@ def parse_env_dict( env_dict, date ):
     extension: convert date patterns into values
     input: dictionary (envvar_name: pattern_value), dt.date
     output: dictionary (envvar_name: actual_value)
+    
+    notes: all names and values must be strings
     """
-    return { k: dt.replace_date( v, date ) for k,v in env_dict.items() }
+    parsed = {}
+    for name,value in env_dict.items():
+        try:
+            parsed[ name ] = dt.replace_date( value, date )
+        except Exception as e:
+            logger.error( 'failed parsing {}: {}'.format( name, value ) )
+            raise e
+    return parsed
 
 def load_env( env_dict ):
     """
@@ -66,29 +75,35 @@ def setup_run():
     env_dict['CTM_RUNLEN'] = ''.join( [ '{:02d}'.format(i) for i in cfg.runlen ] )
     env_dict['CTM_TSTEP'] = ''.join( [ '{:02d}'.format(i) for i in cfg.tstep ] )
     
-    emlays = str(int(ncf.get_attr( template.emis, 'NLAYS' ) ) )
-    conclays = str(int( ncf.get_attr( template.conc, 'NLAYS' ) ) )
-    concspcs = str( ncf.get_attr( template.conc, 'VAR-LIST' ) )
-    if cfg.emis_lays.strip().lower() == 'template':
-        env_dict['CTM_EMLAYS'] = emlays
+    if str( cfg.emis_lays ).strip().lower() == 'template':
+        emlays = int(ncf.get_attr( template.emis, 'NLAYS' ) )
+        env_dict['CTM_EMLAYS'] = str( emlays )
     else:
-        env_dict['CTM_EMLAYS'] = cfg.emis_lays
-    if cfg.conc_out_lays.strip().lower() == 'template':
+        env_dict['CTM_EMLAYS'] = str( cfg.emis_lays )
+    
+    if str( cfg.conc_out_lays ).strip().lower() == 'template':
+        conclays = int( ncf.get_attr( template.conc, 'NLAYS' ) )
         env_dict['CONC_BLEV_ELEV'] = '1 {:}'.format( conclays )
     else:
-        env_dict['CONC_BLEV_ELEV'] = cfg.conc_out_lays
-    if cfg.avg_conc_out_lays.strip().lower() == 'template':
+        env_dict['CONC_BLEV_ELEV'] = str( cfg.conc_out_lays )
+    
+    if str( cfg.avg_conc_out_lays ).strip().lower() == 'template':
+        conclays = int( ncf.get_attr( template.conc, 'NLAYS' ) )
         env_dict['ACONC_BLEV_ELEV'] = '1 {:}'.format( conclays )
     else:
-        env_dict['ACONC_BLEV_ELEV'] = cfg.avg_conc_out_lays
-    if cfg.conc_spcs.strip().lower() == 'template':
+        env_dict['ACONC_BLEV_ELEV'] = str( cfg.avg_conc_out_lays )
+    
+    if str( cfg.conc_spcs ).strip().lower() == 'template':
+        concspcs = str( ncf.get_attr( template.conc, 'VAR-LIST' ) )
         env_dict['CONC_SPCS'] = ' '.join( concspcs.split() )
     else:
-        env_dict['CONC_SPCS'] = cfg.conc_spcs
-    if cfg.avg_conc_spcs.strip().lower() == 'template':
+        env_dict['CONC_SPCS'] = str( cfg.conc_spcs )
+    
+    if str( cfg.avg_conc_spcs ).strip().lower() == 'template':
+        concspcs = str( ncf.get_attr( template.conc, 'VAR-LIST' ) )
         env_dict['AVG_CONC_SPCS'] = ' '.join( concspcs.split() )
     else:
-        env_dict['AVG_CONC_SPCS'] = 'template'
+        env_dict['AVG_CONC_SPCS'] = str( cfg.avg_conc_spcs )
     
     env_dict['ADJ_CHEM_CHK'] = cfg.chem_chk + ' -v'
     env_dict['ADJ_VDIFF_CHK'] = cfg.vdiff_chk + ' -v'
@@ -223,17 +238,17 @@ def run_bwd_single( date, is_first ):
     else:
         env_dict['ADJ_LGRID_FREQ'] = 'OUTPUT_STEP'
     
-    frclays = str(int(ncf.get_attr( template.force, 'NLAYS' ) ) )
-    if cfg.force_lays.strip().lower() == 'template':
-        env_dict['NLAYS_FRC'] = frclays
+    if str( cfg.force_lays ).strip().lower() == 'template':
+        frclays = int( ncf.get_attr( template.force, 'NLAYS' ) )
+        env_dict['NLAYS_FRC'] = str( frclays )
     else:
-        env_dict['NLAYS_FRC'] = cfg.force_lays
+        env_dict['NLAYS_FRC'] = str( cfg.force_lays )
     
-    emsensl = str(int(ncf.get_attr( template.sense_emis, 'NLAYS' ) ) )
-    if cfg.sense_emis_lays.strip().lower() == 'template':
-        env_dict['CTM_EMSENSL'] = emsensl
+    if str( cfg.sense_emis_lays ).strip().lower() == 'template':
+        emsensl = int( ncf.get_attr( template.sense_emis, 'NLAYS' ) )
+        env_dict['CTM_EMSENSL'] = str( emsensl )
     else:
-        env_dict['CTM_EMSENSL'] = cfg.sense_emis_lays
+        env_dict['CTM_EMSENSL'] = str( cfg.sense_emis_lays )
     
     if is_first is not True:
         prev_conc = cfg.conc_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )

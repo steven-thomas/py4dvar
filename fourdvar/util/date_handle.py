@@ -21,7 +21,7 @@ def set_start_date( arg, method='<YYYYMMDD>' ):
     output: None
     
     notes: can implement multiple methods of defining start_date
-    method = '<YYYYDDD':
+    method = '<YYYYDDD>':
         arg is YearJulianDay as a single integer (eg: 2007161)
     method = '<YYYYMMDD>':
         arg is YearMonthDay as a single integer (eg: 20070614)
