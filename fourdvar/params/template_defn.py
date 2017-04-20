@@ -15,7 +15,3 @@ conc = os.path.join( template_root, 'conc_template.ncf' )
 force = os.path.join( template_root, 'force_template.ncf' )
 sense_emis = os.path.join( template_root, 'sense_emis_template.ncf' )
 sense_conc = os.path.join( template_root, 'sense_conc_template.ncf' )
-
-#file used to get metadata (location, time, etc.) for simulated observations
-#can just be the observations datafile.
-obsmeta = os.path.join( data_root, 'obsmeta_processed.pickle' )
