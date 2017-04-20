@@ -7,20 +7,17 @@ import numpy as np
 import os
 
 import _get_root
-from fourdvar.datadef.abstract._interface_data import InterfaceData
+from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
-class SensitivityData( InterfaceData ):
+class SensitivityData( FourDVarData ):
     """application
     """
     
-    #add to the require set all the attributes that must be defined for an AdjointForcingData to be valid.
-    require = InterfaceData.add_require( 'file_data' )
-
     #list of attributes that must match between actual and template
     checklist = [ 'STIME', 'TSTEP', 'NCOLS', 'NROWS', 'NLAYS', 'NVARS',
                   'GDTYP', 'P_ALP', 'P_BET', 'P_GAM', 'XCENT', 'YCENT',

@@ -1,12 +1,13 @@
-#!/apps/python/2.7.6/bin/python2.7
 
 import os
 import glob
-import cPickle as pickle
 
 from obsOCO2_defn import ObsOCO2
 from model_space import ModelSpace
 from netCDF4 import Dataset
+
+import _get_root
+import fourdvar.util.file_handle as fh
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -15,18 +16,14 @@ from netCDF4 import Dataset
 #'pattern': source = file_pattern_string, use all files that match pattern
 source_type = 'directory'
 
-#source = [ 'mok_oco2_data.nc4' ]
-source = 'oco2_sample'
+source = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/oco2_data/processed'
 
-output_file = 'obs_oco2_example.pickle'
-
-METCRO3D = 'METCRO3D'
-METCRO2D = 'METCRO2D'
-CONC = 'conc.ncf'
+output_file = './oco2_observed.pickle.zip'
+reject_log = './rejects.pickle.zip'
 
 #--------------------------------------------------------------------------
 
-model_grid = ModelSpace( METCRO3D, METCRO2D, CONC )
+model_grid = ModelSpace.create_from_fourdvar()
 
 if source_type.lower() == 'filelist':
     filelist = [ os.path.realpath( f ) for f in source ]
@@ -51,6 +48,7 @@ root_var = [ 'latitude',
              'xco2_averaging_kernel' ]
 sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle' ]
 obslist = []
+reject = {}
 for fname in filelist:
     print 'read {}'.format( fname )
     var_dict = {}
@@ -61,21 +59,24 @@ for fname in filelist:
         for var in sounding_var:
             var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
     print 'found {} soundings'.format( size )
+    
+    reject[ fname ] = []
+    
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
         obs = ObsOCO2.create( **src_dict )
         obs.model_process( model_grid )
-        obsdict = obs.get_obsdict()
-        if obsdict[ 'valid' ] is True:
-            obslist.append( obsdict )
+        if obs.valid is True:
+            obslist.append( obs.get_obsdict() )
         else:
-            print 'Sounding No. {} rejected.'.format( i )
+            reject[ fname ].append( 'Obs {}: {}'.format(i, obs.fail_reason) )
 
 if len( obslist ) > 0:
-    gridmeta = model_grid.get_gridmeta()
-    with open( output_file, 'w' ) as f:
-        pickle.dump( gridmeta, f )
-        pickle.dump( obslist, f )
+    domain = model_grid.get_domain()
+    datalist = [ domain ] + obslist
+    fh.save_list( datalist, output_file )
     print 'recorded observations to {}'.format( output_file )
+    fh.save_list( reject.items(), reject_log )
+    print 'rejected indicies logged in {}'.format( reject_log )
 else:
     print 'No valid observations found, no output file generated.'

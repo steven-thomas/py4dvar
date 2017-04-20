@@ -54,8 +54,8 @@ def build_filedict():
         'actual': cmaq_config.icon_file,
         'template': template.icon,
         'archive': archive.icon_file,
-        'date': dt.start_date
-        }
+        'date': None }
+        #'date': dt.start_date }
 
     for date in dt.get_datelist():
         

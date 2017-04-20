@@ -5,6 +5,7 @@ in this example all files are saved to and read from the fourdvar/data directory
 
 import os
 import sys
+import gzip
 import numpy as np
 import cPickle as pickle
 
@@ -58,56 +59,35 @@ def empty_dir( path ):
         os.rmdir( d )
     return None
 
-open_files = {}
-
-def save_obj( obj, filepath, overwrite=True ):
+def save_list( obj_list, filepath ):
     """
-    extension: save a python object to a pickle file
-    input: Object, string (path/to/file.pickle), bool
+    extension: save a list of python objects to a zipped pickle file
+    input: list, string (path/to/file.pickle)
     output: None
-    
-    notes: if overwrite is False obj is appended to end of file
     """
-    global open_files
     fpath = os.path.realpath( filepath )
-    if fpath in open_files.keys() and overwrite is True:
-        msg = 'cannot overwrite {}. file already open for reading.'.format( fpath )
-        raise IOError( msg )
-    ensure_path( os.path.dirname( filepath ) )
-    if overwrite is True:
-        mode = 'wb'
-    else:
-        mode = 'ab'
-    with open( filepath, mode ) as f:
-        pickle.dump( obj, f )
+    ensure_path( os.path.dirname( fpath ) )
+    
+    with gzip.GzipFile( fpath, 'wb' ) as f:
+        for element in obj_list:
+            pickle.dump( element, f )
     return None
 
-def load_obj( filepath, close=True ):
+def load_list( filepath ):
     """
-    extension: load a python object from a pickle file
-    input: string (path/to/file.pickle), bool (close file afterwards)
-    output: Object
-    
-    notes: if EOF is found then None is returned and file is automatically closed
-    but an error is NOT raised.
+    extension: load a list of python objects from a zipped pickle file
+    input: string (path/to/file.pickle)
+    output: list
     """
-    global open_files
     fpath = os.path.realpath( filepath )
-    if fpath in open_files.keys():
-        f = open_files[ fpath ]
-    else:
-        f = open( fpath, 'rb' )
-    try:
-        obj = pickle.load( f )
-    except EOFError:
-        obj = None
-        close = True
-        logger.info( 'EOF of {} reached. closing file.'.format( fpath ) )
-    if close is True:
-        if fpath in open_files.keys():
-            del open_files[ fpath ]
-        f.close()
-    else:
-        open_files[ fpath ] = f
-    return obj
-
+    obj_list = []
+    eof = False
+    
+    with gzip.GzipFile( fpath, 'rb' ) as f:
+        while eof is False:
+            try:
+                element = pickle.load( f )
+                obj_list.append( element )
+            except EOFError:
+                eof = True
+    return obj_list

@@ -1,7 +1,6 @@
 #!/apps/python/2.7.6/bin/python2.7
 
 import os
-import glob
 import shutil
 import numpy as np
 
@@ -13,34 +12,6 @@ import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template
 import cmaq_preprocess.setup_config as setup_config
 import cmaq_preprocess.uncertainty as uncertainty
-
-#Set the start and end dates.
-sdate = setup_config.start_date
-edate = setup_config.end_date
-if str(sdate).lower() == 'find' or str(edate).lower() == 'find':
-    #find first and last dates for emission files
-    msg = 'cmaq_config.emis_file must use <YYYYMMDD> date tag'
-    assert '<YYYYMMDD>' in cmaq_config.emis_file, msg
-    
-    globkey = cmaq_config.emis_file.replace( '<YYYYMMDD>', '*' )
-    emis_file_list = glob.glob( globkey )
-    
-    ind = globkey.find('*')
-    dlist = [ int(efile[ind:ind+8]) for efile in emis_file_list ]
-    dlist.sort()
-    start_int = dlist[0]
-    end_int = dlist[-1]
-
-if str(sdate).lower() == 'find':
-    dt.set_start_date( start_int, method='<YYYYMMDD>' )
-else:
-    dt.set_start_date( sdate, method='<YYYYMMDD>' )
-
-if str(edate).lower() == 'find':
-    dt.set_end_date( end_int, method='<YYYYMMDD>' )
-else:
-    dt.set_end_date( edate, method='<YYYYMMDD>' )
-
 
 #check emission start time & timestep
 if setup_config.match_emis_stime is True:
@@ -163,6 +134,7 @@ if setup_config.create_prior is True:
     emis_var_dict.update( emis_unc_dict )
     
     root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) ),
+                  'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
                   'TSTEP': [ np.int32(tstep[0]), np.int32(tstep[1]) ],
                   'VAR-LIST': ''.join( [ '{:<16}'.format(v) for v in var_list ] ) }
     icon_dim = { 'LAY': icon_lays }
@@ -241,7 +213,8 @@ if setup_config.create_templates is True:
         sense_lay = int( setup_config.sense_emis_lays )
     if str( cmaq_config.sense_emis_lays ).lower() == 'template':
         cmaq_config.sense_emis_lays = str( sense_lay )
-    
+
+    cmaq_handle.wipeout()
     cmaq_handle.run_fwd_single( dt.start_date, is_first=True )
     #use conc_file as force_file
     shutil.copyfile( conc_file, force_file )

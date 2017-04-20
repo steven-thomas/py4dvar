@@ -193,8 +193,9 @@ def run_fwd_single( date, is_first ):
         #use mpi
         runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
     runlist.append( cfg.fwd_prog )
-    fh.ensure_path( cfg.fwd_stdout_log, inc_file=True )
-    with open( cfg.fwd_stdout_log, 'w' ) as stdout_file:
+    stdout_fname = dt.replace_date( cfg.fwd_stdout_log, date )
+    fh.ensure_path( stdout_fname, inc_file=True )
+    with open( stdout_fname, 'w' ) as stdout_file:
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
         logger.debug( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
@@ -266,8 +267,9 @@ def run_bwd_single( date, is_first ):
         #use mpi
         runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
     runlist.append( cfg.bwd_prog )
-    fh.ensure_path( cfg.bwd_stdout_log, inc_file=True )
-    with open( cfg.bwd_stdout_log, 'w' ) as stdout_file:
+    stdout_fname = dt.replace_date( cfg.bwd_stdout_log, date )
+    fh.ensure_path( stdout_fname, inc_file=True )
+    with open( stdout_fname, 'w' ) as stdout_file:
         msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
         logger.debug( msg )
         statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
@@ -318,9 +320,12 @@ def wipeout():
             full_file_name = os.path.realpath( file_name )
             if os.path.isfile( full_file_name ):
                 os.remove( full_file_name )
-    #delete every file in output path, leave directories untouched
-    for file_name in os.listdir( cfg.output_path ):
-        full_file_name = os.path.realpath( os.path.join( cfg.output_path, file_name ) )
-        if os.path.isfile( full_file_name ):
-            os.remove( full_file_name )
+    #delete every file in wipeout_list
+    all_tags = dt.tag_map.keys()
+    for pat_name in cfg.wipeout_list:
+        for t in all_tags:
+            pat_name = pat_name.replace( t, '*' )
+        for fname in glob.glob( pat_name ):
+            if os.path.isfile( fname ):
+                os.remove( fname )
     return None

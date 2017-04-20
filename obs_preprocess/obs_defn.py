@@ -6,18 +6,21 @@ from copy import deepcopy
 class ObsGeneral( object ):
     """base class for observations."""
     count = 0
-    required = ['valid','value','uncertainty','weight_grid']
+    required = ['value','uncertainty','weight_grid']
     
     def __init__( self, obstype='Unknown' ):
         self.id = ObsGeneral.count
         ObsGeneral.count += 1
         self.out_dict = { 'type': obstype }
         self.ready = False
+        self.valid = True
         return None
     
     def get_obsdict( self ):
         if self.ready is False:
             raise AttributeError( 'obs No. {} is not ready'.format(self.id) )
+        if self.valid is False:
+            raise AttributeError( 'obs No. {} is invalid'.format(self.id) )
         keys = self.out_dict.keys()
         for attr in self.required:
             if attr not in keys:
@@ -43,18 +46,18 @@ class ObsSimple( ObsGeneral ):
     
     def model_process( self, model_space ):
         if model_space.valid_coord( self.cell ) is True:
-            self.out_dict['valid'] = True
+            self.valid = True
             self.out_dict['weight_grid'] = { tuple(self.cell): 1.0 }
             self.ready = True
         else:
-            self.coord_fail()
+            self.valid = False
+            self.ready = True
         return None
     
-    def coord_fail( self ):
-        #print 'obs No. {} declared invalid.'.format( self.id )
-        self.out_dict['valid'] = False
-        self.out_dict['weight_grid'] = {}
+    def coord_fail( self, fail_reason='unknown' ):
+        self.valid = False
         self.ready = True
+        self.fail_reason = fail_reason
         return None
 
 class ObsStationary( ObsSimple ):
@@ -76,18 +79,14 @@ class ObsStationary( ObsSimple ):
         """Process the observation with the models parameters"""
         
         if self.spcs not in model_space.spcs:
-            self.coord_fail()
+            self.coord_fail( 'invalid spcs' )
             return None
         
         loc_dict = self.map_location( model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
         
         time_dict = self.map_time( model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
         
         proportion = {}
         for time_k, time_v in time_dict.items():
@@ -96,16 +95,14 @@ class ObsStationary( ObsSimple ):
                 proportion[ coord ] = time_v * loc_v
         
         visibility = self.get_visibility( proportion.keys(), model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
+        
         #dicts must have identical keys
         assert set( visibility ) == set( proportion )
         weight_grid = {}
         for key in visibility.keys():
             weight_grid[ key ] = visibility[ key ] * proportion[ key ]
         self.out_dict['weight_grid'] = weight_grid
-        self.out_dict['valid'] = True
         self.ready = True
         return None
     
@@ -115,9 +112,8 @@ class ObsStationary( ObsSimple ):
         value = proportion of observation."""
         #assume self.time = [ start_time, end_time ]
         #assume time recorded as [ int(YYYYMMDD), int(HHMMSS) ]
-        later = [ self.time[0][i] < self.time[1][i] for i in [0,1] ]
-        if not any(later):
-            self.coord_fail()
+        if self.time[1][0] < self.time[0][0]:
+            self.coord_fail( 'invalid time interval' )
             return None
         start = model_space.get_step( self.time[0] )
         end = model_space.get_step( self.time[1] )
@@ -126,7 +122,9 @@ class ObsStationary( ObsSimple ):
         epos = model_space.get_step_pos( self.time[1][1] )
         if start == end:
             #special case, handled seperatly
-            assert spos < epos, 'invalid time interval'
+            if epos <= spos:
+                self.coord_fail( 'invalid time interval' )
+                return None
             final = model_space.next_step( end )
             sval = min(epos, 0.5) - min(spos, 0.5)
             fval = max(epos-0.5, 0) - max(spos-0.5, 0)
@@ -145,6 +143,15 @@ class ObsStationary( ObsSimple ):
         if epos > 0.5:
             final = model_space.next_step( cur )
             result[ final ] = 0.5 - epos
+        
+        #check obs falls within date range
+        date_set = set( k[0] for k in result.keys() )
+        sdate = model_space.sdate
+        edate = model_space.edate
+        if not all( sdate <= d <= edate for d in date_set ):
+            self.coord_fail( 'outside date range' )
+            return None
+        
         total = sum( result.values() )
         return { k: float(v)/total for k,v in result.items() }
     
@@ -158,7 +165,7 @@ class ObsStationary( ObsSimple ):
         try:
             coord = model_space.grid.get_cell( stationary_point )
         except AssertionError:
-            self.coord_fail()
+            self.coord_fail( 'outside grid position' )
             return None
         col,row,lay = coord
         #stationary obs only has one location
@@ -189,18 +196,14 @@ class ObsInstantRay( ObsSimple ):
         """Process the observation with the models parameters"""
         
         if self.spcs not in model_space.spcs:
-            self.coord_fail()
+            self.coord_fail( 'invalid spcs' )
             return None
         
         loc_dict = self.map_location( model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
         
         time_dict = self.map_time( model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
         
         proportion = {}
         for time_k, time_v in time_dict.items():
@@ -209,9 +212,8 @@ class ObsInstantRay( ObsSimple ):
                 proportion[ coord ] = time_v * loc_v
         
         visibility = self.get_visibility( proportion.keys(), model_space )
-        if self.out_dict.get('valid',True) is False:
-            #process has already failed
-            return None
+        if self.valid is False: return None
+        
         #dicts must have identical keys
         assert set( visibility ) == set( proportion )
         weight_grid = {}
@@ -221,7 +223,6 @@ class ObsInstantRay( ObsSimple ):
                 return None
             weight_grid[ key ] = visibility[ key ] * proportion[ key ]
         self.out_dict['weight_grid'] = weight_grid
-        self.out_dict['valid'] = True
         self.ready = True
         return None
     
@@ -236,8 +237,17 @@ class ObsInstantRay( ObsSimple ):
         end_val = model_space.get_step_pos( self.time[1] )
         start_val = 1 - end_val
         result = { start : start_val }
-        if end_val != 0.:
+        if end_val > 0.:
             result[ end ] = end_val
+        
+        #check obs falls within date range
+        date_set = set( k[0] for k in result.keys() )
+        sdate = model_space.sdate
+        edate = model_space.edate
+        if not all( sdate <= d <= edate for d in date_set ):
+            self.coord_fail( 'outside date range' )
+            return None
+        
         return result
     
     def map_location( self, model_space ):
@@ -252,7 +262,7 @@ class ObsInstantRay( ObsSimple ):
         try:
             xyz_dict = model_space.grid.get_weight( ray_path )
         except AssertionError:
-            self.coord_fail()
+            self.coord_fail( 'outside grid area' )
             return None
         #convert x-y-z into lay-row-col
         result = { (lay,row,col):val
@@ -300,7 +310,7 @@ class ObsMultiRay( ObsInstantRay ):
             try:
                 r_dict = model_space.grid.get_weight( ray_path )
             except AssertionError:
-                self.coord_fail()
+                self.coord_fail( 'outside grid area' )
                 return None
             for k,v in r_dict.items():
                 prev = total_dict.get( k, 0 )

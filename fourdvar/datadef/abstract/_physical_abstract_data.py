@@ -9,22 +9,18 @@ import numpy as np
 import os
 
 import _get_root
-from fourdvar.datadef.abstract._interface_data import InterfaceData
+from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.archive_handle import get_archive_path
-from fourdvar.util.file_handle import save_obj
 import fourdvar.util.date_handle as dt
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
-class PhysicalAbstractData( InterfaceData ):
+class PhysicalAbstractData( FourDVarData ):
     """Parent for PhysicalData and PhysicalAdjointData
     """
-    
-    #add to the require set all the attributes that must be defined for an AdjointForcingData to be valid.
-    require = InterfaceData.add_require( 'emis', 'icon' )
     
     #Parameters
     tsec = None        #No. seconds per timestep
@@ -52,7 +48,6 @@ class PhysicalAbstractData( InterfaceData ):
         """
         #icon_dict: {var-name: np.array([layer, row, column])
         #emis_dict: {var-name: np.array([time, layer, row, column])
-        InterfaceData.__init__( self )
         
         #params must all be set and not None (usally using cls.from_file)
         self.assert_params()
@@ -103,12 +98,13 @@ class PhysicalAbstractData( InterfaceData ):
         if os.path.isfile( save_path ):
             os.remove( save_path )
         #construct netCDF file
-        attr_dict = { 'SDATE': int( dt.replace_date('<YYYYDDD>',dt.start_date) ) }
+        attr_dict = { 'SDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.start_date) ),
+                      'EDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.end_date) ) }
         minute, second = divmod( self.tsec, 60 )
         hour, minute = divmod( minute, 60 )
         day, hour = divmod( hour, 24 )
         hms = int( '{:02}{:02}{:02}'.format( hour, minute, second ) )
-        attr_dict[ 'TSTEP' ] = np.array( [day, hms] )
+        attr_dict[ 'TSTEP' ] = np.array( [np.int32(day), np.int32(hms)] )
         var_list =''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
         attr_dict[ 'VAR-LIST' ] = var_list
         dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
@@ -149,6 +145,7 @@ class PhysicalAbstractData( InterfaceData ):
         
         #get all data/parameters from file
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
+        edate = str( ncf.get_attr( filename, 'EDATE' ) )
         tstep = ncf.get_attr( filename, 'TSTEP' )
         day, step = int(tstep[0]), int(tstep[1])
         tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
@@ -164,6 +161,10 @@ class PhysicalAbstractData( InterfaceData ):
             emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
+        msg = 'invalid start date'
+        assert sdate == dt.replace_date( '<YYYYDDD>', dt.start_date ), msg
+        msg = 'invalid end date'
+        assert edate == dt.replace_date( '<YYYYDDD>', dt.end_date ), msg
         icon_shape = [ i.shape for i in icon_dict.values() ]
         emis_shape = [ e.shape for e in emis_dict.values() ]
         for ishape, eshape in zip( icon_shape[1:], emis_shape[1:] ):
@@ -184,8 +185,6 @@ class PhysicalAbstractData( InterfaceData ):
             assert ( emis_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values.
-        dt.set_start_date( sdate, method='<YYYYDDD>' )
-        dt.set_end_date( (tsec*(estep) - daysec), method='start+tsec' )
         par_name = ['tsec','nstep','nlays_icon','nlays_emis',
                     'nrows','ncols','spcs','icon_unc','emis_unc']
         par_val = [tsec, estep, ilays, elays,
@@ -223,8 +222,6 @@ class PhysicalAbstractData( InterfaceData ):
         icon_val = 0
         emis_val = 0
         
-        msg = 'Must set date_handle start_date & end_date.'
-        assert dt.start_date is not None and dt.end_date is not None, msg
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
         

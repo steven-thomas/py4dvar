@@ -35,7 +35,7 @@ class ObsOCO2( ObsMultiRay ):
         ObsMultiRay.model_process( self, model_space )
         #now created self.out_dict[ 'weight_grid' ]
         #need to rescale weight_grid so that values sum to 1
-        if self.out_dict[ 'valid' ] is True:
+        if self.valid is True:
             tmp = self.out_dict[ 'weight_grid' ].copy()
             total = sum( tmp.values() )
             self.out_dict[ 'weight_grid' ] = { k:(v/total) for k,v in tmp.items() }

@@ -9,19 +9,16 @@ import numpy as np
 import os
 
 import _get_root
-from fourdvar.datadef.abstract._interface_data import InterfaceData
+from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
-class ModelInputData( InterfaceData ):
+class ModelInputData( FourDVarData ):
     """application
     """
-    
-    #add to the require set all the attributes that must be defined for an ModelInputData to be valid.
-    require = InterfaceData.add_require( 'file_data' )
     
     def __init__( self, **kwargs ):
         """

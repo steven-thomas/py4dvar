@@ -2,9 +2,10 @@
 import datetime as dt
 
 import _get_root
+import fourdvar.params.date_defn as defn
 
-start_date = None
-end_date = None
+start_date = dt.datetime.strptime( str( defn.start_date ), '%Y%m%d' ).date()
+end_date = dt.datetime.strptime( str( defn.end_date ), '%Y%m%d' ).date()
 
 #map string tags to date conversion functions
 tag_map = {
@@ -13,64 +14,6 @@ tag_map = {
     '<YESTERDAY>': lambda date: ( date - dt.timedelta(days=1) ).strftime( '%Y%m%d' ),
     '<TOMORROW>': lambda date: ( date + dt.timedelta(days=1) ).strftime( '%Y%m%d' )
 }
-
-def set_start_date( arg, method='<YYYYMMDD>' ):
-    """
-    extension: set the start_date attribute globally
-    input: arg_val, string
-    output: None
-    
-    notes: can implement multiple methods of defining start_date
-    method = '<YYYYDDD>':
-        arg is YearJulianDay as a single integer (eg: 2007161)
-    method = '<YYYYMMDD>':
-        arg is YearMonthDay as a single integer (eg: 20070614)
-    """
-    global start_date
-    
-    if method == '<YYYYDDD>':
-        arg = str( arg )
-        arg_date = dt.datetime.strptime( arg, '%Y%j' ).date()
-    elif method == '<YYYYMMDD>':
-        arg = str( arg )
-        arg_date = dt.datetime.strptime( arg, '%Y%m%d' ).date()
-    else:
-        raise ValueError( 'input method {} is not valid'.format( method ) )
-    
-    msg = 'cannot change start_date'
-    assert start_date is None or arg_date == start_date, msg
-    start_date = arg_date
-    return None
-
-def set_end_date( arg, method='<YYYYMMDD>' ):
-    """
-    extension: set the end_date attribute globally
-    input: arg_val, string
-    output: None
-    
-    notes: can implement multiple methods of defining start_date
-    method = 'start+tsec':
-        arg is integer No. seconds from start_date to end_date
-    method = '<YYYYMMDD>':
-        arg is YearMonthDay as a single integer (eg: 20070614)
-    """
-    global start_date
-    global end_date
-    
-    if method == 'start+tsec':
-        assert start_date is not None, 'Must define start_date first'
-        arg = int( arg )
-        arg_date = start_date + dt.timedelta( seconds=arg )
-    elif method == '<YYYYMMDD>':
-        arg = str( arg )
-        arg_date = dt.datetime.strptime( arg, '%Y%m%d' ).date()
-    else:
-        raise ValueError( 'input method {} is not valid'.format( method ) )
-    
-    msg = 'cannot change end_date'
-    assert end_date is None or arg_date == end_date, msg
-    end_date = arg_date
-    return None
 
 def get_datelist():
     """

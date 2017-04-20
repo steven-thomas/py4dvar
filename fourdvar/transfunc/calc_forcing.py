@@ -8,7 +8,6 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
-import fourdvar.util.obs_handle as obs_handle
 
 def calc_forcing( w_residual ):
     """
@@ -17,14 +16,14 @@ def calc_forcing( w_residual ):
     output: AdjointForcingData
     """
     
-    obs_by_date = obs_handle.get_obs_by_date( w_residual )
     kwargs = AdjointForcingData.get_kwargs_dict()
-    for ymd, obslist in obs_by_date.items():
-        spcs_dict = kwargs[ 'force.'+ymd ]
-        for obs in obslist:
-            for coord,weight in obs.weight_grid.items():
+    for ymd, ilist in ObservationData.ind_by_date.items():
+        spc_dict = kwargs[ 'force.'+ymd ]
+        for i in ilist:
+            for coord,weight in ObservationData.weight_grid[i].items():
                 if str( coord[0] ) == ymd:
                     step,lay,row,col,spc = coord[1:]
-                    w_val = obs.value * weight
-                    spcs_dict[spc][step,lay,row,col] += w_val
+                    w_val = w_residual.value[i] * weight
+                    spc_dict[spc][step,lay,row,col] += w_val
+    
     return AdjointForcingData( **kwargs )

@@ -7,6 +7,11 @@ from copy import deepcopy
 
 from ray_trace import Grid
 
+import _get_root
+import fourdvar.params.cmaq_config as cmaq_config
+import fourdvar.params.template_defn as template_defn
+import fourdvar.util.date_handle as date_handle
+
 #convert HHMMSS into sec
 tosec = lambda t: 3600*(int(t)//10000) + 60*( (int(t)//100) % 100 ) + (int(t)%100)
 #No.seconds in a day
@@ -16,17 +21,31 @@ earth_rad = 6370000
 
 class ModelSpace( object ):
     
-    gridmeta_keys = [ 'STIME', 'TSTEP',
-                      'GDTYP', 'P_ALP', 'P_BET', 'P_GAM',
+    gridmeta_keys = [ 'STIME', 'TSTEP', 'GDTYP', 'P_ALP', 'P_BET', 'P_GAM',
                       'XCENT', 'YCENT', 'XORIG', 'YORIG', 'XCELL', 'YCELL',
-                      'NROWS', 'NCOLS', 'NLAYS',
-                      'VGTYP', 'VGTOP', 'VGLVLS',
+                      'NROWS', 'NCOLS', 'NLAYS', 'VGTYP', 'VGTOP', 'VGLVLS',
                       'NVARS', 'VAR-LIST' ]
     
-    def __init__( self, METCRO3D, METCRO2D, CONCOUT ):
+    @classmethod
+    def create_from_fourdvar( cls ):
+        sdate = date_handle.start_date
+        edate = date_handle.end_date
+        METCRO3D = date_handle.replace_date( cmaq_config.met_cro_3d, sdate )
+        METCRO2D = date_handle.replace_date( cmaq_config.met_cro_2d, sdate )
+        CONC = template_defn.conc
+        date_range = [ sdate, edate ]
+        return cls( METCRO3D, METCRO2D, CONC, date_range )
+    
+    def __init__( self, METCRO3D, METCRO2D, CONC, date_range ):
+        """
+        METCRO3D = path to any single METCRO3D file
+        METCRO2D = path to any single METCRO2D file
+        CONC = path to any concentration file output by CMAQ
+        date_range = [ start_date, end_date ] (as datetime objects)
+        """
         #read netCDF files
         self.gridmeta = {}
-        with Dataset( CONCOUT, 'r' ) as f:
+        with Dataset( CONC, 'r' ) as f:
             for key in self.gridmeta_keys:
                 self.gridmeta[ key ] = f.getncattr( key )
         with Dataset( METCRO3D, 'r' ) as f:
@@ -34,6 +53,10 @@ class ModelSpace( object ):
             layer_height = np.append( np.zeros(1), zf )
         with Dataset( METCRO2D, 'r' ) as f:
             surface_pressure = f.variables['PRSFC'][:].mean()
+        
+        #date co-ords are int YYYYMMDD format
+        self.sdate = int( date_range[0].strftime('%Y%m%d') )
+        self.edate = int( date_range[1].strftime('%Y%m%d') )
         
         #get pressure (Pa) for each layer boundary
         assert ( self.gridmeta[ 'VGTYP' ] == 7 ), 'Invalid VGTYP'
@@ -78,7 +101,7 @@ class ModelSpace( object ):
     def valid_coord( self, coord ):
         """return True if a coord is within the grid"""
         date,step,lay,row,col,spc = coord
-        #don't test date -> any YYYYMMDD may be valid
+        if not (self.sdate <= date <= self.edate): return False
         #fourdvar doesn't allow obs at t0 (move to previous day instead)
         if not (1 <= step < self.nstep): return False
         if not (0 <= lay < self.nlay): return False
@@ -157,5 +180,8 @@ class ModelSpace( object ):
         top_point = ( x0+xd, y0+yd, self.max_height )
         return top_point
     
-    def get_gridmeta( self ):
-        return deepcopy( self.gridmeta )
+    def get_domain( self ):
+        domain = deepcopy( self.gridmeta )
+        domain['SDATE'] = self.sdate
+        domain['EDATE'] = self.edate
+        return domain

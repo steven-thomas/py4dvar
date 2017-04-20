@@ -7,47 +7,32 @@ import numpy as np
 from copy import deepcopy
 
 import _get_root
-from fourdvar.datadef.abstract._single_data import SingleData
-from fourdvar.datadef.abstract._extractable_data import ExtractableData
+from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.file_handle as fh
+import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 
-class ObservationSingle( SingleData ):
-    """application
-    """
-    
-    #add to the require set all the attributes that must be defined for an ObservationSingle to be valid.
-    #require = SingleData.add_require( 'time', 'kind' )
-    
-    def __init__( self, **kwargs ):
-        """
-        application: create a record for a single observation
-        input: user-defined (must include 'value')
-        output: None
-        
-        notes: any provided keyword argument is stored as an attribute
-        """
-        # time is in No. of steps (int)
-        #kwargs[ 'value' ] = np.float64( kwargs[ 'value'] )
-        
-        #cmaq doesn't use forcing values at slice 0 therefore any obs at slice 0 are invalid
-        t = set( c[1] for c in kwargs['weight_grid'].keys() )
-        if 0 in t:
-            kwargs['valid'] = False
-        
-        #this statement must be called.
-        SingleData.__init__( self, **kwargs )
-        return None
+import setup_logging
+logger = setup_logging.get_logger( __file__ )
 
-class ObservationData( ExtractableData ):
+class ObservationData( FourDVarData ):
     """application: vector of observations, observed or simulated"""
     
-    archive_name = 'obsset.pickle'
+    #Parameters
+    length = None
+    uncertainty = None
+    weight_grid = None
+    misc_meta = None
+    grid_attr = None
+    ind_by_date = None
+    spcs = None
     
-    def __init__( self, griddata, obs_list ):
+    archive_name = 'obsset.pickle.zip'
+    
+    def __init__( self, val_list ):
         """
         application: create an instance of ObservationData
         input: user-defined.
@@ -55,37 +40,27 @@ class ObservationData( ExtractableData ):
         
         eg: new_obs =  datadef.ObservationData( [{...}, {...}, ...] )
         
-        notes: Currently input is a list of dicts, each dict contains the attributes of an observation.
+        notes: Currently input is a list of floats.
+               Metadata created by from_file()
         """
-        #a 'valid'==False obs might not have a value, it needs one.
-        for obs in obs_list:
-            if obs['valid'] is False and 'value' not in obs.keys():
-                obs[ 'value' ] == None
-        dataset = [ ObservationSingle( **obs_dict ) for obs_dict in obs_list ]
-        
-        #this statement must be called.
-        ExtractableData.__init__( self, dataset )
-        self.griddata = deepcopy( griddata )
+        #params must all be set and not None
+        self.assert_params()
+        assert len( val_list ) == self.length, 'invalid list of values'
+        self.value = [ float( v ) for v in val_list ]
         return None
     
-    def get_vector( self, attr='value', inc_invalid=False ):
+    def get_vector( self ):
         """
-        extension: add option to get_vector to control use of obd 'valid' flag
-        input: string, bool
-        output: list
-        
-        notes: this overloads ExtractableData.get_vector()
+        framework: return the values of ObservationData as a 1D numpy array
+        input: None
+        output: np.ndarray
         """
-        output = ExtractableData.get_vector( self, attr )
-        if inc_invalid is False:
-            valid = ExtractableData.get_vector( self, 'valid' )
-            output = [ val for val,flag in zip( output, valid ) if flag is True ]
-        return output
+        return np.array( self.value )
         
-    def archive( self, pathname=None ):
+    def archive( self, name=None ):
         """
         extension: save a copy of data to archive/experiment directory
-        input: string or None(path/to/save.pickle)
+        input: string or None
         output: None
 
         notes: this will overwrite any clash in namespace.
@@ -93,49 +68,37 @@ class ObservationData( ExtractableData ):
         output file is in acceptable format for from_file method.
         """
         save_path = get_archive_path()
-        if pathname is None:
-            pathname = self.archive_name
-        save_path = os.path.join( save_path, pathname )
+        if name is None:
+            name = self.archive_name
+        save_path = os.path.join( save_path, name )
         
-        obs_list = [ deepcopy( obs.__dict__ ) for obs in self.dataset ]
-        fh.save_obj( self.griddata, save_path, overwrite=True )
-        fh.save_obj( obs_list, save_path, overwrite=False )
+        domain = deepcopy( self.grid_attr )
+        domain['SDATE'] = np.int32(dt.replace_date('<YYYYMMDD>',dt.start_date))
+        domain['EDATE'] = np.int32(dt.replace_date('<YYYYMMDD>',dt.end_date))
+        
+        obs_list = []
+        iter_obj = zip( self.value, self.uncertainty,
+                        self.weight_grid, self.misc_meta )
+        for val,unc,weight,misc in iter_obj:
+            odict = deepcopy( misc )
+            odict[ 'value' ] = val
+            odict[ 'uncertainty' ] = unc
+            odict[ 'weight_grid' ] = weight
+            obs_list.append( odict )
+        
+        archive_list = [ domain ] + obs_list
+        fh.save_list( archive_list, save_path )
         return None
     
-    def check_grid( self, other_grid=template.conc ):
+    @classmethod
+    def check_grid( cls, other_grid=template.conc ):
         """
         extension: check that griddata matches other
         input: string(path/to/conc.ncf) <OR> dict
         output: Boolean
         """
-        attr_list = self.griddata.keys()
-        return ncf.match_attr( self.griddata, other_grid, attr_list )
-    
-    def check_meta( self, other=None ):
-        """
-        extension: check that 2 ObservationData have compatible metadata
-        input: ObservationData
-        output: Boolean
-        """
-        if other is None:
-            other = ObservationData.load_blank( template.obsmeta )
-        #must have the same griddata
-        if self.check_grid( other.griddata ) is False:
-            return False
-        
-        for s_obs, o_obs in zip( self.dataset, other.dataset ):
-            s_obs = deepcopy( s_obs.__dict__ )
-            o_obs = deepcopy( o_obs.__dict__ )
-            #handle special attributes: valid & value are allowed to be different.
-            s_obs.pop( 'valid' )
-            o_obs.pop( 'valid' )
-            s_obs.pop( 'value' )
-            o_obs.pop( 'value' )
-            
-            shared_attr = list( set( s_obs.keys() ) & set( o_obs.keys() ) )
-            if ncf.match_attr( s_obs, o_obs, shared_attr ) is False:
-                return False
-        return True
+        attr_list = cls.grid_attr.keys()
+        return ncf.match_attr( cls.grid_attr, other_grid, attr_list )
     
     @classmethod
     def error_weight( cls, res ):
@@ -146,11 +109,8 @@ class ObservationData( ExtractableData ):
         
         eg: weighted_residual = datadef.ObservationData.weight( residual )
         """
-        weighted = cls.clone( res )
-        for obs in weighted.dataset:
-            if obs.valid is True:
-                obs.value = obs.value / (obs.uncertainty ** 2)
-        return weighted
+        weighted = [ v/(u**2) for v,u in zip( res.value, res.uncertainty ) ]
+        return cls( weighted )
     
     @classmethod
     def get_residual( cls, observed, simulated ):
@@ -161,25 +121,8 @@ class ObservationData( ExtractableData ):
         
         eg: residual = datadef.ObservationData.get_residual( observed_obs, simulated_obs )
         """
-        
-        observed.check_meta( simulated )
-        
-        arglist = []
-        for obs, sim in zip( observed.dataset, simulated.dataset ):
-            obs = deepcopy( obs.__dict__ )
-            sim = deepcopy( sim.__dict__ )
-            #handle special attributes:
-            ovalid, svalid = obs.pop( 'valid' ), sim.pop( 'valid' )
-            ovalue, svalue = obs.pop( 'value' ), sim.pop( 'value' )
-            valid = (ovalid is True) and (svalid is True)
-            value = (svalue - ovalue) if valid is True else None
-            
-            res_dict = { 'valid': valid, 'value': value }
-            res_dict.update( obs )
-            res_dict.update( sim )
-            arglist.append( res_dict )
-        griddata = deepcopy( observed.griddata )
-        return cls( griddata, arglist )
+        res = [ s - o for o,s in zip( observed.value, simulated.value ) ]
+        return cls( res )
     
     @classmethod
     def from_file( cls, filename ):
@@ -190,22 +133,56 @@ class ObservationData( ExtractableData ):
         
         eg: observed = datadef.ObservationData.from_file( "saved_obs.data" )
         """
-        griddata = fh.load_obj( filename, close=False )
-        obs_list = fh.load_obj( filename, close=True )
-        return cls( griddata, obs_list )
-    
-    @classmethod
-    def load_blank( cls, filename ):
-        """
-        extension: create an ObservationData with None values
-        input: iterable of dicts
-        output: ObservationData
-        """
-        griddata = fh.load_obj( filename, close=False )
-        obs_list = fh.load_obj( filename, close=True )
-        for obs_dict in obs_list:
-            obs_dict[ 'value' ] = None
-        return cls( griddata, obs_list )
+        datalist = fh.load_list( filename )
+        
+        domain = datalist[0]
+        sdate = domain.pop('SDATE')
+        edate = domain.pop('EDATE')
+        if cls.grid_attr is not None:
+            logger.warn( 'Overwriting ObservationData.grid_attr' )
+        cls.grid_attr = domain
+        cls.check_grid()
+        msg = 'obs data does not match params date'
+        assert sdate == np.int32( dt.replace_date('<YYYYMMDD>',dt.start_date) ), msg
+        assert edate == np.int32( dt.replace_date('<YYYYMMDD>',dt.end_date) ), msg
+        
+        obs_list = datalist[1:]
+        unc = [ odict.pop('uncertainty') for odict in obs_list ]
+        weight = [ odict.pop('weight_grid') for odict in obs_list ]
+        val = [ odict.pop('value') for odict in obs_list ]
+        
+        if cls.length is not None:
+            logger.warn( 'Overwriting ObservationData.length' )
+        cls.length = len( obs_list )
+        if cls.uncertainty is not None:
+            logger.warn( 'Overwriting ObservationData.uncertainty' )
+        cls.uncertainty = unc
+        if cls.weight_grid is not None:
+            logger.warn( 'Overwriting ObservationData.weight_grid' )
+        cls.weight_grid = weight
+        if cls.misc_meta is not None:
+            logger.warn( 'Overwriting ObservationData.misc_meta' )
+        cls.misc_meta = obs_list
+        
+        all_spcs = set()
+        for w in cls.weight_grid:
+            spcs = set( str( coord[-1] ) for coord in w.keys() )
+            all_spcs = all_spcs.union( spcs )
+        if cls.spcs is not None:
+            logger.warn( 'Overwriting ObservationData.spcs' )
+        cls.spcs = sorted( list( all_spcs ) )
+        
+        dlist = [ dt.replace_date( '<YYYYMMDD>', d ) for d in dt.get_datelist() ]
+        ind_by_date = { d: [] for d in dlist }
+        for i, weight in enumerate( cls.weight_grid ):
+            dates = set( str( coord[0] ) for coord in weight.keys() )
+            for d in dates:
+                ind_by_date[ d ].append( i )
+        if cls.ind_by_date is not None:
+            logger.warn( 'Overwriting ObservationData.ind_by_date' )
+        cls.ind_by_date = ind_by_date
+        
+        return cls( val )
     
     @classmethod
     def example( cls ):
@@ -214,17 +191,30 @@ class ObservationData( ExtractableData ):
         input: None
         output: ObservationData
         
-        eg: mock_obs = datadef.ObservationData.example()
-        
         notes: only used for testing.
         """
         example_value = 1
-        
-        obs_set = cls.load_blank( template.obsmeta )
-        for obs in obs_set.dataset:
-            if obs.valid is True:
-                obs.value = example_value
-        return obs_set
+        obsval = np.zeros( cls.length ) + example_value
+        return cls( obsval )
+    
+    @classmethod
+    def assert_params( cls ):
+        """
+        extension: assert that all needed observation parameters are valid
+        input: None
+        output: None
+        """
+        assert cls.length is not None, 'length is not set'
+        assert cls.uncertainty is not None, 'uncertainty is not set'
+        assert cls.weight_grid is not None, 'weight_grid is not set'
+        assert cls.misc_meta is not None, 'misc_meta is not set'
+        assert cls.grid_attr is not None, 'grid_attr is not set'
+        assert cls.ind_by_date is not None, 'ind_by_date is not set'
+        assert cls.spcs is not None, 'spcs is not set'
+        assert len(cls.uncertainty) == cls.length, 'invalid uncertainty length'
+        assert len(cls.weight_grid) == cls.length, 'invalid weight_grid length'
+        assert len(cls.misc_meta) == cls.length, 'invalid misc_meta length'
+        return None
     
     @classmethod
     def clone( cls, src ):
@@ -239,6 +229,4 @@ class ObservationData( ExtractableData ):
         """
         msg = 'cannot clone {0}'.format( src.__class__.__name__ )
         assert isinstance( src, cls ), msg
-        #obs does not contain any reference to filepaths
-        #therefore deepcopy is sufficient
-        return deepcopy( src )
+        return cls( src.value )

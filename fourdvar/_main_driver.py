@@ -34,13 +34,13 @@ def cost_func( vector ):
     residual = d.ObservationData.get_residual( observed, simulated )
     w_residual = d.ObservationData.error_weight( residual )
     
-    bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
-    un_vector = np.array( unknown.get_vector( 'value' ) )
+    bg_vector = bg_unknown.get_vector()
+    un_vector = unknown.get_vector()
     
     bg_cost = 0.5 * np.sum( ( un_vector - bg_vector )**2 )
     
-    res_vector = np.array( residual.get_vector( 'value' ) )
-    wres_vector = np.array( w_residual.get_vector( 'value' ) )
+    res_vector = residual.get_vector()
+    wres_vector = w_residual.get_vector()
     ob_cost = 0.5 * np.sum( res_vector * wres_vector )
     cost = bg_cost + ob_cost
     
@@ -82,10 +82,10 @@ def gradient_func( vector ):
     phys_sense = transform( sensitivity, d.PhysicalAdjointData )
     un_gradient = transform( phys_sense, d.UnknownData )
     
-    bg_vector = np.array( bg_unknown.get_vector( 'value' ) )
-    un_vector = np.array( unknown.get_vector( 'value' ) )
+    bg_vector = bg_unknown.get_vector()
+    un_vector = unknown.get_vector()
     bg_grad = un_vector - bg_vector
-    gradient = bg_grad + np.array( un_gradient.get_vector( 'value' ) )
+    gradient = bg_grad + un_gradient.get_vector()
     
     unknown.cleanup()
     physical.cleanup()
@@ -114,7 +114,7 @@ def get_answer():
     bg_unknown = transform( bg_physical, d.UnknownData )
     
     user_driver.setup()
-    start_vector = np.array( bg_unknown.get_vector( 'value' ) )
+    start_vector = bg_unknown.get_vector()
     min_output = user_driver.minim( cost_func, gradient_func, start_vector )
     out_vector = min_output[0]
     out_unknown = d.UnknownData( out_vector )

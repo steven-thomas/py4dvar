@@ -24,7 +24,7 @@ def uncondition( unknown ):
     total_len = len( p.spcs ) * ( icon_len + emis_len )
     del p
     
-    vals = np.array( unknown.get_vector( 'value' ) )
+    vals = unknown.get_vector()
     icon_dict = {}
     emis_dict = {}
     i = 0

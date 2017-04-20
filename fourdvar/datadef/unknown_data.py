@@ -6,26 +6,14 @@ is the pre-conditioned form of physical data, can be converted back and forth vi
 import numpy as np
 
 import _get_root
-from fourdvar.datadef.abstract._single_data import SingleData
-from fourdvar.datadef.abstract._extractable_data import ExtractableData
+from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
-class UnknownSingle( SingleData ):
-    """framework: single point in the unknown vector space"""
-    def __init__( self, val ):
-        """
-        framework: create a record for a single unknown
-        input: scaler
-        output: None
-        """
-        SingleData.__init__( self, value=val )
-        return None
-
-
-class UnknownData( ExtractableData ):
+class UnknownData( FourDVarData ):
     """
     application: vector of unknowns/optimization values
-    note: all methods except 'clone' are already framework"""
-    def __init__( self, vals ):
+    note: all methods except 'clone' are already framework
+    """
+    def __init__( self, values ):
         """
         framework: create an instance of UnknownData
         input: iterable of scalars (eg: list of floats)
@@ -33,39 +21,16 @@ class UnknownData( ExtractableData ):
         
         eg: new_unknown =  datadef.UnknownData( [ val1, val2, ... ] )
         """
-        val_arr = np.array( vals, dtype='float64' )
-        dataset = [ UnknownSingle( val ) for val in val_arr ]
-        ExtractableData.__init__( self, dataset )
+        self.value_arr = np.array( values, dtype='float64' )
         return None
     
-    def perturb( self ):
+    def get_vector( self ):
         """
-        framework: change every value by a random amount normally distributed with a standard deviation of 1.
+        framework: return the values in UnknownData as a 1D numpy array
         input: None
-        output: None
-        
-        eg: test_unknown.perturb()
-        
-        notes: only used for accuracy testing.
-               unknowns generated from pre-conditioning will have a covariance error of 1 by construction.
+        output: np.ndarray
         """
-        for item in self.dataset:
-            item.value += np.random.normal( 0, 1 )
-        return None
-    
-    @classmethod
-    def example( cls ):
-        """
-        application: return a valid example with arbitrary values.
-        input: None
-        output: UnknownData
-        
-        eg: mock_unknown = datadef.UnknownData.example()
-        
-        notes: only used for testing.
-        """
-        #return cls( arglist )
-        return None
+        return np.array( self.value_arr )
     
     @classmethod
     def clone( cls, source ):
@@ -79,5 +44,5 @@ class UnknownData( ExtractableData ):
         notes: only used for testing.
         """
         assert isinstance( source, cls )
-        return cls( source.get_vector( 'value' ) )
+        return cls( source.get_vector() )
 

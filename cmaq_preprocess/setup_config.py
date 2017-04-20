@@ -22,14 +22,6 @@ match_emis_stime = True
 match_emis_tstep = True
 
 
-# -START/END DATES-
-
-# use 'find' to search for dates matching emission filename pattern
-# use str(YYYYMMDD) for custom values.  eg: '20070614'
-start_date = 'find'
-end_date = 'find'
-
-
 # -PRIOR/PHYSICAL_DATA SETTINGS-
 
 #filepath to save new prior file to
