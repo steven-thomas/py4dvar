@@ -16,12 +16,12 @@ import _get_root
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq
+import fourdvar.params.input_defn as input_defn
 from fourdvar._transform import transform
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
-data_dir = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data'
 observed = None
 background = None
 iter_num = 0
@@ -55,12 +55,9 @@ def get_background():
     output: PhysicalData (prior estimate)
     """
     global background
-    global data_dir
-    
-    bg_file = os.path.join( data_dir, 'prior.ncf' )
     
     if background is None:
-        background = d.PhysicalData.from_file( bg_file )
+        background = d.PhysicalData.from_file( input_defn.prior_file )
     return background
 
 def get_observed():
@@ -70,12 +67,9 @@ def get_observed():
     output: ObservationData
     """
     global observed
-    global data_dir
-    
-    obs_file = os.path.join( data_dir, 'oco2_observed.pickle.zip' )
     
     if observed is None:
-        observed = d.ObservationData.from_file( obs_file )
+        observed = d.ObservationData.from_file( input_defn.obs_file )
     return observed
 
 def callback_func( current_vector ):

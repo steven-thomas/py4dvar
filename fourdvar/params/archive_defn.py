@@ -10,11 +10,12 @@ root_dir = os.path.join( '/', 'home', '563', 'spt563',
                          'fourdvar', 'data', 'archive' )
 
 #experiment name & name of directory to save results in
-experiment = 'test_tmp'
+experiment = 'core_test_baseline'
 
 #description is copied into a txt file in the experiment directory
 description = """This is a test of the fourdvar system.
-The description here should contain details of the experiment"""
+The description here should contain details of the experiment
+baseline for comparison: only run on one node"""
 #name of txt file holding the description, if empty string ('') file is not created.
 desc_name = 'description.txt'
 
