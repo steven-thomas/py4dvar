@@ -39,7 +39,7 @@ class Grid( object ):
         [ind1,ind2] = sorted([ind1,ind2])
         return self.edges[ dim ][ ind1:ind2 ]
     
-    def get_weight( self, ray ):
+    def get_ray_cell_dist( self, ray ):
         assert ray.ndim == self.ndim, 'dimension mis-match'
         ray_par_list = []
         for dim in range( self.ndim ):
@@ -56,8 +56,15 @@ class Grid( object ):
         for prev, point in zip( point_list[:-1], point_list[1:] ):
             mid_point = Point.mid_point( prev, point )
             co_ord = self.get_cell( mid_point )
-            weight = point.dist( prev ) / ray.length
-            result[ co_ord ] = result.get( co_ord, 0 ) + weight
+            #weight = point.dist( prev ) / ray.length
+            result[ co_ord ] = result.get( co_ord, 0 ) + point.dist( prev )
+        return result
+    
+    def get_weight( self, ray ):
+        dist_dict = self.get_ray_cell_dist( ray )
+        result = {}
+        for k,v in dist_dict.items():
+            result[ k ] = v / ray.length
         return result
 
 class Ray( object ):

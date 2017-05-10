@@ -146,7 +146,8 @@ class ModelSpace( object ):
         p_arr = pressure_arr[::-1]
         v_arr = pressure_arr[::-1]
         interped = []
-        for p in self.pressure:
+        mod_pressure = [ .5*(a+b) for a,b in zip(self.pressure[:-1],self.pressure[1:]) ]
+        for p in mod_pressure:
             if p <= p_arr[0]:
                 val = v_arr[0]
             elif p >= p_arr[-1]:
@@ -154,7 +155,7 @@ class ModelSpace( object ):
             else:
                 ind = np.searchsorted( p_arr, p ) - 1
                 pos = float(p-p_arr[ind]) / float( p_arr[ind+1] - p_arr[ind] )
-                val = v_arr[ind] + pos*(v_arr[ind+1]-v_arr[ind])
+                val = v_arr[ind]*(1-pos) + v_arr[ind+1]*pos
             interped.append( val )
         return interped
     

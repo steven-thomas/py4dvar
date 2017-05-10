@@ -25,6 +25,7 @@ class ObservationData( FourDVarData ):
     length = None
     uncertainty = None
     weight_grid = None
+    offset_term = None
     misc_meta = None
     grid_attr = None
     ind_by_date = None
@@ -78,12 +79,14 @@ class ObservationData( FourDVarData ):
         
         obs_list = []
         iter_obj = zip( self.value, self.uncertainty,
-                        self.weight_grid, self.misc_meta )
-        for val,unc,weight,misc in iter_obj:
+                        self.weight_grid, self.offset_term,
+                        self.misc_meta )
+        for val,unc,weight,off,misc in iter_obj:
             odict = deepcopy( misc )
             odict[ 'value' ] = val
             odict[ 'uncertainty' ] = unc
             odict[ 'weight_grid' ] = weight
+            odict[ 'offset_term' ] = off
             obs_list.append( odict )
         
         archive_list = [ domain ] + obs_list
@@ -150,6 +153,7 @@ class ObservationData( FourDVarData ):
         unc = [ odict.pop('uncertainty') for odict in obs_list ]
         weight = [ odict.pop('weight_grid') for odict in obs_list ]
         val = [ odict.pop('value') for odict in obs_list ]
+        off = [ odict.pop('offset_term') for odict in obs_list ]
         
         if cls.length is not None:
             logger.warn( 'Overwriting ObservationData.length' )
@@ -160,6 +164,9 @@ class ObservationData( FourDVarData ):
         if cls.weight_grid is not None:
             logger.warn( 'Overwriting ObservationData.weight_grid' )
         cls.weight_grid = weight
+        if cls.offset_term is not None:
+            logger.warn( 'Overwriting ObservationData.offset_term' )
+        cls.offset_term = off
         if cls.misc_meta is not None:
             logger.warn( 'Overwriting ObservationData.misc_meta' )
         cls.misc_meta = obs_list
@@ -207,6 +214,7 @@ class ObservationData( FourDVarData ):
         assert cls.length is not None, 'length is not set'
         assert cls.uncertainty is not None, 'uncertainty is not set'
         assert cls.weight_grid is not None, 'weight_grid is not set'
+        assert cls.offset_term is not None, 'offset_term is not set'
         assert cls.misc_meta is not None, 'misc_meta is not set'
         assert cls.grid_attr is not None, 'grid_attr is not set'
         assert cls.ind_by_date is not None, 'ind_by_date is not set'

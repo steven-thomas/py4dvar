@@ -37,15 +37,20 @@ elif source_type.lower() == 'directory':
 else:
     raise TypeError( "source_type '{}' not supported".format(source_type) )
 
-root_var = [ 'latitude',
+root_var = [ 'sounding_id',
+             'latitude',
              'longitude',
              'time',
              'solar_zenith_angle',
              'sensor_zenith_angle',
+             'warn_level',
              'xco2',
              'xco2_uncertainty',
+             'xco2_apriori',
              'pressure_levels',
-             'xco2_averaging_kernel' ]
+             'co2_profile_apriori',
+             'xco2_averaging_kernel',
+             'pressure_weight' ]
 sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle' ]
 obslist = []
 reject = {}

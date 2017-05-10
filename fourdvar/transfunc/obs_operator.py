@@ -19,7 +19,7 @@ def obs_operator( model_output ):
     
     ObservationData.assert_params()
     
-    val_list = [ 0 for _ in range( ObservationData.length ) ]
+    val_list = [ o for o in ObservationData.offset_term ]
     for ymd, ilist in ObservationData.ind_by_date.items():
         conc_file = model_output.file_data['conc.'+ymd]['actual']
         var_dict = ncf.get_variable( conc_file, ObservationData.spcs )
