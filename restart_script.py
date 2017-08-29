@@ -27,7 +27,7 @@ restart_log_fname = 'restart_log.txt'
 
 
 
-archive_path = os.path.join( archive_defn.root_dir, archive_defn.experiment )
+archive_path = os.path.join( archive_defn.archive_path, archive_defn.experiment )
 archive_handle.archive_path = archive_path
 archive_handle.finished_setup = True
 
