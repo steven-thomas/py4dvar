@@ -7,7 +7,7 @@ in /fourdvar/transfunc and return the output instance requested
 These transforms are:
 
 condition:          (PhysicalData -> UnknownData)
--apply and pre-conditioning to physical data and express information as a vector
+-apply pre-conditioning to physical data and express information as a vector
 
 uncondition:        (UnknownData -> PhysicalData)
 -undo pre-conditioning and re-attach lost meta-data, inverse of condition
@@ -27,6 +27,8 @@ calc_forcing:       (ObservationData -> AdjointForcingData)
 run_adjoint:        (AdjointForcingData -> SensitivityData)
 -run the adjoint of the forward model
 
-condition_adjoint:  (SensitivityData -> UnknownData)
--convert output of adjoint model into gradient vector in Unknown space
+map_sense:  	    (SensitivityData -> PhysicalAdjointData)
+-convert output of adjoint model into Physical space
 
+condition_adjoint:  (PhysicalAdjointData -> UnknownData)
+-apply pre-conditioning to physical gradient data and express information as a vector

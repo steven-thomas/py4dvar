@@ -1,4 +1,1 @@
-Objects and functions have some keywords in their docstrings
-framework - Should not require any changes to work with a new implementation.
-application - Will require user modification/definition for a specific application.
-extension - Used for the example application. May be useful for users but not required by the framework.
+I need to write a README at some point.

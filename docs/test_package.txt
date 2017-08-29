@@ -1,16 +1,10 @@
-the tests package has 3 subpackages included.
+the tests package has 2 main scripts.
 
-Skeleton:
-This is mine. Testing for the framework during development. users should not need this.
+test_cost_verbose:
+- replicates the cost function and saves the output of every step to <archive_dir>/tmp_cost_verbose/
 
-Function:
-This is for auto-testing user-required code.
-config_function_test.py holds the config for the user for a test run,
-whether to run the test or not, any setup requirements and any teardown requirements are defined here
-run the function test by calling > python run_function_test.py
+test_grad_verbose:
+- replicates the gradient function and saves the output of every step to <archive_dir>/tmp_grad_verbose/
 
-Accuracy:
-This is to assess the internal consistency of components.
-Tests in here output reports instead of a simple pass/fail check.
-e.g: does a calculated gradient produce a similar answer to a finite difference perturbation?
-
+select which test to run by modifing the submit.sh script and submit it as a job
+> qsub submit.sh

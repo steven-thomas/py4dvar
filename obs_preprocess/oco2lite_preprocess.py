@@ -8,6 +8,7 @@ from netCDF4 import Dataset
 
 import _get_root
 import fourdvar.util.file_handle as fh
+from fourdvar.params.root_path_defn import root_path
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -16,7 +17,7 @@ import fourdvar.util.file_handle as fh
 #'pattern': source = file_pattern_string, use all files that match pattern
 source_type = 'directory'
 
-source = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/oco2_data/processed'
+source = os.path.join( toor_path, 'SHORT_LN/obs_oco2_data' )
 
 output_file = './oco2_observed.pickle.zip'
 reject_log = './rejects.pickle.zip'

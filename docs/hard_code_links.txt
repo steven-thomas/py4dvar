@@ -1,0 +1,14 @@
+
+List of variables in PyDVAR that need to be set to local values (file-paths, etc.)
+
+obs_preprocess:
+  oco2lite_preprocess.py
+    source (file-path)
+
+cmaq_preprocess:
+  uncertainty.py
+    icon_unc (function)
+    emis_unc (function)
+
+fourdvar:
+  

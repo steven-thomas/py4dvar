@@ -1,53 +1,47 @@
 Spaces definitions
 
 Every 'space' data occupies as it is transformed through the model is defined as a python class.
-these classes are divided into 2 types: interface and extractable data
-
--interface data is for passing information from one transformation to another.
-It has no explicit requirements to its structure and can store information in whatever form is most convienent.
-(e.g: list of filenames, python dictionary, numpy matrix, etc.)
-
--extractable data must contain a dataset of single elements in an ordered list / vector.
-It has the get_vector method for extracting an attribute from the single elements as a python list
-and can also store metadata related to the list as a whole.
-(e.g: for a set of observations: the set has descriptions of the instrument used and the domain and each observation stores the measured value, location/time and associated error)
-
 
 These space are:
 
-PhysicalData (interface)
+PhysicalData:
 -representation of the dataset you are trying to optimize for.
 -is constructed as the background / prior estimate for the minimizer and from the UnknownData
 -is converted into UnknownData and ModelInputData
 (e.g: model parameters)
 
-UnknownData (extractable):
+UnknownData:
 -the vector form of PhysicalData
 -is already pre-conditioned (if applicable)
 -is run through the minimizer
 -is constructed from and converted into PhysicalData
 
-ModelInputData (interface)
+ModelInputData:
 -the required input for the forward model to run
 -is constructed from PhysicalData and converted into ModelOutputData
 (e.g: a list of filenames used by the forward model)
 
-ModelOutputData (interface)
+ModelOutputData:
 -the output of the forward model
 -is constructed from ModelInputData and converted into ObservationData
 
-ObservationData (extractable)
+ObservationData:
 -the set of observations either from measurements or simulated from the model
 -is constructed from ModelOutputData (observation operator) and as the observed data (from file)
 -is converted into residuals (also ObservationData) and AdjointForcingData
 
-AdjointForcingData (interface)
+AdjointForcingData:
 -the input of the adjoint model
 -is constructed from the weighted residuals of ObservationData
 -is converted into SensitivityData
 
-SensitivityData (interface)
+SensitivityData:
 -the output of the adjoint model
 -is constructed from AdjointForcingData
--is converted into UnknownData (as a gradient)
+-is converted into PhysicalAdjointData
 
+PhysicalAdjointData:
+-the sensitivity from the adjoint model in PhysicalData units
+-shares almost all properties with PhysicalData
+-is contructed from SensitivityData
+-is converted into UnknownData (as a gradient)

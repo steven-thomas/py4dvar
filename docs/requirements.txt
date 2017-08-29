@@ -1,0 +1,25 @@
+
+List of the external requirements to run fourdvar and its pre-prcessors
+All code is tested on Python 2.7 using conda/analysis27 on Raijin
+
+obs_preprocess:
+  non-standard python libraries:
+    numpy
+    netCDF4
+    pyproj
+  fourdvar params files:
+    cmaq_config.py
+    template_defn.py
+    date_defn.py
+
+cmaq_preprocess:
+  non-standard python libraries:
+    numpy
+    netCDF4
+  fourdvar params files:
+    cmaq_config.py
+    template_defn.py
+    date_defn.py
+
+fourdvar
+  

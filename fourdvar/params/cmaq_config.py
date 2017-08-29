@@ -2,16 +2,17 @@
 import os
 
 import _get_root
+from fourdvar.params.root_path_defn import root_path
 
-#notes: the patterns <YYYYMMDD> & <YYYYDDD> will be replaced
+#notes: the patterns <YYYYMMDD>, <YYYYDDD> & <YYYY-MM-DD> will be replaced
 #with the year, month and day of the current model run
 
 #No. of processors per column
-#npcol = 1
-npcol = 4
+npcol = 1
+#npcol = 4
 #No. of processors per row
-#nprow = 1
-nprow = 4
+nprow = 1
+#nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -82,14 +83,13 @@ sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
 runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
-
-cmaq_base = os.path.join( '/', 'home', '563', 'spt563', 'cmaq_adj' )
-cmaq_data = os.path.join( cmaq_base, 'CMAQadjBnmkData' )
-output_path = os.path.join( cmaq_data, 'GHG_output' )
-mcip_path = os.path.join( cmaq_data, 'mcip' )
+cmaq_base = os.path.join( root_path, 'SHORT_LN/CMAQ' )
+input_path = os.path.join( cmaq_base, 'input' )
+output_path = os.path.join( cmaq_base, 'output' )
+const_path = os.path.join( cmaq_base, 'const' )
 
 #horizontal grid definition file
-griddesc = os.path.join( cmaq_data, 'other', 'GRIDDESC' )
+griddesc = os.path.join( const_path, 'GRIDDESC' )
 gridname = 'CMAQ-BENCHMARK'
 
 #logfile
@@ -100,61 +100,58 @@ bwd_logfile = os.path.join( output_path, 'bwd_CO2only.<YYYYMMDD>.log' )
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
 
 #checkpoint files
-chem_chk = os.path.join( output_path, 'CHEM_CHK.<YYYYMMDD>' )
-vdiff_chk = os.path.join( output_path, 'VDIFF_CHK.<YYYYMMDD>' )
-aero_chk = os.path.join( output_path, 'AERO_CHK.<YYYYMMDD>' )
-ha_rhoj_chk = os.path.join( output_path, 'HA_RHOJ_CHK.<YYYYMMDD>' )
-va_rhoj_chk = os.path.join( output_path, 'VA_RHOJ_CHK.<YYYYMMDD>' )
-hadv_chk = os.path.join( output_path, 'HADV_CHK.<YYYYMMDD>' )
-vadv_chk = os.path.join( output_path, 'VADV_CHK.<YYYYMMDD>' )
-emis_chk = os.path.join( output_path, 'EMIS_CHK.<YYYYMMDD>' )
-emist_chk = os.path.join( output_path, 'EMIST_CHK.<YYYYMMDD>' )
+chem_chk = os.path.join( output_path, 'CHEM_CHK.<YYYYMMDD>.ncf' )
+vdiff_chk = os.path.join( output_path, 'VDIFF_CHK.<YYYYMMDD>.ncf' )
+aero_chk = os.path.join( output_path, 'AERO_CHK.<YYYYMMDD>.ncf' )
+ha_rhoj_chk = os.path.join( output_path, 'HA_RHOJ_CHK.<YYYYMMDD>.ncf' )
+va_rhoj_chk = os.path.join( output_path, 'VA_RHOJ_CHK.<YYYYMMDD>.ncf' )
+hadv_chk = os.path.join( output_path, 'HADV_CHK.<YYYYMMDD>.ncf' )
+vadv_chk = os.path.join( output_path, 'VADV_CHK.<YYYYMMDD>.ncf' )
+emis_chk = os.path.join( output_path, 'EMIS_CHK.<YYYYMMDD>.ncf' )
+emist_chk = os.path.join( output_path, 'EMIST_CHK.<YYYYMMDD>.ncf' )
 
 #xfirst file
 fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( cmaq_data, 'icon', 'ICON_CMAQ-CO2test_profile' )
-#bcon_file = os.path.join( cmaq_data, 'bcon', 'BCON_CMAQ-CO2test_profile' )
-bcon_file = os.path.join( cmaq_data, 'bcon', 'bcon_CO2only.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( cmaq_data, 'emis', 'emis_CMAQ-CO2test_<YYYYMMDD>.ncf' )
-force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>' )
+icon_file = os.path.join( input_path, 'icon_CO2only.ncf' )
+bcon_file = os.path.join( const_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( input_path, 'emis_CO2only.<YYYYMMDD>.ncf' )
+force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
-ocean_file = os.path.join( cmaq_data, 'other', 'surf_BENCHMARK.ncf' )
-grid_dot_2d = os.path.join( mcip_path, 'GRIDDOT2D_<YYYYMMDD>' )
-grid_cro_2d = os.path.join( mcip_path, 'GRIDCRO2D_<YYYYMMDD>' )
-met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>' )
-met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>' )
-met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>' )
-met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_<YYYYMMDD>' )
+ocean_file = os.path.join( const_path, 'surf_BENCHMARK.ncf' )
+grid_dot_2d = os.path.join( const_path, 'GRIDDOT2D_<YYYYMMDD>.ncf' )
+grid_cro_2d = os.path.join( const_path, 'GRIDCRO2D_<YYYYMMDD>.ncf' )
+met_cro_2d = os.path.join( const_path, 'METCRO2D_<YYYYMMDD>.ncf' )
+met_cro_3d = os.path.join( const_path, 'METCRO3D_<YYYYMMDD>.ncf' )
+met_dot_3d = os.path.join( const_path, 'METDOT3D_<YYYYMMDD>.ncf' )
+met_bdy_3d = os.path.join( const_path, 'METBDY3D_<YYYYMMDD>.ncf' )
 layerfile = met_cro_3d
 depv_trac = met_cro_2d
-xj_data = os.path.join( cmaq_data, 'jproc', 'JTABLE_<YYYYDDD>' )
+xj_data = os.path.join( const_path, 'JTABLE_<YYYYDDD>' )
 
 #output files
-conc_file = os.path.join( output_path, 'CONC.<YYYYMMDD>' )
-avg_conc_file = os.path.join( output_path, 'ACONC.<YYYYMMDD>' )
-last_grid_file = os.path.join( output_path, 'CGRID.<YYYYMMDD>' )
-drydep_file = os.path.join( output_path, 'DRYDEP.<YYYYMMDD>' )
-wetdep1_file = os.path.join( output_path, 'WETDEP1.<YYYYMMDD>' )
-wetdep2_file = os.path.join( output_path, 'WETDEP2.<YYYYMMDD>' )
-ssemis_file = os.path.join( output_path, 'SSEMIS1.<YYYYMMDD>' )
-aerovis_file = os.path.join( output_path, 'AEROVIS.<YYYYMMDD>' )
-aerodiam_file = os.path.join( output_path, 'AERODIAM.<YYYYMMDD>' )
-ipr1_file = os.path.join( output_path, 'PA_1.<YYYYMMDD>' )
-ipr2_file = os.path.join( output_path, 'PA_2.<YYYYMMDD>' )
-ipr3_file = os.path.join( output_path, 'PA_3.<YYYYMMDD>' )
-irr1_file = os.path.join( output_path, 'IRR_1.<YYYYMMDD>' )
-irr2_file = os.path.join( output_path, 'IRR_2.<YYYYMMDD>' )
-irr3_file = os.path.join( output_path, 'IRR_3.<YYYYMMDD>' )
-rj1_file = os.path.join( output_path, 'RJ_1.<YYYYMMDD>' )
-rj2_file = os.path.join( output_path, 'RJ_2.<YYYYMMDD>' )
-conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO2only.<YYYYMMDD>' )
-emis_sense_file = os.path.join( output_path,
-                                'EM.LGRID.bwd_CO2only.<YYYYMMDD>' )
-emis_scale_sense_file = os.path.join( output_path,
-                                      'EM_SF.LGRID.bwd_CO2only.<YYYYMMDD>' )
+conc_file = os.path.join( output_path, 'CONC.<YYYYMMDD>.ncf' )
+avg_conc_file = os.path.join( output_path, 'ACONC.<YYYYMMDD>.ncf' )
+last_grid_file = os.path.join( output_path, 'CGRID.<YYYYMMDD>.ncf' )
+drydep_file = os.path.join( output_path, 'DRYDEP.<YYYYMMDD>.ncf' )
+wetdep1_file = os.path.join( output_path, 'WETDEP1.<YYYYMMDD>.ncf' )
+wetdep2_file = os.path.join( output_path, 'WETDEP2.<YYYYMMDD>.ncf' )
+ssemis_file = os.path.join( output_path, 'SSEMIS1.<YYYYMMDD>.ncf' )
+aerovis_file = os.path.join( output_path, 'AEROVIS.<YYYYMMDD>.ncf' )
+aerodiam_file = os.path.join( output_path, 'AERODIAM.<YYYYMMDD>.ncf' )
+ipr1_file = os.path.join( output_path, 'PA_1.<YYYYMMDD>.ncf' )
+ipr2_file = os.path.join( output_path, 'PA_2.<YYYYMMDD>.ncf' )
+ipr3_file = os.path.join( output_path, 'PA_3.<YYYYMMDD>.ncf' )
+irr1_file = os.path.join( output_path, 'IRR_1.<YYYYMMDD>.ncf' )
+irr2_file = os.path.join( output_path, 'IRR_2.<YYYYMMDD>.ncf' )
+irr3_file = os.path.join( output_path, 'IRR_3.<YYYYMMDD>.ncf' )
+rj1_file = os.path.join( output_path, 'RJ_1.<YYYYMMDD>.ncf' )
+rj2_file = os.path.join( output_path, 'RJ_2.<YYYYMMDD>.ncf' )
+conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
+emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
+emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
 
 #drivers
 fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )

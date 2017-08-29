@@ -2,20 +2,20 @@
 import os
 import _get_root
 
+from fourdvar.params.root_path_defn import root_path
+
 #Settings for archive processes
 
 #location of archive directory
-root_dir = os.path.join( '/', 'home', '563', 'spt563',
-                         'fourdvar', 'cmaq_vsn1',
-                         'fourdvar', 'data', 'archive' )
+archive_path = os.path.join( root_path, 'SHORT_LN/archive' )
 
 #experiment name & name of directory to save results in
-experiment = 'core_test_baseline'
+experiment = 'example_experiment'
 
 #description is copied into a txt file in the experiment directory
 description = """This is a test of the fourdvar system.
 The description here should contain details of the experiment
-baseline for comparison: only run on one node"""
+and is written to the description text file."""
 #name of txt file holding the description, if empty string ('') file is not created.
 desc_name = 'description.txt'
 
@@ -31,15 +31,16 @@ extension = '<E>_vsn<I>'
 
 
 #cmaq datadef files can be archived. These require an archive name pattern
+#patterns can include <YYYYMMDD>, <YYYYDDD> or <YYYY-MM-DD> tags to specify day
 #initial conditions file
 icon_file = 'icon.ncf'
-#emission file, requires a tag to map date (<YYYYMMDD> or <YYYYDDD>)
+#emission file, requires a tag to map date
 emis_file = 'emis.<YYYYMMDD>.ncf'
-#concentration file, requires a tag to map date (<YYYYMMDD> or <YYYYDDD>)
+#concentration file, requires a tag to map date
 conc_file = 'conc.<YYYYMMDD>.ncf'
-#adjoint forcing file, requires a tag to map date (<YYYYMMDD> or <YYYYDDD>)
+#adjoint forcing file, requires a tag to map date
 force_file = 'force.<YYYYMMDD>.ncf'
-#concentration sensitivity file, requires a tag to map date (<YYYYMMDD> or <YYYYDDD>)
+#concentration sensitivity file, requires a tag to map date
 sens_conc_file = 'sens_conc.<YYYYMMDD>.ncf'
-#emission sensitivity file, requires a tag to map date (<YYYYMMDD> or <YYYYDDD>)
+#emission sensitivity file, requires a tag to map date
 sens_emis_file = 'sens_emis.<YYYYMMDD>.ncf'

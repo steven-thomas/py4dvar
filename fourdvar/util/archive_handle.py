@@ -24,7 +24,7 @@ def setup():
     if finished_setup is True:
         logger.warn( 'archive setup called again. Ignoring' )
         return None
-    path = os.path.join( defn.root_dir, defn.experiment )
+    path = os.path.join( defn.archive_path, defn.experiment )
     if os.path.isdir( path ) is True:
         logger.warn( '{} already exists.'.format( path ) )
         if (defn.overwrite is False):
@@ -38,7 +38,7 @@ def setup():
             i = 1
             unique = False
             while unique is False:
-                path = os.path.join( defn.root_dir, template.replace('<I>',str(i)) )
+                path = os.path.join( defn.archive_path, template.replace('<I>',str(i)) )
                 unique = not os.path.isdir( path )
                 i += 1
             logger.warn( 'moved archive to {}'.format( path ) )

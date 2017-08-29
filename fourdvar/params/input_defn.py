@@ -1,10 +1,11 @@
 
+import os
+
 import _get_root
+from fourdvar.params.root_path_defn import root_path
 
 #full path to the prior file used by user_driver.get_background
-prior_file = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/prior.ncf'
-#prior_file = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/perturb_prior.ncf'
+prior_file = os.path.join( root_path, 'SHORT_LN/input/prior.ncf' )
 
 #full path to the obs file used by user_driver.get_observed
-obs_file = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/oco2_observed.pickle.zip'
-#obs_file = '/home/563/spt563/fourdvar/cmaq_vsn1/fourdvar/data/perturb_obs.pickle.zip'
+obs_file = os.path.join( root_path, 'SHORT_LN/input/obs_oco2.pickle.zip' )
