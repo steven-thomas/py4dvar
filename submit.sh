@@ -1,25 +1,14 @@
 #!/bin/bash
 
-#PBS -N fourdvar.cmaq_vsn1
+#PBS -N PyDVAR
 #PBS -l walltime=12:00:00
-#PBS -l mem=32GB
-#PBS -l ncpus=16
+#PBS -l mem=2GB
+#PBS -l ncpus=1
 #PBS -q express
 #PBS -l wd
 #PBS -l jobfs=5GB
 
-module load dot
-module load intel-fc
-module load intel-cc
-module load openmpi
-# include netcdf and tools to interact with it
-module load netcdf
-module load nco
-#include setuptools for python setup
-module load python/2.7.6
-module use ~access/modules
-module load pythonlib/netCDF4
-module load pythonlib/matplotlib
-module load hdf5
+module use /g/data3/hh5/public/modules
+module load conda/analysis27
 
 python runscript.py >& output.txt
