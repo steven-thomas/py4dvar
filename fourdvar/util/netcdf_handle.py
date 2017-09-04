@@ -134,7 +134,7 @@ def set_date( fileobj, start_date ):
     
     if str( fileobj ) == fileobj:
         #provided with filepath
-        with ncfDataset( fileobj, 'a' ) as ncf_file:
+        with ncf.Dataset( fileobj, 'a' ) as ncf_file:
             _set_ncfobj_date( ncf_file, start_date )
     else:
         #provided with file object
