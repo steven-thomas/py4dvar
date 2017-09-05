@@ -11,13 +11,20 @@ end_date = dt.datetime.strptime( str( defn.end_date ), '%Y%m%d' ).date()
 tag_map = {
     '<YYYYMMDD>': lambda date: date.strftime( '%Y%m%d' ),
     '<YYYYDDD>': lambda date: date.strftime( '%Y%j' ),
-    '<YESTERDAY>': lambda date: ( date - dt.timedelta(days=1) ).strftime( '%Y%m%d' ),
-    '<TOMORROW>': lambda date: ( date + dt.timedelta(days=1) ).strftime( '%Y%m%d' )
+    '<YYYY-MM-DD>': lambda date: date.strftime( '%Y-%m-%d' )
 }
+
+def add_days( date, ndays ):
+    """
+    extension: return the the date ndays before/after date
+    input: datetime.date, int (-ve for bwd in time)
+    output: datetime.date
+    """
+    return date + dt.timedelta( days=ndays )
 
 def get_datelist():
     """
-    extension: get the list of dates with model runs over
+    extension: get the list of dates which the model runs over
     input: None
     output: list of datetime.date objects
     
@@ -28,7 +35,7 @@ def get_datelist():
     if start_date is None or end_date is None:
         raise ValueError( 'Need to define start_date and end_date.' )
     days = (end_date - start_date).days + 1
-    datelist = [ start_date + dt.timedelta(days=i) for i in range(days) ]
+    datelist = [ add_days( start_date, i ) for i in range(days) ]
     return datelist
 
 def replace_date( src, date ):
@@ -51,12 +58,39 @@ def replace_date( src, date ):
     for tag in tag_map.keys():
         if tag in src:
             src = src.replace( tag, tag_map[ tag ]( date ) )
+        mtag = tag[:-1] + '#'
+        while mtag in src:
+            tstart = src.index( mtag ) + len(mtag)
+            tend = src.index( '>', tstart )
+            ndays = int( src[tstart:tend] )
+            mdate = add_days( date, ndays )
+            src = src[:tstart-1] + src[tend:]
+            src = src.replace( tag, tag_map[ tag ](mdate) )
     return src
 
-def add_days( date, ndays ):
+def move_tag( src_str, ndays ):
     """
-    extension: return the date ndays after date
-    input: datetime.date, int
-    output: datetime.date
+    extension: add a day modifier to a date tag
+    input: string, integer
+    output: string
     """
-    return date + dt.timedelta( days=ndays )
+    modifier = '{:+}'.format( int(ndays) )
+    for tag in tag_map.keys():
+        if tag in src_str:
+            new_tag = '<{}#{}>'.format( tag[1:-1], modifier )
+            src_str = src_str.replace( tag, new_tag )
+    return src_str
+
+def reset_tag( src_str ):
+    """
+    extension: undo move_tag day modifier
+    input: string
+    output: string
+    """
+    for tag in tag_map.keys():
+        mtag = tag[:-1] + '#'
+        while mtag in src_str:
+            tstart = src_str.index( mtag ) + len(mtag)
+            tend = src_str.index( '>', tstart )
+            src_str = src_str[:tstart-1] + src_str[tend:]
+    return src_str

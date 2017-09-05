@@ -177,8 +177,8 @@ def run_fwd_single( date, is_first ):
         env_dict['INIT_TRAC_1'] = cfg.icon_file
         env_dict['CTM_XFIRST_IN'] = ''
     else:
-        prev_grid = cfg.last_grid_file.replace('<YYYYMMDD>', '<YESTERDAY>' )
-        prev_xfirst = cfg.fwd_xfirst_file.replace('<YYYYMMDD>', '<YESTERDAY>' )
+        prev_grid = dt.move_tag( cfg.last_grid_file, -1 )
+        prev_xfirst = dt.move_tag( cfg.fwd_xfirst_file, -1 )
         env_dict['INIT_GASC_1'] = prev_grid
         env_dict['INIT_AERO_1'] = prev_grid
         env_dict['INIT_NONR_1'] = prev_grid
@@ -252,9 +252,9 @@ def run_bwd_single( date, is_first ):
         env_dict['CTM_EMSENSL'] = str( cfg.sense_emis_lays )
     
     if is_first is not True:
-        prev_conc = cfg.conc_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )
-        prev_emis = cfg.emis_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )
-        prev_scale = cfg.emis_scale_sense_file.replace( '<YYYYMMDD>', '<TOMORROW>' )
+        prev_conc = dt.move_tag( cfg.conc_sense_file, 1 )
+        prev_emis = dt.move_tag( cfg.emis_sense_file, 1 )
+        prev_scale = dt.move_tag( cfg.emis_scale_sense_file, 1 )
         env_dict['INIT_LGRID_1'] = prev_conc
         env_dict['INIT_EM_1'] = prev_emis
         env_dict['INIT_EM_SF_1'] = prev_scale

@@ -144,7 +144,7 @@ class ModelSpace( object ):
         assert np.all( np.diff(pressure_arr) < 0.0 ), msg
         #flip input arrays to use np.searchsorted
         p_arr = pressure_arr[::-1]
-        v_arr = pressure_arr[::-1]
+        v_arr = value_arr[::-1]
         interped = []
         mod_pressure = [ .5*(a+b) for a,b in zip(self.pressure[:-1],self.pressure[1:]) ]
         for p in mod_pressure:
