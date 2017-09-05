@@ -19,29 +19,20 @@ class AdjointForcingData( FourDVarData ):
     """application
     """
     
-    def __init__( self, **kwargs ):
+    def __init__( self ):
         """
         application: create an instance of AdjointForcingData
-        input: user-defined
+        input: None
         output: None
         
-        eg: new_forcing =  datadef.AdjointForcingData( filelist )
+        notes: assumes all files already exist,
+        to create files see create_new or load_from_archive.
         """
-        #each input arg is a dictionary, matching to a record in file_details[class_name]
-        #arg name matches the record key
-        #arg value is a dictionary, keys are variable in file, values are numpy arrays
         self.file_data = get_filedict( self.__class__.__name__ )
-        assert len(self.file_data) == len(kwargs), 'input args do not match file_details'
-        for label, data in kwargs.items():
-            assert label in self.file_data.keys(), '{} not in file_details'.format( label )
-            err_msg = "{} data doesn't match template.".format( label )
-            assert ncf.validate( self.file_data[ label ][ 'template' ], data ), err_msg
         
-        for label, record in self.file_data.items():
-            ncf.create_from_template( record[ 'template' ],
-                                      record[ 'actual' ],
-                                      var_change=kwargs[ label ],
-                                      date=record[ 'date' ] )
+        for record in self.file_data.values():
+            exists = os.path.isfile( record[ 'actual' ] )
+            assert exists, 'missing file {}'.format( record[ 'actual' ] )
         return None
     
     def get_variable( self, file_label, varname ):
@@ -89,21 +80,51 @@ class AdjointForcingData( FourDVarData ):
             data = { spc: np.zeros( shape ) for spc in spcs }
             argdict[ label ] = data
         return argdict
-
+    
     @classmethod
-    def example( cls ):
+    def create_new( cls, **kwargs ):
         """
-        application: return a valid example with arbitrary values.
-        input: None
+        application: create an instance of AdjointForcingData from template with new data
+        input: user-defined
         output: AdjointForcingData
         
-        eg: mock_forcing = datadef.AdjointForcingData.example()
-        
-        notes: only used for testing.
+        eg: new_forcing =  datadef.AdjointForcingData( filelist )
         """
+        #each input arg is a dictionary, matching to a record in file_details[class_name]
+        #arg name matches the record key
+        #arg value is a dictionary, keys are variable in file, values are numpy arrays
+        fdata = get_filedict( cls.__name__ )
+        msg = 'input args incompatible with file list'
+        assert set( fdata.keys() ) == set( kwargs.keys() ), msg
+        for label, data in kwargs.items():
+            err_msg = "{} data doesn't match template.".format( label )
+            assert ncf.validate( fdata[ label ][ 'template' ], data ), err_msg
+        
+        for label, record in fdata.items():
+            ncf.create_from_template( record[ 'template' ],
+                                      record[ 'actual' ],
+                                      var_change=kwargs[ label ],
+                                      date=record[ 'date' ],
+                                      overwrite=True)
+        return cls()
+
+    @classmethod
+    def load_from_archive( cls, dirname ):
+        """
+        extension: create an AdjointForcingData from previous archived files.
+        input: string (path/to/file)
+        output: AdjointForcingData
+        
+        notes: this function assumes the filenames match current archive default names
+        """
+        pathname = os.path.realpath( dirname )
+        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
         filedict = get_filedict( cls.__name__ )
-        argdict = { label: {} for label in filedict.keys() }
-        return cls( **argdict )
+        for record in filedict.values():
+            source = os.path.join( pathname, record['archive'] )
+            dest = record['actual']
+            ncf.copy_compress( source, dest )
+        return cls()
     
     def cleanup( self ):
         """

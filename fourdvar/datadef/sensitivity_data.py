@@ -74,17 +74,31 @@ class SensitivityData( FourDVarData ):
         return None
     
     @classmethod
-    def example( cls ):
+    def load_from_archive( cls, dirname ):
         """
-        application: return a valid example with arbitrary values.
+        extension: create a SensitivityData from previous archived files.
+        input: string (path/to/file)
+        output: SensitivityData
+        """
+        pathname = os.path.realpath( dirname )
+        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
+        filedict = get_filedict( cls.__name__ )
+        for record in filedict.values():
+            source = os.path.join( pathname, record['archive'] )
+            dest = record['actual']
+            ncf.copy_compress( source, dest )
+        return cls()
+
+    @classmethod
+    def load_from_template( cls ):
+        """
+        application: return a valid example with template values.
         input: None
         output: SensitivityData
         
-        eg: mock_sensitivity = datadef.SensitivityData.example()
-        
         notes: only used for testing.
         """
-        filedict = get_filedict( cls.__name__, )
+        filedict = get_filedict( cls.__name__ )
         for record in filedict.values():
             ncf.create_from_template( record['template'], record['actual'],
                                       var_change={}, date=record['date'] )

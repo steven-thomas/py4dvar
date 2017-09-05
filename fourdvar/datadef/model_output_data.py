@@ -74,7 +74,7 @@ class ModelOutputData( FourDVarData ):
         return None
     
     @classmethod
-    def load( cls, dirname ):
+    def load_from_archive( cls, dirname ):
         """
         extension: create a ModelOutputData from previous archived files
         input: string (path/to/file)
@@ -92,9 +92,9 @@ class ModelOutputData( FourDVarData ):
         return cls()
     
     @classmethod
-    def example( cls ):
+    def load_from_template( cls ):
         """
-        application: return a valid example with arbitrary values.
+        application: return a valid example with values from template.
         input: None
         output: ModelOutputData
         

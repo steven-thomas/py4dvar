@@ -34,25 +34,33 @@ def validate( filepath, dataset ):
                 return False
     return True
 
-def create_from_template( source, dest, var_change={}, date=None ):
+def create_from_template( source, dest, var_change={}, date=None, overwrite=True ):
     """
     extension: create a new copy of a netCDF file, with new variable data
-    input: string (path/to/old.ncf), string (path/to/new.ncf), dict, date obj
+    input: string (path/to/old.ncf), string (path/to/new.ncf), dict, date obj, boolean
     output: None
     
-    notes: var_change is a dict of variables to overwrite
+    notes: var_change is a dict of variables to change
         key = name of variable to change
         value = numpy.ndarray of new values (must match shape)
-      date is the date to set the new file to (SDATE & TFLAG),
+    date is the date to set the new file to (SDATE & TFLAG),
         if None date is left unmodified
+    overwrite == True will overwrite files variables with var_change
+    overwrite == False will add var_change variables to file values.
     if dest already exists it is overwritten.
+    
+    designed for IOAPI compliant netCDF files, other netCDF files may not work.
     """
     assert validate( source, var_change ), 'changes to template are invalid'
     logger.debug( 'copy {} to {}.'.format( source, dest ) )
     shutil.copyfile( source, dest )
     with ncf.Dataset( dest, 'a' ) as ncf_file:
         for var, data in var_change.items():
-            ncf_file.variables[ var ][:] = data
+            if overwrite is True:
+                ncf_file.variables[ var ][:] = data
+            else:
+                orig_data = ncf_file.variables[ var ][:]
+                ncf_file.variables[ var ][:] = data + orig_data
         if date is not None:
             set_date( ncf_file, date )
     return None
@@ -77,15 +85,21 @@ def get_variable( filepath, varname, group=None ):
             result = { k:v[:] for k,v in source.variables.items() if k in varname }
     return result
 
-def get_attr( filepath, attrname ):
+def get_attr( filepath, attrname, group=None ):
     """
     extension: get the value of a single attribute
-    input: string (path/to/file.ncf), string
+    input: string (path/to/file.ncf), string, string
     output: attr value (variable type)
+    
+    notes: group allows chosing netCDF4 groups, leave as None to use root
     """
     with ncf.Dataset( filepath, 'r' ) as ncf_file:
-        assert attrname in ncf_file.ncattrs(), '{} not in file'.format( attrname )
-        result = ncf_file.getncattr( attrname )
+        source = ncf_file
+        if group is not None:
+            for g in group.split( '/' ):
+                source = source.groups[ g ]
+        assert attrname in source.ncattrs(), '{} not found'.format( attrname )
+        result = source.getncattr( attrname )
     return result
 
 def get_all_attr( filepath ):

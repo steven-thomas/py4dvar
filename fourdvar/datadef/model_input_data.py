@@ -20,44 +20,21 @@ class ModelInputData( FourDVarData ):
     """application
     """
     
-    def __init__( self, **kwargs ):
+    def __init__( self ):
         """
         application: create an instance of ModelInputData
         input: user-defined
         output: None
         
-        eg: new_model_in =  datadef.ModelInputData( filelist )
+        notes: assumes all files already exist,
+        to create files see create_new or load_from_archive
         """
-        #each input arg is a dictionary, matching to a record in file_details[class_name]
-        #arg name matches the record key
-        #arg value is a dictionary, keys are variable in file, values are numpy arrays
         self.file_data = get_filedict( self.__class__.__name__ )
-        msg = 'input args incompatible with file list'
-        assert set( self.file_data.keys() ) == set( kwargs.keys() ), msg
-        need_time = set()
-        for label, data in kwargs.items():
-            err_msg = "{} data doesn't match template.".format( label )
-            assert ncf.validate( self.file_data[ label ][ 'template' ], data ), err_msg
-            for array in data.values():
-                if len( array.shape ) == 4 and array.shape[0] > 1:
-                    #data has a timestep (ie: not icon)
-                    need_time.add( (label, array.shape[0]) )
         
-        #if file in need_time, check file TSTEP is compatible 
-        for label, nstep in need_time:
-            step_file = self.file_data[ label ][ 'template' ]
-            tstep = int( ncf.get_attr( step_file, 'TSTEP' ) )
-            tsec = 3600*(tstep//10000) + 60*((tstep//100)%100) + (tstep%100)
-            daysec = 24*60*60
-            assert daysec % tsec == 0, 'timestep must cleanly divide a day.'
-            msg = '{0} must have {1} timesteps.'.format( label, daysec//tsec + 1 )
-            assert (nstep-1) % (daysec//tsec) == 0, msg
-        
-        for label, record in self.file_data.items():
-            ncf.create_from_template( record[ 'template' ],
-                                      record[ 'actual' ],
-                                      var_change=kwargs[ label ],
-                                      date=record[ 'date' ] )
+        #check that required files exist
+        for record in self.file_data.values():
+            exists = os.path.isfile( record[ 'actual' ] )
+            assert exists, 'missing file {}'.format( record[ 'actual' ] )
         return None
     
     def get_variable( self, file_label, varname ):
@@ -91,19 +68,47 @@ class ModelInputData( FourDVarData ):
         return None
     
     @classmethod
-    def example( cls ):
+    def create_new( cls, **kwargs ):
         """
-        application: return a valid example with arbitrary values.
-        input: None
+        application: create an instance of ModelInputData from template with modified values.
+        input: user_defined
+        output: ModelInputData
+        """
+        #each input arg is a dictionary, matching to a record in file_details[class_name]
+        #arg name matches the record key
+        #arg value is a dictionary, keys are variable in file, values are numpy arrays
+        fdata = get_filedict( cls.__name__ )
+        msg = 'input args incompatible with file list'
+        assert set( fdata.keys() ) == set( kwargs.keys() ), msg
+        for label, data in kwargs.items():
+            err_msg = "{} data doesn't match template.".format( label )
+            assert ncf.validate( fdata[ label ][ 'template' ], data ), err_msg
+        
+        for label, record in fdata.items():
+            ncf.create_from_template( record[ 'template' ],
+                                      record[ 'actual' ],
+                                      var_change=kwargs[ label ],
+                                      date=record[ 'date' ],
+                                      overwrite=True )
+        return cls()
+    
+    @classmethod
+    def load_from_archive( cls, dirname ):
+        """
+        extension: create a ModelInputData from previous archived files
+        input: string (path/to/file)
         output: ModelInputData
         
-        eg: mock_model_in = datadef.ModelInputData.example()
-        
-        notes: only used for testing.
+        notes: this function assumes the filenames match current archive default names
         """
+        pathname = os.path.realpath( dirname )
+        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
         filedict = get_filedict( cls.__name__ )
-        argdict = { label: {} for label in filedict.keys() }
-        return cls( **argdict )    
+        for record in filedict.values():
+            source = os.path.join( pathname, record['archive'] )
+            dest = record['actual']
+            ncf.copy_compress( source, dest )
+        return cls()
     
     def cleanup( self ):
         """

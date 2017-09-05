@@ -68,5 +68,4 @@ def prepare_model( physical_data ):
     #may want to remove this line in future.
     cmaq.wipeout()
     
-    return ModelInputData( **model_input_args )
-
+    return ModelInputData.create_new( **model_input_args )

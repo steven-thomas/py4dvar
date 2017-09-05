@@ -26,4 +26,4 @@ def calc_forcing( w_residual ):
                     w_val = w_residual.value[i] * weight
                     spc_dict[spc][step,lay,row,col] += w_val
     
-    return AdjointForcingData( **kwargs )
+    return AdjointForcingData.create_new( **kwargs )
