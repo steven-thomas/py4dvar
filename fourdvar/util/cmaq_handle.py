@@ -188,17 +188,19 @@ def run_fwd_single( date, is_first ):
     env_dict = parse_env_dict( env_dict, date )
     load_env( env_dict )
     
-    runlist = []
+    run_cmd = cfg.cmd_preamble
     if int(cfg.npcol) != 1 or int(cfg.nprow) != 1:
         #use mpi
-        runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
-    runlist.append( cfg.fwd_prog )
+        run_cmd += 'mpirun -np {:} '.format( int( cfg.npcol ) * int( cfg.nprow ) )
+    run_cmd += cfg.fwd_prog
     stdout_fname = dt.replace_date( cfg.fwd_stdout_log, date )
     fh.ensure_path( stdout_fname, inc_file=True )
     with open( stdout_fname, 'w' ) as stdout_file:
-        msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
+        msg = 'calling external process:\n{:}> {:}'.format( cfg.cmd_shell, run_cmd )
         logger.debug( msg )
-        statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+        statcode = subprocess.call( run_cmd, stdout=stdout_file,
+                                    stderr=subprocess.STDOUT,
+                                    shell=True, executable=cfg.cmd_shell )
         logger.debug( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq fwd failed on {}.'.format( date.strftime('%Y%m%d') )
@@ -262,17 +264,19 @@ def run_bwd_single( date, is_first ):
     env_dict = parse_env_dict( env_dict, date )
     load_env( env_dict )
     
-    runlist = []
+    run_cmd = cfg.cmd_preamble
     if int(cfg.npcol) != 1 or int(cfg.nprow) != 1:
         #use mpi
-        runlist = ['mpirun', '-np', str( int( cfg.npcol ) * int( cfg.nprow ) ) ]
-    runlist.append( cfg.bwd_prog )
+        run_cmd += 'mpirun -np {:} '.format( int( cfg.npcol ) * int( cfg.nprow ) )
+    run_cmd += cfg.bwd_prog
     stdout_fname = dt.replace_date( cfg.bwd_stdout_log, date )
     fh.ensure_path( stdout_fname, inc_file=True )
     with open( stdout_fname, 'w' ) as stdout_file:
-        msg = 'calling external process:\n> {0}'.format( ' '.join( runlist ) )
+        msg = 'calling external process:\n{:}> {:}'.format( cfg.cmd_shell, run_cmd )
         logger.debug( msg )
-        statcode = subprocess.call( runlist, stdout=stdout_file, stderr=subprocess.STDOUT )
+        statcode = subprocess.call( run_cmd, stdout=stdout_file,
+                                    stderr=subprocess.STDOUT,
+                                    shell=True, executable=cfg.cmd_shell )
         logger.debug( 'external process finished.' )
     if statcode != 0:
         msg = 'cmaq bwd failed on {}.'.format( date.strftime('%Y%m%d') )

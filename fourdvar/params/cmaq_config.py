@@ -153,10 +153,6 @@ conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO2only.<YYYYMMDD>.ncf' 
 emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
 emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
 
-#drivers
-fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
-
 curdir = os.path.realpath( os.curdir )
 
 #temporary, change when reworking archive system
@@ -182,3 +178,13 @@ wipeout_list = [ fwd_logfile, bwd_logfile, floor_file,
                  rj1_file, rj2_file, conc_sense_file,
                  emis_sense_file, emis_scale_sense_file,
                  fwd_stdout_log, bwd_stdout_log ]
+
+#drivers
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
+
+#shell used to call drivers
+cmd_shell = '/bin/csh'
+
+#shell input added before running drivers
+cmd_preamble = 'unlimit; '
