@@ -5,6 +5,7 @@ extension: toolkit for interacting with netCDF files
 import numpy as np
 import os
 import shutil
+import subprocess
 import netCDF4 as ncf
 
 import _get_root
@@ -121,8 +122,16 @@ def copy_compress( source, dest ):
     notes: if dst already exists it is overwritten.
     """
     #Current version does not compress.
-    logger.debug( 'copy {} to {}.'.format( source, dest ) )
-    shutil.copyfile( source, dest )
+    msg = 'copy {} to {}.'.format( source, dest )
+    copy_cmd = [ 'ncks', '-4', '-L4', '-O', source, dest ]
+    with open( os.devnull, 'w' ) as DEVNULL:
+        statcode = subprocess.call( copy_cmd, stdout=DEVNULL, stderr=DEVNULL )
+    if statcode != 0:
+        msg = 'Failed to ' + msg
+        logger.error( msg )
+        raise AssertionError( msg )
+    else:
+        logger.debug( msg )
     return None
 
 def set_date( fileobj, start_date ):
