@@ -33,6 +33,8 @@ def setup():
     output: None
     """
     archive.setup()
+    if input_defn.inc_icon is False:
+        logger.warn( 'input_defn.inc_icon is turned off.' )
     bg = get_background()
     obs = get_observed()
     bg.archive( 'prior.ncf' )

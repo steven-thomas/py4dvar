@@ -8,6 +8,7 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import UnknownData, PhysicalData
+from fourdvar.params.input_defn import inc_icon
 
 def uncondition( unknown ):
     """
@@ -19,32 +20,39 @@ def uncondition( unknown ):
     """
     PhysicalData.assert_params()
     p = PhysicalData
-    icon_len = p.nlays_icon * p.nrows * p.ncols
     emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
-    total_len = len( p.spcs ) * ( icon_len + emis_len )
+    if inc_icon is True:
+        icon_len = p.nlays_icon * p.nrows * p.ncols
+        total_len = len( p.spcs ) * ( icon_len + emis_len )
+    else:
+        total_len = len( p.spcs ) * emis_len
     del p
     
     vals = unknown.get_vector()
-    icon_dict = {}
+    if inc_icon is True:
+        icon_dict = {}
     emis_dict = {}
     i = 0
     for spc in PhysicalData.spcs:
-        icon = vals[ i:i+icon_len ]
-        i += icon_len
+        if inc_icon is True:
+            icon = vals[ i:i+icon_len ]
+            i += icon_len
         emis = vals[ i:i+emis_len ]
         i += emis_len
         
         p = PhysicalData
-        icon = icon.reshape(( p.nlays_icon, p.nrows, p.ncols, ))
+        if inc_icon is True:
+            icon = icon.reshape(( p.nlays_icon, p.nrows, p.ncols, ))
+            icon = icon * p.icon_unc[ spc ]
+            icon_dict[ spc ] = icon
         emis = emis.reshape(( p.nstep, p.nlays_emis, p.nrows, p.ncols, ))
-        icon = icon * p.icon_unc[ spc ]
         emis = emis * p.emis_unc[ spc ]
-        del p
-        
-        icon_dict[ spc ] = icon
         emis_dict[ spc ] = emis
+        del p
     
     assert i == total_len, 'Some physical data left unassigned!'
     
+    if inc_icon is False:
+        icon_dict = None
     return PhysicalData( icon_dict, emis_dict )
 

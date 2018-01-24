@@ -14,6 +14,7 @@ from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.date_handle as dt
+from fourdvar.params.input_defn import inc_icon
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -25,18 +26,21 @@ class PhysicalAbstractData( FourDVarData ):
     #Parameters
     tsec = None        #No. seconds per timestep
     nstep = None       #No. timesteps for emis data
-    nlays_icon = None  #No. layers for icon data
     nlays_emis = None  #No. layers for emis_data
     nrows = None       #No. rows for all data
     ncols = None       #No. columns for all data
     spcs = None        #list of species for all data
-    icon_unc = None    #dict of icon uncertainty values
     emis_unc = None    #dict of emis uncertainty values
+    
+    if inc_icon is True:
+        nlays_icon = None  #No. layers for icon data
+        icon_unc = None    #dict of icon uncertainty values
+        #this class variable should be overloaded in children
+        icon_units = 'NA'  #unit to attach to netCDF archive
 
     #these class variables should be overloaded in children
     archive_name = 'physical_abstract_data.ncf' #default archive filename
-    icon_units = 'NA' #units to attach to netCDF archive
-    emis_units = 'NA'
+    emis_units = 'NA'  #unit to attach to netCDF archive
     
     def __init__( self, icon_dict, emis_dict ):
         """
@@ -52,30 +56,34 @@ class PhysicalAbstractData( FourDVarData ):
         #params must all be set and not None (usally using cls.from_file)
         self.assert_params()
         
-        assert set( icon_dict.keys() ) == set( self.spcs ), 'invalid icon spcs.'
-        assert set( emis_dict.keys() ) == set( self.spcs ), 'invalid emis spcs.'
+        if inc_icon is True:
+            assert set( icon_dict.keys() ) == set( self.spcs ), 'invalid icon spcs.'
+            self.icon = {}
         
-        self.icon = {}
+        assert set( emis_dict.keys() ) == set( self.spcs ), 'invalid emis spcs.'
         self.emis = {}
+        
         for spcs_name in self.spcs:
-            icon_data = np.array( icon_dict[ spcs_name ] )
+            if inc_icon is True:
+                icon_data = np.array( icon_dict[ spcs_name ] )
+                
+                assert len( icon_data.shape ) == 3, 'icon dimensions invalid.'
+                inl,inr,inc = icon_data.shape
+                assert inl == self.nlays_icon, 'icon layers invalid.'
+                assert inr == self.nrows, 'icon rows invalid.'
+                assert inc == self.ncols, 'icon columns invalid.'
+                
+                self.icon[ spcs_name ] = icon_data
+            
             emis_data = np.array( emis_dict[ spcs_name ] )
             
-            assert len( icon_data.shape ) == 3, 'icon dimensions invalid.'
-            assert len( emis_data.shape ) == 4, 'emis dimensions invalid.'
-            
-            #check all dimension sizes match current parameters
-            inl,inr,inc = icon_data.shape
+            assert len( emis_data.shape ) == 4, 'emis dimensions invalid.'            
             ent,enl,enr,enc = emis_data.shape
-            assert inl == self.nlays_icon, 'icon layers invalid.'
-            assert inr == self.nrows, 'icon rows invalid.'
-            assert inc == self.ncols, 'icon columns invalid.'
             assert ent == self.nstep, 'emis timesteps invalid.'
             assert enl == self.nlays_emis, 'emis layers invalid.'
             assert enr == self.nrows, 'emis rows invalid.'
             assert enc == self.ncols, 'emis columns invalid.'
             
-            self.icon[ spcs_name ] = icon_data
             self.emis[ spcs_name ] = emis_data
         return None
     
@@ -112,20 +120,25 @@ class PhysicalAbstractData( FourDVarData ):
         root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
                            is_root=True )
         
-        icon_dim = { 'LAY': self.nlays_icon }
+        if inc_icon is True:
+            icon_dim = { 'LAY': self.nlays_icon }
+            icon_var = {}
         emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
-        icon_var = {}
         emis_var = {}
+        
         for spc in self.spcs:
-            icon_var[ spc ] = ( 'f4', ('LAY','ROW','COL',), self.icon[ spc ] )
-            icon_var[ unc(spc) ] = ( 'f4', ('LAY','ROW','COL'),
-                                     self.icon_unc[ spc ] )
+            if inc_icon is True:
+                icon_var[ spc ] = ( 'f4', ('LAY','ROW','COL',), self.icon[ spc ] )
+                icon_var[ unc(spc) ] = ( 'f4', ('LAY','ROW','COL'),
+                                         self.icon_unc[ spc ] )
             emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ] )
             emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                      self.emis_unc[ spc ] )
-        ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
-                    is_root=False )
+        
+        if inc_icon is True:
+            ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
+                        is_root=False )
         ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
                     is_root=False )
         root.close()
@@ -152,12 +165,15 @@ class PhysicalAbstractData( FourDVarData ):
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
         
-        icon_dict = ncf.get_variable( filename, spcs_list, group='icon' )
+        if inc_icon is True:
+            icon_dict = ncf.get_variable( filename, spcs_list, group='icon' )
+            icon_unc = ncf.get_variable( filename, unc_list, group='icon' )
         emis_dict = ncf.get_variable( filename, spcs_list, group='emis' )
-        icon_unc = ncf.get_variable( filename, unc_list, group='icon' )
         emis_unc = ncf.get_variable( filename, unc_list, group='emis' )
+        
         for spc in spcs_list:
-            icon_unc[ spc ] = icon_unc.pop( unc( spc ) )
+            if inc_icon is True:
+                icon_unc[ spc ] = icon_unc.pop( unc( spc ) )
             emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
@@ -165,32 +181,39 @@ class PhysicalAbstractData( FourDVarData ):
         assert sdate == dt.replace_date( '<YYYYDDD>', dt.start_date ), msg
         msg = 'invalid end date'
         assert edate == dt.replace_date( '<YYYYDDD>', dt.end_date ), msg
-        icon_shape = [ i.shape for i in icon_dict.values() ]
+        
         emis_shape = [ e.shape for e in emis_dict.values() ]
-        for ishape, eshape in zip( icon_shape[1:], emis_shape[1:] ):
-            assert ishape == icon_shape[ 0 ], 'all icon spcs must have the same shape.'
-            assert eshape == emis_shape[ 0 ], 'all emis spcs must have the same shape.'
-        ilays, irows, icols = icon_shape[ 0 ]
-        estep, elays, erows, ecols = emis_shape[ 0 ]
-        assert irows == erows, 'icon & emis must match rows.'
-        assert icols == ecols, 'icon & emis must match columns.'
+        for eshape in emis_shape[1:]:
+            assert eshape == emis_shape[0], 'all emis spcs must have the same shape.'
+        estep, elays, erows, ecols = emis_shape[0]
+        
+        if inc_icon is True:
+            icon_shape = [ i.shape for i in icon_dict.values() ]
+            for ishape in icon_shape[1:]:
+                assert ishape == icon_shape[0], 'all icon spcs must have the same shape.'
+            ilays, irows, icols = icon_shape[0]
+            assert irows == erows, 'icon & emis must match rows.'
+            assert icols == ecols, 'icon & emis must match columns.'
         
         assert max(daysec,tsec) % min(daysec,tsec) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
         assert (tsec >= daysec) or (estep % (daysec//tsec) == 0), 'nstep must cleanly divide into days.'
         for spc in spcs_list:
             msg = 'Uncertainty values are invalid for this data.'
-            assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
+            if inc_icon is True:
+                assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
+                assert ( icon_unc[ spc ] > 0 ).all(), msg
             assert emis_unc[ spc ].shape == emis_dict[ spc ].shape, msg
-            assert ( icon_unc[ spc ] > 0 ).all(), msg
             assert ( emis_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values.
-        par_name = ['tsec','nstep','nlays_icon','nlays_emis',
-                    'nrows','ncols','spcs','icon_unc','emis_unc']
-        par_val = [tsec, estep, ilays, elays,
-                   irows, icols, spcs_list, icon_unc, emis_unc]
-        #list of cls variables that from_file can change
-        par_mutable = ['icon_unc', 'emis_unc']
+        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
+        par_val = [tsec, estep, elays, erows, ecols, spcs_list, emis_unc]
+        par_mutable = ['emis_unc']
+        if inc_icon is True:
+            par_name += [ 'nlays_icon', 'icon_unc' ]
+            par_val += [ ilays, icon_unc ]
+            par_mutable += ['icon_unc']
+
         for name, val in zip( par_name, par_val ):
             old_val = getattr( cls, name )
             if old_val is not None:
@@ -205,6 +228,8 @@ class PhysicalAbstractData( FourDVarData ):
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
+        if inc_icon is False:
+            icon_dict = None
         return cls( icon_dict, emis_dict )
 
     @classmethod
@@ -225,10 +250,15 @@ class PhysicalAbstractData( FourDVarData ):
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
         
-        icon_val += np.zeros((cls.nlays_icon, cls.nrows, cls.ncols))
+        if inc_icon is True:
+            icon_val += np.zeros((cls.nlays_icon, cls.nrows, cls.ncols))
+            icon_dict = { spc: icon_val.copy() for spc in cls.spcs }
+        else:
+            icon_dict = None
+        
         emis_val += np.zeros((cls.nstep, cls.nlays_emis, cls.nrows, cls.ncols))
-        icon_dict = { spc: icon_val.copy() for spc in cls.spcs }
         emis_dict = { spc: emis_val.copy() for spc in cls.spcs }
+        
         return cls( icon_dict, emis_dict )
     
     @classmethod
@@ -240,8 +270,9 @@ class PhysicalAbstractData( FourDVarData ):
         
         notes: method raises assertion error if None valued parameter is found.
         """
-        par_name = ['tsec','nstep','nlays_icon','nlays_emis',
-                    'nrows','ncols','spcs','icon_unc','emis_unc']
+        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
+        if inc_icon is True:
+            par_name += [ 'nlays_icon', 'icon_unc' ]
         for param in par_name:
             msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
             assert getattr( cls, param ) is not None, msg

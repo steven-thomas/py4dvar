@@ -4,6 +4,7 @@ import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
 import fourdvar.params.archive_defn as archive
 import fourdvar.params.cmaq_config as cmaq_config
+import fourdvar.params.input_defn as input_defn
 
 all_files = { 'ModelInputData': {},
               'ModelOutputData': {},
@@ -50,12 +51,13 @@ def build_filedict():
     all_files[ 'AdjointForcingData' ] = adjoint_forcing_files
     all_files[ 'SensitivityData' ] = sensitivity_files
 
-    model_input_files['icon'] = {
-        'actual': cmaq_config.icon_file,
-        'template': template.icon,
-        'archive': archive.icon_file,
-        'date': None }
-        #'date': dt.start_date }
+    if input_defn.inc_icon is True:
+        model_input_files['icon'] = {
+            'actual': cmaq_config.icon_file,
+            'template': template.icon,
+            'archive': archive.icon_file,
+            'date': None }
+            #'date': dt.start_date }
 
     for date in dt.get_datelist():
         

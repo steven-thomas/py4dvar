@@ -86,10 +86,15 @@ tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 cmaq_base = os.path.join( root_path, 'SHORT_LN/CMAQ' )
 input_path = os.path.join( cmaq_base, 'input' )
 output_path = os.path.join( cmaq_base, 'output' )
-const_path = os.path.join( cmaq_base, 'const' )
+mcip_path = os.path.join( cmaq_base, 'mcip' )
+grid_path = os.path.join( cmaq_base, 'grid' )
+jproc_path = os.path.join( cmaq_base, 'jproc' )
+bcon_path = os.path.join( cmaq_base, 'bcon' )
+icon_path = os.path.join( cmaq_base, 'icon' )
+emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
-griddesc = os.path.join( const_path, 'GRIDDESC' )
+griddesc = os.path.join( grid_path, 'GRIDDESC' )
 gridname = 'CMAQ-BENCHMARK'
 
 #logfile
@@ -115,21 +120,21 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( input_path, 'icon_CO2only.ncf' )
-bcon_file = os.path.join( const_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( input_path, 'emis_CO2only.<YYYYMMDD>.ncf' )
+icon_file = os.path.join( icon_path, 'icon_CO2only.ncf' )
+bcon_file = os.path.join( bcon_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( emis_path, 'emis_CO2only.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
-ocean_file = os.path.join( const_path, 'surf_BENCHMARK.ncf' )
-grid_dot_2d = os.path.join( const_path, 'GRIDDOT2D_<YYYYMMDD>.ncf' )
-grid_cro_2d = os.path.join( const_path, 'GRIDCRO2D_<YYYYMMDD>.ncf' )
-met_cro_2d = os.path.join( const_path, 'METCRO2D_<YYYYMMDD>.ncf' )
-met_cro_3d = os.path.join( const_path, 'METCRO3D_<YYYYMMDD>.ncf' )
-met_dot_3d = os.path.join( const_path, 'METDOT3D_<YYYYMMDD>.ncf' )
-met_bdy_3d = os.path.join( const_path, 'METBDY3D_<YYYYMMDD>.ncf' )
+ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.ncf' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_<YYYYMMDD>.ncf' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_<YYYYMMDD>.ncf' )
+met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.ncf' )
+met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.ncf' )
+met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.ncf' )
+met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_<YYYYMMDD>.ncf' )
 layerfile = met_cro_3d
 depv_trac = met_cro_2d
-xj_data = os.path.join( const_path, 'JTABLE_<YYYYDDD>' )
+xj_data = os.path.join( jproc_path, 'JTABLE_<YYYYDDD>' )
 
 #output files
 conc_file = os.path.join( output_path, 'CONC.<YYYYMMDD>.ncf' )

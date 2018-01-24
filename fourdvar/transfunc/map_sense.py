@@ -12,6 +12,7 @@ import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.params.cmaq_config as cmaq_config
+from fourdvar.params.input_defn import inc_icon
 
 unit_key = 'units.<YYYYMMDD>'
 unit_convert_dict = None
@@ -90,24 +91,26 @@ def map_sense( sensitivity ):
     
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
-    icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
+    if inc_icon is True:
+        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
+        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
-    icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
     del p
     
     #construct icon_dict
-    icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
-    icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
-    icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
-    for spc in PhysicalAdjointData.spcs:
-        data = icon_vars[ spc ][ 0, :, :, : ]
-        ilays, irows, icols = data.shape
-        msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
-        assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
-        assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-        assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-        icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
+    if inc_icon is True:
+        icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
+        icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
+        icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
+        for spc in PhysicalAdjointData.spcs:
+            data = icon_vars[ spc ][ 0, :, :, : ]
+            ilays, irows, icols = data.shape
+            msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
+            assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
+            assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
+            assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
+            icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
     
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
@@ -144,4 +147,6 @@ def map_sense( sensitivity ):
                                for i in range( fac ) ]).sum( axis=0 )
             emis_dict[ spc ][ start:end, ... ] += pdata.copy()
     
+    if inc_icon is False:
+        icon_dict = None
     return PhysicalAdjointData( icon_dict, emis_dict )

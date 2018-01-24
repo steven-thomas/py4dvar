@@ -12,6 +12,7 @@ import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.cmaq_handle as cmaq
+from fourdvar.params.input_defn import inc_icon
 
 #value to convert units for each days emissions
 unit_convert = None
@@ -38,11 +39,15 @@ def prepare_model( physical_data ):
     global unit_convert
     if unit_convert is None:
         unit_convert = get_unit_convert()
-    
-    model_input_args = { 'icon': {} }
-    #physical icon had no time dimensions, model input icon has time dimension of len 1
-    for spcs, icon_array in physical_data.icon.items():
-        model_input_args['icon'][spcs] = icon_array.reshape( (1,)+icon_array.shape )
+
+    if inc_icon is True:
+        model_input_args = { 'icon': {} }
+        #physical icon has no time dim, model input icon has time dim of len 1
+        for spcs, icon_array in physical_data.icon.items():
+            model_input_args['icon'][spcs] = icon_array.reshape( (1,)+icon_array.shape )
+    else:
+        model_input_args = {}
+
     
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
     m_daysize = ncf.get_variable( template.emis, physical_data.spcs[0] ).shape[0] - 1
