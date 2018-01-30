@@ -27,6 +27,5 @@ def run_model( model_input ):
         output = ModelOutputData()
     except AssertionError as assert_error:
         logger.error( 'cmaq_fwd_failed. logs exported.' )
-        cmaq.cleanup()
         raise assert_error
     return ModelOutputData()
