@@ -64,7 +64,7 @@ def build_filedict():
         ymd = dt.replace_date( '<YYYYMMDD>', date )
         model_input_files['emis.'+ymd] = {
             'actual': dt.replace_date( cmaq_config.emis_file, date ),
-            'template': template.emis,
+            'template': dt.replace_date( template.emis, date ),
             'archive': dt.replace_date( archive.emis_file, date ),
             'date': date
             }

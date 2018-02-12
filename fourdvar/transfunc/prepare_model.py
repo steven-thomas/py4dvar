@@ -26,8 +26,9 @@ def get_unit_convert():
     notes: PhysicalData.emis units = mol/(s*m^2)
            ModelInputData.emis units = mol/s
     """
-    xcell = ncf.get_attr( template.emis, 'XCELL' )
-    ycell = ncf.get_attr( template.emis, 'YCELL' )
+    fname = dt.replace_date( template.emis, dt.start_date )
+    xcell = ncf.get_attr( fname, 'XCELL' )
+    ycell = ncf.get_attr( fname, 'YCELL' )
     return  float(xcell*ycell)
 
 def prepare_model( physical_data ):
@@ -50,7 +51,8 @@ def prepare_model( physical_data ):
 
     
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
-    m_daysize = ncf.get_variable( template.emis, physical_data.spcs[0] ).shape[0] - 1
+    emis_fname = dt.replace_date( template.emis, dt.start_date )
+    m_daysize = ncf.get_variable( emis_fname, physical_data.spcs[0] ).shape[0] - 1
     dlist = dt.get_datelist()
     p_daysize = float(physical_data.nstep) / len( dlist )
     assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'

@@ -83,7 +83,8 @@ def map_sense( sensitivity ):
     PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
     test_spc = PhysicalAdjointData.spcs[0]
-    mod_shape = ncf.get_variable( template.emis, test_spc ).shape    
+    test_fname = dt.replace_date( template.emis, dt.start_date )
+    mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
     
     #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
     #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }

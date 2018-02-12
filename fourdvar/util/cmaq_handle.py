@@ -76,7 +76,8 @@ def setup_run():
     env_dict['CTM_TSTEP'] = ''.join( [ '{:02d}'.format(i) for i in cfg.tstep ] )
     
     if str( cfg.emis_lays ).strip().lower() == 'template':
-        emlays = int(ncf.get_attr( template.emis, 'NLAYS' ) )
+        fname = dt.replace_date( template.emis, dt.start_date )
+        emlays = int(ncf.get_attr( fname, 'NLAYS' ) )
         env_dict['CTM_EMLAYS'] = str( emlays )
     else:
         env_dict['CTM_EMLAYS'] = str( cfg.emis_lays )

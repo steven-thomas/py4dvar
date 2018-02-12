@@ -2,20 +2,47 @@
 import numpy as np
 
 import _get_root
+import fourdvar.util.netcdf_handle as ncf
 
-def icon_unc( val_dict, attr_dict, **kwargs ):
+def convert_unc( unc, val ):
     """
-    Set the uncertainty for all inital concentrations (in ppm)
+    convert the uncertainty object provided into a valid dictionary
+    uncertainty object is either a string (filepath), dictionary (of spcs) or a scalar
     """
-    #use a constant uncertainty for all values
-    unc_val = 1.0 #ppm
-    unc_dict = { k: np.ones(v.shape)*unc_val for k,v in val_dict.items() }
-    return unc_dict
+    spc_list = val.keys()
+    arr_shape = val.values()[0].shape
+    
+    if str(unc) == unc:
+        try:
+            unc_var = ncf.get_variable( unc, spc_list )
+        except:
+            print 'uncertainty file is not valid'
+            raise
+        for spc in spc_list:
+            arr = unc_var[ spc ]
+            msg = 'unc file has data with wrong shape, needs {:}'.format( str(arr_shape) )
+            assert arr.shape == arr_shape, msg
+            assert (arr > 0).all(), 'uncertainty values must be greater than 0.'
+        unc_dict = { s:unc_var[s] for s in spc_list }
+    elif type(unc) == dict:
+        msg = 'uncertainty dictionary is missing needed spcs.'
+        assert set( spc_list ).issubset( unc.keys() ), msg
+        unc_dict = {}
+        for spc in spc_list:
+            val = unc[ spc ]
+            assert val > 0, 'uncertainty values must be greater than 0.'
+            unc_dict[ spc ] = np.zeros(arr_shape) + val
+    else:
+        try:
+            val = float( unc )
+        except:
+            print 'invalid uncertainty parameter'
+            raise
+        assert val > 0, 'uncertainty values must be greater than 0.'
+        unc_dict = { s:(np.zeros(arr_shape)+val) for s in spc_list }
 
-def emis_unc( val_dict, attr_dict, **kwargs ):
-    """
-    Set the uncertainty for all emissions ( in mol/(s*m^2) )
-    """
-    unc_val = 1.32e-5 #mol/(s*m^2), == 3g Carbon/(day*m^2)
-    unc_dict = { k: np.ones(v.shape)*unc_val for k,v in val_dict.items() }
+    for spc in spc_list:
+        arr = unc_dict.pop( spc )
+        unc_dict[ spc + '_UNC' ] = arr
+    
     return unc_dict
