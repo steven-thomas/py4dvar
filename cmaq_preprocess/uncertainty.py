@@ -22,7 +22,6 @@ def convert_unc( unc, val ):
             arr = unc_var[ spc ]
             msg = 'unc file has data with wrong shape, needs {:}'.format( str(arr_shape) )
             assert arr.shape == arr_shape, msg
-            assert (arr > 0).all(), 'uncertainty values must be greater than 0.'
         unc_dict = { s:unc_var[s] for s in spc_list }
     elif type(unc) == dict:
         msg = 'uncertainty dictionary is missing needed spcs.'
@@ -30,7 +29,6 @@ def convert_unc( unc, val ):
         unc_dict = {}
         for spc in spc_list:
             val = unc[ spc ]
-            assert val > 0, 'uncertainty values must be greater than 0.'
             unc_dict[ spc ] = np.zeros(arr_shape) + val
     else:
         try:
@@ -38,11 +36,11 @@ def convert_unc( unc, val ):
         except:
             print 'invalid uncertainty parameter'
             raise
-        assert val > 0, 'uncertainty values must be greater than 0.'
         unc_dict = { s:(np.zeros(arr_shape)+val) for s in spc_list }
 
     for spc in spc_list:
         arr = unc_dict.pop( spc )
+        assert (arr > 0).all(), 'uncertainty values must be greater than 0.'
         unc_dict[ spc + '_UNC' ] = arr
     
     return unc_dict

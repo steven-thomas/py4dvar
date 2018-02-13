@@ -159,6 +159,7 @@ for spc in spc_list:
     emis_dict[ spc ] = data
 
 emis_unc = convert_unc( emis_unc, emis_dict )
+emis_dict.update( emis_unc )
 
 # create icon data if needed
 if input_defn.inc_icon is True:
@@ -167,6 +168,7 @@ if input_defn.inc_icon is True:
     icon_dict = { k:v[0, :icon_nlay, :, :] for k,v in idict.items() }
     
     icon_unc = convert_unc( icon_unc, icon_dict )
+    icon_dict.update( icon_unc )
     
 
 # build data into new netCDF file
