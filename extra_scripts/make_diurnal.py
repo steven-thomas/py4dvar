@@ -65,8 +65,8 @@ def make_diurnal_file():
     efile = dt.replace_date( template.emis, dt.start_date )
     efile_attr_dict = ncf.get_all_attr( efile )
     attr_dict = { attr: efile_attr_dict[attr] for attr in ATTR_LIST }
-    #add CAT-NAME to diurnal attributes
-    attr_dict['CAT-NAME'] = ''.join([ '{:<16}'.format(c) for c in CAT_NAME_LIST ])
+    #add CAT-LIST to diurnal attributes
+    attr_dict['CAT-LIST'] = ''.join([ '{:<16}'.format(c) for c in CAT_NAME_LIST ])
 
     spc_list = attr_dict['VAR-LIST'].strip().split()
     arr_shape = ncf.get_variable( efile, spc_list[0] ).shape
