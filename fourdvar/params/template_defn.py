@@ -14,3 +14,6 @@ sense_conc = os.path.join( template_path, 'sense_conc_template.ncf' )
 #fwd model inputs are "records" instead of templates.
 emis = os.path.join( template_path, 'record', 'emis_record_<YYYYMMDD>.ncf' )
 icon = os.path.join( template_path, 'record', 'icon_record.ncf' )
+
+#special case for diurnal category to emis-file mapping
+diurnal = os.path.join( template_path, 'diurnal_template.ncf' )
