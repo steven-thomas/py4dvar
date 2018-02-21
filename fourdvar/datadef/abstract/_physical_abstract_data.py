@@ -24,13 +24,14 @@ class PhysicalAbstractData( FourDVarData ):
     """
     
     #Parameters
-    tsec = None        #No. seconds per timestep
+    tday = None        #No. days per timestep
     nstep = None       #No. timesteps for emis data
     nlays_emis = None  #No. layers for emis_data
     nrows = None       #No. rows for all data
     ncols = None       #No. columns for all data
     spcs = None        #list of species for all data
     emis_unc = None    #dict of emis uncertainty values
+    cat = None         #list of diurnal category names
     
     if inc_icon is True:
         nlays_icon = None  #No. layers for icon data
@@ -77,8 +78,9 @@ class PhysicalAbstractData( FourDVarData ):
             
             emis_data = np.array( emis_dict[ spcs_name ] )
             
-            assert len( emis_data.shape ) == 4, 'emis dimensions invalid.'            
-            ent,enl,enr,enc = emis_data.shape
+            assert len( emis_data.shape ) == 5, 'emis dimensions invalid.'            
+            encat,ent,enl,enr,enc = emis_data.shape
+            assert encat == len(self.cat), 'emis category indices invalid.'
             assert ent == self.nstep, 'emis timesteps invalid.'
             assert enl == self.nlays_emis, 'emis layers invalid.'
             assert enr == self.nrows, 'emis rows invalid.'
@@ -108,13 +110,11 @@ class PhysicalAbstractData( FourDVarData ):
         #construct netCDF file
         attr_dict = { 'SDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.start_date) ),
                       'EDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.end_date) ) }
-        minute, second = divmod( self.tsec, 60 )
-        hour, minute = divmod( minute, 60 )
-        day, hour = divmod( hour, 24 )
-        hms = int( '{:02}{:02}{:02}'.format( hour, minute, second ) )
-        attr_dict[ 'TSTEP' ] = np.array( [np.int32(day), np.int32(hms)] )
-        var_list =''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
+        attr_dict[ 'TDAY' ] = np.int32( self.tday )
+        var_list = ''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
+        cat_list = ''.join( [ '{:<16}'.format( c ) for c in self.cat ] )
         attr_dict[ 'VAR-LIST' ] = var_list
+        attr_dict[ 'CAT-LIST' ] = cat_list
         dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
         
         root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
@@ -123,7 +123,7 @@ class PhysicalAbstractData( FourDVarData ):
         if inc_icon is True:
             icon_dim = { 'LAY': self.nlays_icon }
             icon_var = {}
-        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
+        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None, 'CAT': len( self.cat ) }
         emis_var = {}
         
         for spc in self.spcs:
@@ -131,9 +131,9 @@ class PhysicalAbstractData( FourDVarData ):
                 icon_var[ spc ] = ( 'f4', ('LAY','ROW','COL',), self.icon[ spc ] )
                 icon_var[ unc(spc) ] = ( 'f4', ('LAY','ROW','COL'),
                                          self.icon_unc[ spc ] )
-            emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+            emis_var[ spc ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ] )
-            emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+            emis_var[ unc(spc) ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
                                      self.emis_unc[ spc ] )
         
         if inc_icon is True:
@@ -153,16 +153,16 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
-        daysec = 24*60*60
+        #daysec = 24*60*60
         unc = lambda spc: spc + '_UNC'
         
         #get all data/parameters from file
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
         edate = str( ncf.get_attr( filename, 'EDATE' ) )
-        tstep = ncf.get_attr( filename, 'TSTEP' )
-        day, step = int(tstep[0]), int(tstep[1])
-        tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
+        tday = ncf.get_attr( filename, 'TDAY' )
+        #tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
+        cat_list = ncf.get_attr( filename, 'CAT-LIST' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
         
         if inc_icon is True:
@@ -181,11 +181,14 @@ class PhysicalAbstractData( FourDVarData ):
         assert sdate == dt.replace_date( '<YYYYDDD>', dt.start_date ), msg
         msg = 'invalid end date'
         assert edate == dt.replace_date( '<YYYYDDD>', dt.end_date ), msg
+        msg = 'TDAY must cleanly divide into No. of model days'
+        assert len(dt.get_datelist()) % tday == 0, msg
         
         emis_shape = [ e.shape for e in emis_dict.values() ]
         for eshape in emis_shape[1:]:
             assert eshape == emis_shape[0], 'all emis spcs must have the same shape.'
-        estep, elays, erows, ecols = emis_shape[0]
+        ecat, estep, elays, erows, ecols = emis_shape[0]
+        assert ecat == len( cat_list ), 'emis diurnal categories must match.'
         
         if inc_icon is True:
             icon_shape = [ i.shape for i in icon_dict.values() ]
@@ -195,8 +198,6 @@ class PhysicalAbstractData( FourDVarData ):
             assert irows == erows, 'icon & emis must match rows.'
             assert icols == ecols, 'icon & emis must match columns.'
         
-        assert max(daysec,tsec) % min(daysec,tsec) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
-        assert (tsec >= daysec) or (estep % (daysec//tsec) == 0), 'nstep must cleanly divide into days.'
         for spc in spcs_list:
             msg = 'Uncertainty values are invalid for this data.'
             if inc_icon is True:
@@ -206,8 +207,9 @@ class PhysicalAbstractData( FourDVarData ):
             assert ( emis_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values.
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
-        par_val = [tsec, estep, elays, erows, ecols, spcs_list, emis_unc]
+        par_name = ['tday','nstep','nlays_emis','nrows','ncols',
+                    'spcs', 'cat', 'emis_unc']
+        par_val = [tday, estep, elays, erows, ecols, spcs_list, cat_list, emis_unc]
         par_mutable = ['emis_unc']
         if inc_icon is True:
             par_name += [ 'nlays_icon', 'icon_unc' ]
@@ -256,7 +258,8 @@ class PhysicalAbstractData( FourDVarData ):
         else:
             icon_dict = None
         
-        emis_val += np.zeros((cls.nstep, cls.nlays_emis, cls.nrows, cls.ncols))
+        emis_val += np.zeros((len(cls.cat), cls.nstep, cls.nlays_emis,
+                              cls.nrows, cls.ncols))
         emis_dict = { spc: emis_val.copy() for spc in cls.spcs }
         
         return cls( icon_dict, emis_dict )
@@ -270,14 +273,14 @@ class PhysicalAbstractData( FourDVarData ):
         
         notes: method raises assertion error if None valued parameter is found.
         """
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
+        par_name = ['tday','nstep','nlays_emis','nrows','ncols','spcs','cat','emis_unc']
         if inc_icon is True:
             par_name += [ 'nlays_icon', 'icon_unc' ]
         for param in par_name:
             msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
             assert getattr( cls, param ) is not None, msg
-        assert max(24*60*60,cls.tsec) % min(24*60*60,cls.tsec) == 0, 'invalid step size (tsec).'
-        assert (cls.tsec>=24*60*60) or (cls.nstep % ((24*60*60)//cls.tsec) == 0), 'invalid step count (nstep).'
+        assert len(dt.get_datelist()) % cls.tday == 0, 'invalid step size (tday)'
+        assert cls.tday*cls.nstep == len(dt.get_datelist()), 'invalid step count (nstep)'
         return None
     
     def cleanup( self ):

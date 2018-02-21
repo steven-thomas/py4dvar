@@ -33,7 +33,8 @@ emis_nlay = 'all'
 # possible values:
 # 'single' for using a single average across the entire model run
 # integer to use custom number of days
-tday = 'single'
+#tday = 'single'
+tday = 1
 
 # data for emission uncertainty
 # allowed values:

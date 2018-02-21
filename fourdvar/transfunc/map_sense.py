@@ -74,11 +74,6 @@ def map_sense( sensitivity ):
     if unit_convert_dict is None:
         unit_convert_dict = get_unit_convert()
     
-    #check that:
-    #- date_handle dates exist
-    #- PhysicalAdjointData params exist
-    #- template.emis & template.sense_emis are compatible
-    #- template.icon & template.sense_conc are compatible
     datelist = dt.get_datelist()
     PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
@@ -86,17 +81,16 @@ def map_sense( sensitivity ):
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
     
-    #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-    #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
-    #emis_dict = { spcs: np.ndarray( nstep, nlays_emis, nrows, ncols ) }
-    
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
+    ncat = len( p.cat )
     if inc_icon is True:
         icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
         icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
-    emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
+    emis_shape = ( ncat, p.nstep, p.nlays_emis, p.nrows, p.ncols, )
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
+
+    diurnal = ncf.get_variable( template.diurnal, p.spcs )
     del p
     
     #construct icon_dict
@@ -113,40 +107,32 @@ def map_sense( sensitivity ):
             assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
             icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
     
-    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
-    for i,date in enumerate( datelist ):
+    nlay = PhysicalAdjointData.nlays_emis
+    #note: model includes overlapping timestep at start and end of day
+    model_step = mod_shape[0] - 1
+    nrow = mod_shape[2]
+    ncol = mod_shape[3]
+    for i,date in enumerate( dt.get_datelist() ):
+        pstep = i // PhysicalAdjointData.tday
+        unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
-        start = int( i * p_daysize )
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
         for spc in PhysicalAdjointData.spcs:
-            unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
-            sdata = sense_data_dict[ spc ][:] * unit_convert
-            sstep, slay, srow, scol = sdata.shape
-            #recast to match mod_shape
-            mstep, mlay, mrow, mcol = mod_shape
-            msg = 'emis_sense and ModelInputData {} are incompatible.'
-            assert ((sstep-1) >= (mstep-1)) and ((sstep-1) % (mstep-1) == 0), msg.format( 'TSTEP' )
-            assert slay >= mlay, msg.format( 'NLAYS' )
-            assert srow == mrow, msg.format( 'NROWS' )
-            assert scol == mcol, msg.format( 'NCOLS' )
-            fac = (sstep-1) // (mstep-1)
-            tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
-                             for i in range( fac ) ]).mean( axis=0 )
-            #adjoint prepare_model
-            msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
-            assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
-            assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = (mstep-1) // (end-start)
-            pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
-                               for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc ][ start:end, ... ] += pdata.copy()
+            cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
+            sense_data = (sense_data_dict[ spc ] * unit_convert)[ :-1, :nlay, :, : ]
+            model_avg = sense_data.reshape((model_step,-1,nlay,nrow,ncol)).mean( axis=1 )
+            for c in range( ncat ):
+                data = model_avg.copy()
+                data[ cat_arr != c ] = np.nan
+                data = np.nansum( data, axis=0 )
+                #insert NaN's if cell never has category c
+                nan_arr = (cat_arr == c).sum( axis=0 )
+                nan_arr = np.where( (nan_arr==0), np.nan, 0. )
+                data += nan_arr
+                #add day to emis_dict total
+                emis_dict[spc][c,pstep,:,:,:] += data
     
     if inc_icon is False:
         icon_dict = None

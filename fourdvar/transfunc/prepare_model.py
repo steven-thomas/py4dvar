@@ -48,27 +48,20 @@ def prepare_model( physical_data ):
             model_input_args['icon'][spcs] = icon_array.reshape( (1,)+icon_array.shape )
     else:
         model_input_args = {}
-
     
-    #all emis files & spcs for model_input use same NSTEP dimension, get it's size
-    emis_fname = dt.replace_date( template.emis, dt.start_date )
-    m_daysize = ncf.get_variable( emis_fname, physical_data.spcs[0] ).shape[0] - 1
-    dlist = dt.get_datelist()
-    p_daysize = float(physical_data.nstep) / len( dlist )
-    assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'
-    
+    diurnal = ncf.get_variable( template.diurnal, physical_data.spcs )
+        
     emis_pattern = 'emis.<YYYYMMDD>'
-    for i,date in enumerate( dlist ):
+    for i,date in enumerate( dt.get_datelist() ):
         spcs_dict = {}
-        start = int(i * p_daysize)
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
+        pstep = int( i // physical_data.tday )
         for spcs_name in physical_data.spcs:
-            phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
-            mod_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
-            mod_data = np.append( mod_data, np.zeros((1,) + mod_data.shape[1:]), axis=0 )
-            spcs_dict[ spcs_name ] = mod_data * unit_convert
+            model_arr = np.zeros( diurnal[ spcs_name ].shape )
+            for c,_ in enumerate( physical_data.cat ):
+                phys_arr = physical_data.emis[ spcs_name ][ c, pstep, ... ]
+                phys_arr[ np.isnan( phys_arr ) ] = 0.
+                model_arr += phys_arr * (diurnal[ spcs_name ] == c)
+            spcs_dict[ spcs_name ] = model_arr * unit_convert
         emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
     

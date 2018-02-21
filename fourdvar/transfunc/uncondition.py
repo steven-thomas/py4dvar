@@ -7,8 +7,10 @@ eg: transform( unknown_instance, datadef.PhysicalData ) == uncondition( unknown_
 import numpy as np
 
 import _get_root
+import fourdvar.util.netcdf_handle as ncf
 from fourdvar.datadef import UnknownData, PhysicalData
 from fourdvar.params.input_defn import inc_icon
+import fourdvar.params.template_defn as template
 
 def uncondition( unknown ):
     """
@@ -20,13 +22,15 @@ def uncondition( unknown ):
     """
     PhysicalData.assert_params()
     p = PhysicalData
-    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    ncat = len( p.cat )
+    emis_len = ncat * p.nstep * p.nlays_emis * p.nrows * p.ncols
+    emis_shape = ( ncat, p.nstep, p.nlays_emis, p.nrows, p.ncols, )
     if inc_icon is True:
         icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
-    else:
-        total_len = len( p.spcs ) * emis_len
+        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
     del p
+    
+    diurnal = ncf.get_variable( template.diurnal, PhysicalData.spcs )
     
     vals = unknown.get_vector()
     if inc_icon is True:
@@ -36,22 +40,23 @@ def uncondition( unknown ):
     for spc in PhysicalData.spcs:
         if inc_icon is True:
             icon = vals[ i:i+icon_len ]
+            icon = icon.reshape( icon_shape )
+            icon_dict[ spc ] = icon
             i += icon_len
-        emis = vals[ i:i+emis_len ]
+        
+        emis_arr = np.zeros( emis_shape )
+        cat_arr = diurnal[ spc ][ :-1, :PhysicalData.nlays_emis, :, : ]
+        for c in range( ncat ):
+            nan_arr = (cat_arr == c).sum( axis=0, keepdims=True )
+            nan_arr = np.where( (nan_arr==0), np.nan, 0. )
+            emis_arr[ c, :, :, :, : ] = nan_arr
+        
+        emis_len = np.count_nonzero( ~np.isnan(emis_arr) )
+        emis_vector = vals[ i:i+emis_len ]
+        emis_arr[ ~np.isnan(emis_arr) ] = emis_vector
+        emis_dict[ spc ] = emis_arr
         i += emis_len
         
-        p = PhysicalData
-        if inc_icon is True:
-            icon = icon.reshape(( p.nlays_icon, p.nrows, p.ncols, ))
-            icon = icon * p.icon_unc[ spc ]
-            icon_dict[ spc ] = icon
-        emis = emis.reshape(( p.nstep, p.nlays_emis, p.nrows, p.ncols, ))
-        emis = emis * p.emis_unc[ spc ]
-        emis_dict[ spc ] = emis
-        del p
-    
-    assert i == total_len, 'Some physical data left unassigned!'
-    
     if inc_icon is False:
         icon_dict = None
     return PhysicalData( icon_dict, emis_dict )
