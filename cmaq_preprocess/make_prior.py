@@ -1,6 +1,8 @@
 
 import os
 import numpy as np
+import gzip
+import cPickle as pickle
 
 import _get_root
 import fourdvar.util.netcdf_handle as ncf
@@ -14,15 +16,11 @@ from cmaq_preprocess.uncertainty import convert_unc
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( root_path, 'SHORT_LN/input/new_prior.ncf' )
+save_path = os.path.join( root_path, 'SHORT_LN/input/yc_prior.ncf' )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
 spc_list = 'all'
-
-# number of layers for PhysicalData initial condition
-# int for custom layers or 'all' to use all possible layers
-icon_nlay = 'all'
 
 # number of layers for PhysicalData emissions (fluxes)
 # int for custom layers or 'all' to use all possible layers
@@ -33,23 +31,17 @@ emis_nlay = 'all'
 # 'emis' to use timestep from emissions file
 # 'single' for using a single average across the entire model run
 # [ days, HoursMinutesSeconds ] for custom length eg: (half-hour = [0,3000])
-tstep = [1,0] #daily average emissions
-#tstep = 'single'
+#tstep = [1,0] #daily average emissions
+tstep = 'single'
 
 # data for emission uncertainty
 # allowed values:
-# single number: apply value to every uncertainty
-# dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-emis_unc = 1e-6 # mol/(s*m**2)
+emis_unc_vector = 'tmp_unc_vector.pickle.zip'
+emis_corr_matrix = 'tmp_corr_matrix.pickle.zip'
 
-# data for inital condition uncertainty
-# allowed values:
-# single number: apply value to every uncertainty
-# dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
-# string: filename for netCDF file already correctly formatted.
-icon_unc = 1.0 # ppm
 
+assert input_defn.inc_icon is False, 'make_prior not configured for ICON optimization.'
 
 # convert spc_list into valid list
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
@@ -71,22 +63,6 @@ else:
         print 'invalid spc_list'
         raise
 
-# convert icon_nlay into valid number (only if we need icon)
-if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    inlay = int( ncf.get_attr( ifile, 'NLAYS' ) )
-    if str(icon_nlay).lower() == 'all':
-        icon_nlay = inlay
-    else:
-        try:
-            assert int( icon_nlay ) == icon_nlay
-            icon_nlay = int( icon_nlay )
-        except:
-            print 'invalid icon_nlay'
-            raise
-        if icon_nlay > inlay:
-            raise AssertionError('icon_nlay must be <= {:}'.format( inlay ))
-
 # convert emis_nlay into valid number
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 enlay = int( ncf.get_attr( efile, 'NLAYS' ) )
@@ -106,10 +82,12 @@ else:
 if str( tstep ).lower() == 'emis':
     efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
     estep = int( ncf.get_attr( efile, 'TSTEP' ) )
-    tstep = [ 0, estep ]
+    day = 0
+    hms = estep
 elif str( tstep ).lower() == 'single':
     nday = len( dt.get_datelist() )
-    tstep = [ nday, 0 ]
+    day = nday
+    hms = 0
 else:
     try:
         assert len( tstep ) == 2
@@ -121,6 +99,7 @@ else:
     except:
         print 'invalid tstep'
         raise
+tstep = [ day, hms ]
 
 daysec = 24*60*60
 tsec = daysec*day + 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
@@ -136,39 +115,37 @@ assert (tsec >= esec) and (tsec%esec == 0), msg
 assert max(tsec,daysec) % min(tsec,daysec) == 0, 'tstep must fit into days'
 assert len(dt.get_datelist())*daysec % tsec == 0, 'tstep must fit into model length'
 
-# convert emis-file data into needed PhysicalData format
+
+
+#emis_nlay
 nrow = int( ncf.get_attr( efile, 'NROWS' ) )
 ncol = int( ncf.get_attr( efile, 'NCOLS' ) )
-xcell = float( ncf.get_attr( efile, 'XCELL' ) )
-ycell = float( ncf.get_attr( efile, 'YCELL' ) )
-emis_dict = { spc: [] for spc in spc_list }
-cell_area = xcell * ycell
-for date in dt.get_datelist():
-    efile = dt.replace_date( cmaq_config.emis_file, date )
-    edict = ncf.get_variable( efile, spc_list )
-    for spc in spc_list:
-        #get data and convert unit (mol/(s*cell) to mol/(s*m**2)
-        data = edict[ spc ][ :-1, :emis_nlay, :, : ] / cell_area
-        emis_dict[ spc ].append( data )
+nstep = len(dt.get_datelist())*daysec // tsec
+emis_shape = ( nstep, emis_nlay, nrow, ncol, )
 
-tot_nstep = len(dt.get_datelist())*daysec // tsec
-for spc in spc_list:
-    data = emis_dict[ spc ]
-    data = np.concatenate( data, axis=0 )
-    data = data.reshape((tot_nstep,-1,emis_nlay,nrow,ncol,)).mean(axis=1)
-    emis_dict[ spc ] = data
+emis_dict = { spc: np.zeros(emis_shape) for spc in spc_list }
 
-emis_unc = convert_unc( emis_unc, emis_dict )
-emis_dict.update( emis_unc )
+def load_obj( fname ):
+    with gzip.GzipFile( fname, 'rb' ) as f:
+        obj = pickle.load( f )
+    return obj
 
-# create icon data if needed
-if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    idict = ncf.get_variable( ifile, spc_list )
-    icon_dict = { k:v[0, :icon_nlay, :, :] for k,v in idict.items() }
-    
-    icon_unc = convert_unc( icon_unc, icon_dict )
-    icon_dict.update( icon_unc )
+emis_unc_vector = load_obj( emis_unc_vector )
+emis_corr_matrix = load_obj( emis_corr_matrix )
+
+assert len( emis_corr_matrix.shape ) == 2, 'emis_corr_matrix must be 2-dimensional'
+d1,d2 = emis_corr_matrix.shape
+if d2 > d1:
+    emis_corr_matrix = np.transpose( emis_corr_matrix )
+
+all_cells, unknowns = emis_corr_matrix.shape
+
+msg = 'emis_corr_matrix long dimension is invalid.'
+assert all_cells == len(spc_list) * np.prod( emis_shape ), msg
+
+assert len( emis_unc_vector.shape ) == 1, 'emis_unc_vector must be 1-dimensional'
+msg = 'emis_corr_matrix short dimension does not match emis_unc_vector.'
+assert unknowns == emis_unc_vector.shape[0], msg
     
 
 # build data into new netCDF file
@@ -184,10 +161,11 @@ emis_dim = { 'TSTEP': None, 'LAY': emis_nlay }
 emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }
 ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var, is_root=False )
 
-if input_defn.inc_icon is True:
-    icon_dim = { 'LAY': icon_nlay }
-    icon_var = { k: ('f4', ('LAY','ROW','COL'), v) for k,v in icon_dict.items() }
-    ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
+corr_unc_dim = { 'ALL_CELLS': all_cells, 'UNKNOWNS':unknowns }
+corr_unc_var = { 'corr_matrix': ('f4', ('ALL_CELLS','UNKNOWNS',), emis_corr_matrix),
+                 'unc_vector': ('f4', ('UNKNOWNS',), emis_unc_vector) }
+ncf.create( parent=root, name='corr_unc', dim=corr_unc_dim, var=corr_unc_var, is_root=False )
 
 root.close()
+ncf.copy_compress( save_path, save_path )
 print 'Prior created and save to:\n  {:}'.format( save_path )

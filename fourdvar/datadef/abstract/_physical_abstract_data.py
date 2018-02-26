@@ -24,13 +24,16 @@ class PhysicalAbstractData( FourDVarData ):
     """
     
     #Parameters
-    tsec = None        #No. seconds per timestep
-    nstep = None       #No. timesteps for emis data
-    nlays_emis = None  #No. layers for emis_data
-    nrows = None       #No. rows for all data
-    ncols = None       #No. columns for all data
-    spcs = None        #list of species for all data
-    emis_unc = None    #dict of emis uncertainty values
+    tsec = None               #No. seconds per timestep
+    nstep = None              #No. timesteps for emis data
+    nlays_emis = None         #No. layers for emis_data
+    nrows = None              #No. rows for all data
+    ncols = None              #No. columns for all data
+    spcs = None               #list of species for all data
+    emis_unc_vector = None    #vector of emis uncertainty eigen values
+    emis_corr_matrix = None   #2D array to convert emis uncertainty
+    nall_cells = None         #No. emis cells
+    nunknowns = None          #No. unknowns
     
     if inc_icon is True:
         nlays_icon = None  #No. layers for icon data
@@ -133,14 +136,18 @@ class PhysicalAbstractData( FourDVarData ):
                                          self.icon_unc[ spc ] )
             emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ] )
-            emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
-                                     self.emis_unc[ spc ] )
+        
+        corr_unc_dim = { 'ALL_CELLS': self.nall_cells, 'UNKNOWNS': self.nunknowns }
+        corr_unc_var = { 'corr_matrix': ('f4',('ALL_CELLS','UNKNOWNS'),self.emis_corr_matrix),
+                         'unc_vector': ('f4',('UNKNOWNS',),self.emis_unc_vector) }
         
         if inc_icon is True:
             ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
                         is_root=False )
         ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
                     is_root=False )
+        ncf.create( parent=root, name='corr_unc', dim=corr_unc_dim,
+                    var=corr_unc_var, is_root=False )
         root.close()
         return None
     
@@ -169,12 +176,13 @@ class PhysicalAbstractData( FourDVarData ):
             icon_dict = ncf.get_variable( filename, spcs_list, group='icon' )
             icon_unc = ncf.get_variable( filename, unc_list, group='icon' )
         emis_dict = ncf.get_variable( filename, spcs_list, group='emis' )
-        emis_unc = ncf.get_variable( filename, unc_list, group='emis' )
+        emis_unc_vector = ncf.get_variable(filename,'unc_vector',group='corr_unc')
+        emis_corr_matrix = ncf.get_variable(filename,'corr_matrix',group='corr_unc')
+        nall_cells, nunknowns = emis_corr_matrix.shape
         
         for spc in spcs_list:
             if inc_icon is True:
                 icon_unc[ spc ] = icon_unc.pop( unc( spc ) )
-            emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
         msg = 'invalid start date'
@@ -202,13 +210,15 @@ class PhysicalAbstractData( FourDVarData ):
             if inc_icon is True:
                 assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
                 assert ( icon_unc[ spc ] > 0 ).all(), msg
-            assert emis_unc[ spc ].shape == emis_dict[ spc ].shape, msg
-            assert ( emis_unc[ spc ] > 0 ).all(), msg
+        assert emis_unc_vector.shape == (nunknowns,), msg
+        assert nall_cells == len(spcs_list)*estep*elays*erows*ecols, msg
         
         #assign new param values.
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
-        par_val = [tsec, estep, elays, erows, ecols, spcs_list, emis_unc]
-        par_mutable = ['emis_unc']
+        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs',
+                    'emis_unc_vector', 'emis_corr_matrix', 'nall_cells', 'nunknowns']
+        par_val = [tsec, estep, elays, erows, ecols, spcs_list, emis_unc_vector,
+                   emis_corr_matrix, nall_cells, nunknowns]
+        par_mutable = ['emis_unc_vector, emis_corr_matrix']
         if inc_icon is True:
             par_name += [ 'nlays_icon', 'icon_unc' ]
             par_val += [ ilays, icon_unc ]
@@ -270,7 +280,8 @@ class PhysicalAbstractData( FourDVarData ):
         
         notes: method raises assertion error if None valued parameter is found.
         """
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs','emis_unc']
+        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs',
+                    'emis_unc_vector','emis_corr_matrix','nall_cells','nunknowns']
         if inc_icon is True:
             par_name += [ 'nlays_icon', 'icon_unc' ]
         for param in par_name:

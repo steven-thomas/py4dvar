@@ -89,7 +89,7 @@ class ModelInputData( FourDVarData ):
                                       record[ 'actual' ],
                                       var_change=kwargs[ label ],
                                       date=record[ 'date' ],
-                                      overwrite=True )
+                                      overwrite=False )
         return cls()
     
     @classmethod

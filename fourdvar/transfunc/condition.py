@@ -40,12 +40,12 @@ def phys_to_unk( physical, is_adjoint ):
     notes: this function must apply the inverse prior error covariance
     """
     p = PhysicalAbstractData
-    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    emis_len = p.nall_cells
     if inc_icon is True:
         icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
+        total_len = len( p.spcs ) * icon_len + p.nunknowns
     else:
-        total_len = len( p.spcs ) * emis_len
+        total_len = p.nunknowns
     del p
     
     #weighting function changes if is_adjoint
@@ -61,9 +61,13 @@ def phys_to_unk( physical, is_adjoint ):
             icon = weight( physical.icon[ spc ], physical.icon_unc[ spc ] )
             arg[ i:i+icon_len ] = icon.flatten()
             i += icon_len
-        emis = weight( physical.emis[ spc ], physical.emis_unc[ spc ] )
-        arg[ i:i+emis_len ] = emis.flatten()
-        i += emis_len
-    assert i == total_len, 'Some unknowns left unassigned!'
+
+    emis_vector = np.zeros( emis_len )
+    for ns,spc in enumerate( PhysicalAbstractData.spcs ):
+        emis = physical.emis[ spc ].flatten()
+        emis_vector[ ns*emis.size : (ns+1)*emis.size ] = emis
+    emis_vector = np.matmul( emis_vector, PhysicalAbstractData.emis_corr_matrix )
+    emis_vector = weight( emis_vector, PhysicalAbstractData.emis_unc_vector )
+    arg[ i: ] = emis_vector
     
     return UnknownData( arg )
