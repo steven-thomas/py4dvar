@@ -14,33 +14,13 @@ import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.cmaq_handle as cmaq
 from fourdvar.params.input_defn import inc_icon
 
-#value to convert units for each days emissions
-unit_convert = None
-
-def get_unit_convert():
-    """
-    extension: get unit conversion value
-    input: None
-    output: scalar
-    
-    notes: PhysicalData.emis units = mol/(s*m^2)
-           ModelInputData.emis units = mol/s
-    """
-    fname = dt.replace_date( template.emis, dt.start_date )
-    xcell = ncf.get_attr( fname, 'XCELL' )
-    ycell = ncf.get_attr( fname, 'YCELL' )
-    return  float(xcell*ycell)
-
 def prepare_model( physical_data ):
     """
     application: change resolution/formatting of physical data for input in forward model
     input: PhysicalData
     output: ModelInputData
     """
-    global unit_convert
-    if unit_convert is None:
-        unit_convert = get_unit_convert()
-
+    
     if inc_icon is True:
         model_input_args = { 'icon': {} }
         #physical icon has no time dim, model input icon has time dim of len 1
@@ -52,7 +32,7 @@ def prepare_model( physical_data ):
     
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
     emis_fname = dt.replace_date( template.emis, dt.start_date )
-    m_daysize = ncf.get_variable( emis_fname, physical_data.spcs[0] ).shape[0] - 1
+    m_daysize = ncf.get_variable( emis_fname, physical_data.spcs_out[0] ).shape[0] - 1
     dlist = dt.get_datelist()
     p_daysize = float(physical_data.nstep) / len( dlist )
     assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'
@@ -64,11 +44,19 @@ def prepare_model( physical_data ):
         end = int( (i+1) * p_daysize )
         if start == end:
             end += 1
-        for spcs_name in physical_data.spcs:
-            phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
-            mod_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
-            mod_data = np.append( mod_data, np.zeros((1,) + mod_data.shape[1:]), axis=0 )
-            spcs_dict[ spcs_name ] = mod_data * unit_convert
+        spcs_pair_list = zip( physical_data.spcs_out, physical_data.spcs_in )
+        for spc_out, spc_in in spcs_pair_list:
+            fname = dt.replace_date( template.emis, date )
+            in_arr = ncf.get_variable( fname, spc_in )
+            phys_data = physical_data.emis[ spc_out ][ start:end, ... ]
+            if end < physical_data.nstep:
+                last_slice = physical_data.emis[ spc_out ][ end:end+1, ... ]
+            else:
+                last_slice = physical_data.emis[ spc_out ][ end-1:end, ... ]
+            prop_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
+            prop_data = np.append( prop_data, last_slice ), axis=0 )
+            spcs_dict[ spcs_name ] = prop_data * in_arr
+        
         emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
     
