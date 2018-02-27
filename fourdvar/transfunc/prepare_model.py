@@ -65,9 +65,13 @@ def prepare_model( physical_data ):
         if start == end:
             end += 1
         for spcs_name in physical_data.spcs:
-            phys_data = physical_data.emis[ spcs_name ][ start:end, :, :, : ]
+            phys_data = physical_data.emis[ spcs_name ][ start:end, ... ]
+            if end < physical_data.nstep:
+                last_slice = physical_data.emis[ spcs_name ][ end:end+1, ... ]
+            else:
+                last_slice = physical_data.emis[ spcs_name ][ end-1:end, ... ]
             mod_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
-            mod_data = np.append( mod_data, np.zeros((1,) + mod_data.shape[1:]), axis=0 )
+            mod_data = np.append( mod_data, last_slice, axis=0 )
             spcs_dict[ spcs_name ] = mod_data * unit_convert
         emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
