@@ -82,9 +82,12 @@ def map_sense( sensitivity ):
     datelist = dt.get_datelist()
     PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
-    test_spc = PhysicalAdjointData.spcs[0]
+    test_spc = PhysicalAdjointData.spcs_out[0]
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
+    xcell = float( ncf.get_attr( test_fname, 'XCELL' ) )
+    ycell = float( ncf.get_attr( test_fname, 'YCELL' ) )
+    cell_area = xcell*ycell
     
     #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
     #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
@@ -94,9 +97,9 @@ def map_sense( sensitivity ):
     p = PhysicalAdjointData
     if inc_icon is True:
         icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
+        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs_icon }
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
-    emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
+    emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs_out }
     del p
     
     #construct icon_dict
@@ -118,14 +121,18 @@ def map_sense( sensitivity ):
     for i,date in enumerate( datelist ):
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
-        sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
+        emis_fname = dt.replace_date( cmaq_config.emis_file, date )
+        sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs_out )
+        emis_input_dict = ncf.get_variable( emis_fname, PhysicalAdjointData.spcs_in )
         start = int( i * p_daysize )
         end = int( (i+1) * p_daysize )
         if start == end:
             end += 1
-        for spc in PhysicalAdjointData.spcs:
+        spcs_pair_list = zip( PhysicalAdjointData.spcs_out, PhysicalAdjointData.spcs_in )
+        for spc_out, spc_in in spcs_pair_list:
             unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
-            sdata = sense_data_dict[ spc ][:] * unit_convert
+            sdata = sense_data_dict[ spc_out ][:] * unit_convert
+            edata = emis_input_dict[ spc_in ][:] / cell_area
             sstep, slay, srow, scol = sdata.shape
             #recast to match mod_shape
             mstep, mlay, mrow, mcol = mod_shape
@@ -138,13 +145,15 @@ def map_sense( sensitivity ):
             tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
                              for i in range( fac ) ]).mean( axis=0 )
             #adjoint prepare_model
+            assert tmp.shape == edata.shape, 'Error in shape re-casting.'
+            prop_arr = tmp / edata
             msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
             assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
             assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
             assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
             assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
             fac = (mstep-1) // (end-start)
-            pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
+            pdata = np.array([ prop_arr[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
                                for i in range( fac ) ]).sum( axis=0 )
             emis_dict[ spc ][ start:end, ... ] += pdata.copy()
     
