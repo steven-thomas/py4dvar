@@ -107,7 +107,7 @@ def map_sense( sensitivity ):
         icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
         icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
         icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
-        for spc in PhysicalAdjointData.spcs:
+        for spc in PhysicalAdjointData.spcs_icon:
             data = icon_vars[ spc ][ 0, :, :, : ]
             ilays, irows, icols = data.shape
             msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
@@ -155,7 +155,7 @@ def map_sense( sensitivity ):
             fac = (mstep-1) // (end-start)
             pdata = np.array([ prop_arr[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
                                for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc ][ start:end, ... ] += pdata.copy()
+            emis_dict[ spc_out ][ start:end, ... ] += pdata.copy()
     
     if inc_icon is False:
         icon_dict = None

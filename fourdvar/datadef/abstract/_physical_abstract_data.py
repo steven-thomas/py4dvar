@@ -221,8 +221,8 @@ class PhysicalAbstractData( FourDVarData ):
         par_val = [tsec, estep, elays, erows, ecols, spcs_out, spcs_in, emis_unc]
         par_mutable = ['emis_unc']
         if inc_icon is True:
-            par_name += [ 'nlays_icon', 'icon_unc' ]
-            par_val += [ ilays, icon_unc ]
+            par_name += [ 'nlays_icon', 'spcs_icon', 'icon_unc' ]
+            par_val += [ ilays, spcs_icon, icon_unc ]
             par_mutable += ['icon_unc']
 
         for name, val in zip( par_name, par_val ):
@@ -284,7 +284,7 @@ class PhysicalAbstractData( FourDVarData ):
         par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs_out',
                     'spcs_in','emis_unc']
         if inc_icon is True:
-            par_name += [ 'nlays_icon', 'icon_unc' ]
+            par_name += [ 'nlays_icon', 'spcs_icon', 'icon_unc' ]
         for param in par_name:
             msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
             assert getattr( cls, param ) is not None, msg

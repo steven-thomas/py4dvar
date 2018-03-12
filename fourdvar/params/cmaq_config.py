@@ -67,8 +67,8 @@ pertspcs = '2'
 pertdelt = '1.00'
 
 #application name
-fwd_appl = 'fwd_CO2only.<YYYYMMDD>'
-bwd_appl = 'bwd_CO2only.<YYYYMMDD>'
+fwd_appl = 'fwd_CO_CO2.<YYYYMMDD>'
+bwd_appl = 'bwd_CO_CO2.<YYYYMMDD>'
 
 #emis_date, use unknown
 emisdate = '<YYYYMMDD>'
@@ -98,8 +98,8 @@ griddesc = os.path.join( grid_path, 'GRIDDESC' )
 gridname = 'CMAQ-BENCHMARK'
 
 #logfile
-fwd_logfile = os.path.join( output_path, 'fwd_CO2only.<YYYYMMDD>.log' )
-bwd_logfile = os.path.join( output_path, 'bwd_CO2only.<YYYYMMDD>.log' )
+fwd_logfile = os.path.join( output_path, 'fwd_CO_CO2.<YYYYMMDD>.log' )
+bwd_logfile = os.path.join( output_path, 'bwd_CO_CO2.<YYYYMMDD>.log' )
 
 #floor file
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
@@ -120,9 +120,9 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'icon_CO2only.ncf' )
-bcon_file = os.path.join( bcon_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( emis_path, 'emis_CO2only.<YYYYMMDD>.ncf' )
+icon_file = os.path.join( icon_path, 'icon_CO_CO2.ncf' )
+bcon_file = os.path.join( bcon_path, 'bcon_CO_CO2.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( emis_path, 'emis_CO_CO2.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.ncf' )
@@ -154,9 +154,9 @@ irr2_file = os.path.join( output_path, 'IRR_2.<YYYYMMDD>.ncf' )
 irr3_file = os.path.join( output_path, 'IRR_3.<YYYYMMDD>.ncf' )
 rj1_file = os.path.join( output_path, 'RJ_1.<YYYYMMDD>.ncf' )
 rj2_file = os.path.join( output_path, 'RJ_2.<YYYYMMDD>.ncf' )
-conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
-emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
-emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO2only.<YYYYMMDD>.ncf' )
+conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
+emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
+emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
 
 curdir = os.path.realpath( os.curdir )
 
@@ -185,8 +185,8 @@ wipeout_list = [ fwd_logfile, bwd_logfile, floor_file,
                  fwd_stdout_log, bwd_stdout_log ]
 
 #drivers
-fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO_CO2', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO_CO2', 'ADJOINT_BWD' )
 
 #shell used to call drivers
 cmd_shell = '/bin/csh'

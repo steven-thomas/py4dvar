@@ -54,8 +54,8 @@ def prepare_model( physical_data ):
             else:
                 last_slice = physical_data.emis[ spc_out ][ end-1:end, ... ]
             prop_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
-            prop_data = np.append( prop_data, last_slice ), axis=0 )
-            spcs_dict[ spcs_name ] = prop_data * in_arr
+            prop_data = np.append( prop_data, last_slice, axis=0 )
+            spcs_dict[ spc_out ] = prop_data * in_arr
         
         emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict

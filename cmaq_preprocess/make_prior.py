@@ -113,7 +113,7 @@ if str( tsec ).lower() == 'emis':
     efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
     hms = int( ncf.get_attr( efile, 'TSTEP' ) )
     tsec = 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
-elif str( tstep ).lower() == 'single':
+elif str( tsec ).lower() == 'single':
     nday = len( dt.get_datelist() )
     tsec = nday * daysec
 else:
