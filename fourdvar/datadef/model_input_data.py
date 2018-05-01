@@ -11,8 +11,6 @@ import os
 import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
-import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
@@ -25,46 +23,21 @@ class ModelInputData( FourDVarData ):
         application: create an instance of ModelInputData
         input: user-defined
         output: None
-        
-        notes: assumes all files already exist,
-        to create files see create_new or load_from_archive
         """
-        self.file_data = get_filedict( self.__class__.__name__ )
-        
-        #check that required files exist
-        for record in self.file_data.values():
-            exists = os.path.isfile( record[ 'actual' ] )
-            assert exists, 'missing file {}'.format( record[ 'actual' ] )
+        #Mostly handled by the 'create_new' classmethod
         return None
-    
-    def get_variable( self, file_label, varname ):
-        """
-        extension: return an array of a single variable
-        input: string, string
-        output: numpy.ndarray
-        """
-        err_msg = 'file_label {} not in file_data'.format( file_label )
-        assert file_label in self.file_data.keys(), err_msg
-        return ncf.get_variable( self.file_data[file_label]['actual'], varname )
-    
+        
     def archive( self, dirname=None ):
         """
         extension: save copy of files to archive/experiment directory
         input: string or None
         output: None
-        
-        notes: this will overwrite any clash of namespace.
-        if input is None file will write to experiment directory
-        else it will create dirname in experiment directory and save there.
         """
         save_path = get_archive_path()
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
         ensure_path( save_path, inc_file=False )
-        for record in self.file_data.values():
-            source = record['actual']
-            dest = os.path.join( save_path, record['archive'] )
-            ncf.copy_compress( source, dest )
+        #save data to save_path, somehow
         return None
     
     @classmethod
@@ -74,40 +47,19 @@ class ModelInputData( FourDVarData ):
         input: user_defined
         output: ModelInputData
         """
-        #each input arg is a dictionary, matching to a record in file_details[class_name]
-        #arg name matches the record key
-        #arg value is a dictionary, keys are variable in file, values are numpy arrays
-        fdata = get_filedict( cls.__name__ )
-        msg = 'input args incompatible with file list'
-        assert set( fdata.keys() ) == set( kwargs.keys() ), msg
-        for label, data in kwargs.items():
-            err_msg = "{} data doesn't match template.".format( label )
-            assert ncf.validate( fdata[ label ][ 'template' ], data ), err_msg
-        
-        for label, record in fdata.items():
-            ncf.create_from_template( record[ 'template' ],
-                                      record[ 'actual' ],
-                                      var_change=kwargs[ label ],
-                                      date=record[ 'date' ],
-                                      overwrite=True )
         return cls()
     
+    #OPTIONAL
     @classmethod
     def load_from_archive( cls, dirname ):
         """
         extension: create a ModelInputData from previous archived files
         input: string (path/to/file)
         output: ModelInputData
-        
-        notes: this function assumes the filenames match current archive default names
         """
         pathname = os.path.realpath( dirname )
         assert os.path.isdir( pathname ), 'dirname must be an existing directory'
-        filedict = get_filedict( cls.__name__ )
-        for record in filedict.values():
-            source = os.path.join( pathname, record['archive'] )
-            dest = record['actual']
-            ncf.copy_compress( source, dest )
+        #Load data from archive format into use
         return cls()
     
     def cleanup( self ):
@@ -121,6 +73,5 @@ class ModelInputData( FourDVarData ):
         notes: called after test instance is no longer needed,
                used to delete files etc.
         """
-        for record in self.file_data.values():
-            os.remove( record['actual'] )
+        #function must exist, it doesn't <NEED> to do anything.
         return None

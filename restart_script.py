@@ -20,7 +20,7 @@ restart_from_last = True
 restart_number = None
 
 # Must match filename used by user_driver.callback_func!
-iter_fname = 'iter{:04}.ncf'
+iter_fname = 'iter{:04}.phys'
 
 # name of restart log file saved to archive
 restart_log_fname = 'restart_log.txt'

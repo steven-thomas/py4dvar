@@ -9,7 +9,6 @@ import numpy as np
 import _get_root
 from fourdvar.datadef import UnknownData
 from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
-from fourdvar.params.input_defn import inc_icon
 
 def condition_adjoint( physical_adjoint ):
     """
@@ -19,7 +18,7 @@ def condition_adjoint( physical_adjoint ):
     
     notes: this function must apply the prior error covariance
     """
-    return phys_to_unk( physical_adjoint, True )
+    return UnknownData( vector_gradient )
 
 def condition( physical ):
     """
@@ -29,41 +28,4 @@ def condition( physical ):
     
     notes: this function must apply the inverse prior error covariance
     """
-    return phys_to_unk( physical, False )
-
-def phys_to_unk( physical, is_adjoint ):
-    """
-    application: apply pre-conditioning to PhysicalData, get vector to optimize
-    input: PhysicalData
-    output: UnknownData
-    
-    notes: this function must apply the inverse prior error covariance
-    """
-    p = PhysicalAbstractData
-    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
-    if inc_icon is True:
-        icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
-    else:
-        total_len = len( p.spcs ) * emis_len
-    del p
-    
-    #weighting function changes if is_adjoint
-    if is_adjoint is True:
-        weight = lambda val, sd: val * sd
-    else:
-        weight = lambda val, sd: val / sd
-    
-    arg = np.zeros( total_len )
-    i = 0
-    for spc in PhysicalAbstractData.spcs:
-        if inc_icon is True:
-            icon = weight( physical.icon[ spc ], physical.icon_unc[ spc ] )
-            arg[ i:i+icon_len ] = icon.flatten()
-            i += icon_len
-        emis = weight( physical.emis[ spc ], physical.emis_unc[ spc ] )
-        arg[ i:i+emis_len ] = emis.flatten()
-        i += emis_len
-    assert i == total_len, 'Some unknowns left unassigned!'
-    
-    return UnknownData( arg )
+    return UnknownData( vector_unknowns )

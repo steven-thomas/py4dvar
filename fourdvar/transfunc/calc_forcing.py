@@ -16,14 +16,4 @@ def calc_forcing( w_residual ):
     output: AdjointForcingData
     """
     
-    kwargs = AdjointForcingData.get_kwargs_dict()
-    for ymd, ilist in ObservationData.ind_by_date.items():
-        spc_dict = kwargs[ 'force.'+ymd ]
-        for i in ilist:
-            for coord,weight in ObservationData.weight_grid[i].items():
-                if str( coord[0] ) == ymd:
-                    step,lay,row,col,spc = coord[1:]
-                    w_val = w_residual.value[i] * weight
-                    spc_dict[spc][step,lay,row,col] += w_val
-    
-    return AdjointForcingData.create_new( **kwargs )
+    return AdjointForcingData.create_new()

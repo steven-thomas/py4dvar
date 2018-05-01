@@ -1,3 +1,4 @@
+
 import os
 import time
 import numpy as np
@@ -9,7 +10,6 @@ import fourdvar.datadef as d
 from fourdvar._transform import transform
 import fourdvar.util.archive_handle as archive
 import fourdvar.params.archive_defn as archive_defn
-import fourdvar.util.cmaq_handle as cmaq
 
 archive_defn.experiment = 'tmp_grad_verbose'
 archive_defn.desc_name = ''
@@ -129,7 +129,6 @@ with open( fname, 'w' ) as f:
     pickle.dump( gradient, f )
 print 'success in {}s. gradient saved in {}'.format( int(time.time()-st), fname )
 
-print 'cleanup files produced by CMAQ'
-cmaq.wipeout()
+user.cleanup()
 
 print 'FINISHED!'

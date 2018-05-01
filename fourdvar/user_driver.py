@@ -6,16 +6,13 @@ handles driver IO and the minimizer function
 from __future__ import print_function
 
 import numpy as np
-import sys
 import os
-import shutil
 import cPickle as pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import _get_root
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
-import fourdvar.util.cmaq_handle as cmaq
 import fourdvar.params.input_defn as input_defn
 from fourdvar._transform import transform
 
@@ -33,8 +30,6 @@ def setup():
     output: None
     """
     archive.setup()
-    if input_defn.inc_icon is False:
-        logger.warn( 'input_defn.inc_icon is turned off.' )
     bg = get_background()
     obs = get_observed()
     bg.archive( 'prior.ncf' )
@@ -47,7 +42,6 @@ def cleanup():
     input: None
     output: None
     """
-    cmaq.wipeout()
     return None
 
 def get_background():
@@ -84,7 +78,7 @@ def callback_func( current_vector ):
     iter_num += 1
     current_unknown = d.UnknownData( current_vector )
     current_physical = transform( current_unknown, d.PhysicalData )
-    current_physical.archive( 'iter{:04}.ncf'.format( iter_num ) )
+    current_physical.archive( 'iter{:04}.phys'.format( iter_num ) )
     
     logger.info( 'iter_num = {}'.format( iter_num ) )
     

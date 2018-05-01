@@ -1,0 +1,21 @@
+
+This is a list of files that must at mimimum be changed/completed before the blank_template version can run:
+
+fourdvar/transfunc/condition.py
+fourdvar/transfunc/uncondition.py
+fourdvar/transfunc/prepare_model.py
+fourdvar/transfunc/run_model.py
+fourdvar/transfunc/obs_operator.py
+fourdvar/transfunc/calc_forcing.py
+fourdvar/transfunc/run_adjoint.py
+fourdvar/transfunc/map_sense.py
+fourdvar/datadef/model_input_data.py
+fourdvar/datadef/model_output_data.py
+fourdvar/datadef/adjoint_forcing_data.py
+fourdvar/datadef/sensitivity_data.py
+fourdvar/datadef/observation_data.py
+fourdvar/datadef/abstract/_physical_abstract_data.py
+fourdvar/params/root_path_defn.py
+
+
+# also required are a means of producing the observation and prior data files, compatible with the newly built _physical_abstract_data and observation_data

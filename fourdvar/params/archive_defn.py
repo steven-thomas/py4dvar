@@ -28,19 +28,3 @@ overwrite = True
 #<I> if replace with a number to make a unique directory name
 #if a tag is missing the assumed format is: <E>extension<I>
 extension = '<E>_vsn<I>'
-
-
-#cmaq datadef files can be archived. These require an archive name pattern
-#patterns can include <YYYYMMDD>, <YYYYDDD> or <YYYY-MM-DD> tags to specify day
-#initial conditions file
-icon_file = 'icon.ncf'
-#emission file, requires a tag to map date
-emis_file = 'emis.<YYYYMMDD>.ncf'
-#concentration file, requires a tag to map date
-conc_file = 'conc.<YYYYMMDD>.ncf'
-#adjoint forcing file, requires a tag to map date
-force_file = 'force.<YYYYMMDD>.ncf'
-#concentration sensitivity file, requires a tag to map date
-sens_conc_file = 'sens_conc.<YYYYMMDD>.ncf'
-#emission sensitivity file, requires a tag to map date
-sens_emis_file = 'sens_emis.<YYYYMMDD>.ncf'

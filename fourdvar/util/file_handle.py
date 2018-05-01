@@ -59,6 +59,7 @@ def empty_dir( path ):
         os.rmdir( d )
     return None
 
+#OPTIONAL: archive obs?
 def save_list( obj_list, filepath ):
     """
     extension: save a list of python objects to a zipped pickle file
@@ -73,6 +74,7 @@ def save_list( obj_list, filepath ):
             pickle.dump( element, f )
     return None
 
+#OPTIONAL: archive obs?
 def load_list( filepath ):
     """
     extension: load a list of python objects from a zipped pickle file

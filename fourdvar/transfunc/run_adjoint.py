@@ -8,7 +8,6 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import AdjointForcingData, SensitivityData
-import fourdvar.util.cmaq_handle as cmaq
 
 def run_adjoint( adjoint_forcing ):
     """
@@ -16,8 +15,4 @@ def run_adjoint( adjoint_forcing ):
     input: AdjointForcingData
     output: SensitivityData
     """
-    assert isinstance( adjoint_forcing, AdjointForcingData )
-    #should ensure that checkpoints exist first.
-    cmaq.run_bwd()
     return SensitivityData()
-
