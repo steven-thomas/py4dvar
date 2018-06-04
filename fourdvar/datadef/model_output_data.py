@@ -15,7 +15,7 @@ from fourdvar.util.file_handle import ensure_path
 class ModelOutputData( FourDVarData ):
     """application
     """
-    def __init__( self ):
+    def __init__( self, data ):
         """
         application: create an instance of ModelOutputData
         input: user-defined
@@ -23,6 +23,7 @@ class ModelOutputData( FourDVarData ):
         
         eg: new_output =  datadef.ModelOutputData( filelist )
         """
+        self.value = data
         return None
     
     def archive( self, dirname=None ):

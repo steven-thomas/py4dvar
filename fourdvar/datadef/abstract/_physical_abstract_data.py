@@ -7,7 +7,7 @@ therefore most of their code is here.
 
 import numpy as np
 import os
-
+import cPickle as pickle
 import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
@@ -19,7 +19,7 @@ logger = setup_logging.get_logger( __file__ )
 class PhysicalAbstractData( FourDVarData ):
     """Parent for PhysicalData and PhysicalAdjointData
     """    
-    def __init__( self, ... ):
+    def __init__( self, vals):
         """
         application: create an instance of PhysicalData
         input: user-defined
@@ -27,6 +27,8 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: new_phys =  datadef.PhysicalData( filelist )
         """
+        self.length = len(vals)
+        self.value = np.array(vals) # this should be an instance attribute
         return None
     
     def archive( self, path=None ):
@@ -41,7 +43,8 @@ class PhysicalAbstractData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        #save data to save_path
+        with open(save_path, 'wb') as picklefile:
+            pickle.dump(self.value, picklefile)
         return None
     
     @classmethod
@@ -53,7 +56,7 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
-        return cls( ... )
+        return cls
     
     def cleanup( self ):
         """

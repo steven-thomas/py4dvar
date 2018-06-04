@@ -21,7 +21,7 @@ class UnknownData( FourDVarData ):
         
         eg: new_unknown =  datadef.UnknownData( [ val1, val2, ... ] )
         """
-        self.value_arr = np.array( values, dtype='float64' )
+        self.value = np.array( values, dtype='float64' )
         return None
     
     def get_vector( self ):
@@ -30,7 +30,7 @@ class UnknownData( FourDVarData ):
         input: None
         output: np.ndarray
         """
-        return np.array( self.value_arr )
+        return np.array( self.value )
     
     @classmethod
     def clone( cls, source ):

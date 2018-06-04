@@ -15,7 +15,7 @@ import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.params.input_defn as input_defn
 from fourdvar._transform import transform
-
+from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
@@ -32,7 +32,7 @@ def setup():
     archive.setup()
     bg = get_background()
     obs = get_observed()
-    bg.archive( 'prior.ncf' )
+    bg.archive( 'prior.pickle' )
     obs.archive( 'observed.pickle' )
     return None
 
@@ -53,7 +53,8 @@ def get_background():
     global background
     
     if background is None:
-        background = d.PhysicalData.from_file( input_defn.prior_file )
+        background = d.PhysicalData( [0.,0.,0.])
+        PhysicalAbstractData.unc = np.array([2.,2.,2.])
     return background
 
 def get_observed():
@@ -65,7 +66,8 @@ def get_observed():
     global observed
     
     if observed is None:
-        observed = d.ObservationData.from_file( input_defn.obs_file )
+        observed = d.ObservationData([3.])
+        d.ObservationData.unc = np.array([1.]) # setting class variable directly
     return observed
 
 def callback_func( current_vector ):
@@ -106,7 +108,7 @@ def post_process( out_physical, metadata ):
     input: PhysicalData (solution), list (user-defined output of minim)
     output: None
     """
-    out_physical.archive( 'final_solution.ncf' )
+    out_physical.archive( 'final_solution.pickle' )
     with open( os.path.join( archive.get_archive_path(), 'ans_details.pickle' ), 'w' ) as f:
         pickle.dump( metadata, f )
     return None

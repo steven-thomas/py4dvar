@@ -18,4 +18,4 @@ def run_model( model_input ):
     input: ModelInputData
     output: ModelOutputData
     """
-    return ModelOutputData()
+    return ModelOutputData(model_input.value**3)

@@ -18,7 +18,7 @@ def condition_adjoint( physical_adjoint ):
     
     notes: this function must apply the prior error covariance
     """
-    return UnknownData( vector_gradient )
+    return UnknownData( np.array( physical_adjoint.value )* PhysicalAbstractData.unc )
 
 def condition( physical ):
     """
@@ -28,4 +28,4 @@ def condition( physical ):
     
     notes: this function must apply the inverse prior error covariance
     """
-    return UnknownData( vector_unknowns )
+    return UnknownData( np.array( physical.value)/np.array( PhysicalAbstractData.unc) )

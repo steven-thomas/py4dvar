@@ -16,4 +16,4 @@ def calc_forcing( w_residual ):
     output: AdjointForcingData
     """
     
-    return AdjointForcingData.create_new()
+    return AdjointForcingData.create_new( w_residual.value *np.array([1.,1.,1.]))

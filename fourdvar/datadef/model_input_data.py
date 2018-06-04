@@ -37,16 +37,18 @@ class ModelInputData( FourDVarData ):
         if dirname is not None:
             save_path = os.path.join( save_path, dirname )
         ensure_path( save_path, inc_file=False )
-        #save data to save_path, somehow
+        with open( save_path, 'wb') as picklefile:
+            pickle.dump(self.data, picklefile)
         return None
     
     @classmethod
-    def create_new( cls, **kwargs ):
+    def create_new( cls, data, **kwargs ):
         """
         application: create an instance of ModelInputData from template with modified values.
         input: user_defined
         output: ModelInputData
         """
+        cls.value = data
         return cls()
     
     #OPTIONAL

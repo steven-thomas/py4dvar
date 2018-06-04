@@ -15,4 +15,4 @@ def prepare_model( physical_data ):
     input: PhysicalData
     output: ModelInputData
     """    
-    return ModelInputData.create_new()
+    return ModelInputData.create_new( physical_data.value) # just pass it through

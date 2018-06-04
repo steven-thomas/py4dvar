@@ -15,4 +15,4 @@ def obs_operator( model_output ):
     input: ModelOutputData
     output: ObservationData
     """    
-    return ObservationData()
+    return ObservationData(  [np.sum(model_output.value)])

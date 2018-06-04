@@ -17,4 +17,4 @@ def uncondition( unknown ):
     
     notes: this function must apply the prior error covariance
     """
-    return PhysicalData()
+    return PhysicalData( np.array( unknown.value)* np.array( PhysicalData.unc))
