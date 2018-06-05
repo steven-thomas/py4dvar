@@ -13,9 +13,11 @@ archive_path = os.path.join( root_path, 'SHORT_LN/archive' )
 experiment = 'example_experiment'
 
 #description is copied into a txt file in the experiment directory
-description = """This is a test of the fourdvar system.
-The description here should contain details of the experiment
-and is written to the description text file."""
+description = """simple model template
+model is x**3
+3 unknowns
+obsop is simple sum
+"""
 #name of txt file holding the description, if empty string ('') file is not created.
 desc_name = 'description.txt'
 

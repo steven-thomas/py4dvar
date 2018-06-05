@@ -15,4 +15,4 @@ def map_sense( sensitivity ):
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    return PhysicalAdjointData()
+    return PhysicalAdjointData( sensitivity.value)

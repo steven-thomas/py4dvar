@@ -8,11 +8,14 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import AdjointForcingData, SensitivityData
-
+import fourdvar.util.model_data as model_data
 def run_adjoint( adjoint_forcing ):
     """
     application: run the adjoint model, construct SensitivityData from results
     input: AdjointForcingData
     output: SensitivityData
     """
-    return SensitivityData()
+    x = model_data.value
+    adjoint = 3*x**2
+    
+    return SensitivityData( adjoint*adjoint_forcing.value )

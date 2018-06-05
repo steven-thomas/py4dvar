@@ -15,14 +15,15 @@ from fourdvar.util.file_handle import ensure_path
 class SensitivityData( FourDVarData ):
     """application
     """        
-    def __init__( self ):
+    def __init__( self, sensitivity ):
         """
         application: create an instance of SensitivityData
         input: user-defined
         output: None
         
         eg: new_sense =  datadef.SensitivityData( filelist )
-        """        
+        """
+        self.value = sensitivity
         return None
     
     def archive( self, dirname=None ):

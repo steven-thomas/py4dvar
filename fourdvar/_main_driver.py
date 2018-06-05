@@ -9,7 +9,7 @@ import _get_root
 from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
-
+# dictionary referring to current iteration
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
@@ -68,7 +68,6 @@ def gradient_func( vector ):
     observed = user_driver.get_observed()
     
     unknown = d.UnknownData( vector )
-    
     physical = transform( unknown, d.PhysicalData )
     model_in = transform( physical, d.ModelInputData )
     model_out = transform( model_in, d.ModelOutputData )
@@ -78,15 +77,14 @@ def gradient_func( vector ):
     w_residual = d.ObservationData.error_weight( residual )
     
     adj_forcing = transform( w_residual, d.AdjointForcingData )
-    sensitivity = transform( adj_forcing, d.SensitivityData )
-    phys_sense = transform( sensitivity, d.PhysicalAdjointData )
-    un_gradient = transform( phys_sense, d.UnknownData )
-    
+    model_sensitivity = transform( adj_forcing, d.SensitivityData )
+    physical_sensitivity = transform( model_sensitivity, d.PhysicalAdjointData )
+    unknown_gradient = transform( physical_sensitivity, d.UnknownData )
     bg_vector = bg_unknown.get_vector()
     un_vector = unknown.get_vector()
     bg_grad = un_vector - bg_vector
-    gradient = bg_grad + un_gradient.get_vector()
-    
+    gradient = bg_grad + unknown_gradient.get_vector()
+    logger.info( 'gradient norm = {}'.format( np.linalg.norm(gradient) ) )
     unknown.cleanup()
     physical.cleanup()
     model_in.cleanup()
@@ -95,11 +93,9 @@ def gradient_func( vector ):
     residual.cleanup()
     w_residual.cleanup()
     adj_forcing.cleanup()
-    sensitivity.cleanup()
-    phys_sense.cleanup()
-    un_gradient.cleanup()
-    
-    logger.info( 'gradient norm = {}'.format( np.linalg.norm(gradient) ) )
+    model_sensitivity.cleanup()
+    physical_sensitivity.cleanup()
+    unknown_gradient.cleanup()
     
     return np.array( gradient )
 

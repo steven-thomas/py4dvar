@@ -53,7 +53,7 @@ def get_background():
     global background
     
     if background is None:
-        background = d.PhysicalData( [0.,0.,0.])
+        background = d.PhysicalData( [-1., -1., -1.])
         PhysicalAbstractData.unc = np.array([2.,2.,2.])
     return background
 
