@@ -18,7 +18,8 @@ logger = setup_logging.get_logger( __file__ )
 
 class PhysicalAbstractData( FourDVarData ):
     """Parent for PhysicalData and PhysicalAdjointData
-    """    
+    """
+    unc = None
     def __init__( self, vals):
         """
         application: create an instance of PhysicalData
@@ -45,6 +46,12 @@ class PhysicalAbstractData( FourDVarData ):
             os.remove( save_path )
         with open(save_path, 'wb') as picklefile:
             pickle.dump(self.value, picklefile)
+            pickle.dump(self.unc, picklefile)
+        return None
+    
+    @classmethod
+    def set_unc( cls, unc ):
+        cls.unc = np.array( unc )
         return None
     
     @classmethod
@@ -56,7 +63,11 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
-        return cls
+        with open( filename, 'rb' ) as picklefile:
+            val = pickle.load(picklefile)
+            unc = pickle.load(picklefile)
+        cls.set_unc( unc )
+        return cls( val )
     
     def cleanup( self ):
         """

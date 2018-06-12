@@ -27,20 +27,22 @@ class ModelInputData( FourDVarData ):
         #Mostly handled by the 'create_new' classmethod
         return None
         
-    def archive( self, dirname=None ):
+    def archive( self, path=None ):
         """
-        extension: save copy of files to archive/experiment directory
+        extension: save a copy of data to archive/experiment directory
         input: string or None
         output: None
         """
         save_path = get_archive_path()
-        if dirname is not None:
-            save_path = os.path.join( save_path, dirname )
-        ensure_path( save_path, inc_file=False )
-        with open( save_path, 'wb') as picklefile:
-            pickle.dump(self.data, picklefile)
+        if path is None:
+            path = self.archive_name
+        save_path = os.path.join( save_path, path )
+        if os.path.isfile( save_path ):
+            os.remove( save_path )
+        with open(save_path, 'wb') as picklefile:
+            pickle.dump(self.value, picklefile)
         return None
-    
+        
     @classmethod
     def create_new( cls, data, **kwargs ):
         """
@@ -60,9 +62,10 @@ class ModelInputData( FourDVarData ):
         output: ModelInputData
         """
         pathname = os.path.realpath( dirname )
-        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
-        #Load data from archive format into use
-        return cls()
+        with open( pathname, 'wb' ) as picklefile:
+            data = pickle.load( picklefile )
+        
+        return cls.create_new( data )
     
     def cleanup( self ):
         """

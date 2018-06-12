@@ -26,19 +26,22 @@ class ModelOutputData( FourDVarData ):
         self.value = data
         return None
     
-    def archive( self, dirname=None ):
+    def archive( self, path=None ):
         """
-        extension: save copy of files to archive/experiment directory
+        extension: save a copy of data to archive/experiment directory
         input: string or None
         output: None
         """
         save_path = get_archive_path()
-        if dirname is not None:
-            save_path = os.path.join( save_path, dirname )
-        ensure_path( save_path, inc_file=False )
-        #Save data to save_path
+        if path is None:
+            path = self.archive_name
+        save_path = os.path.join( save_path, path )
+        if os.path.isfile( save_path ):
+            os.remove( save_path )
+        with open(save_path, 'wb') as picklefile:
+            pickle.dump(self.value, picklefile)
         return None
-
+    
     #OPTIONAL
     @classmethod
     def load_from_archive( cls, dirname ):
@@ -48,9 +51,10 @@ class ModelOutputData( FourDVarData ):
         output: ModelOutputData
         """
         pathname = os.path.realpath( dirname )
-        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
-        #Load data from archive format
-        return cls()
+        with open( pathname, 'wb' ) as picklefile:
+            data = pickle.load( picklefile )
+        
+        return cls( data )
         
     def cleanup( self ):
         """

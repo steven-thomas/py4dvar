@@ -15,7 +15,6 @@ import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.params.input_defn as input_defn
 from fourdvar._transform import transform
-from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
@@ -54,7 +53,7 @@ def get_background():
     
     if background is None:
         background = d.PhysicalData( [-1., -1., -1.])
-        PhysicalAbstractData.unc = np.array([2.,2.,2.])
+        d.PhysicalData.set_unc( np.array([2.,2.,2.] )
     return background
 
 def get_observed():

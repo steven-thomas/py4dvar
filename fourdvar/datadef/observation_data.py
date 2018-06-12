@@ -17,7 +17,7 @@ class ObservationData( FourDVarData ):
     """application: vector of observations, observed or simulated"""
     
     archive_name = 'obsset.pickle.zip'
-    unc = 0. # place holder class variable
+    unc = None # place holder class variable
     def __init__( self, data ):
         """
         application: create an instance of ObservationData
@@ -26,7 +26,7 @@ class ObservationData( FourDVarData ):
         
         eg: new_obs =  datadef.ObservationData( [{...}, {...}, ...] )
         """
-        self.value = np.array( data)
+        self.value = np.array( data )
         return None
     
     def get_vector( self ):
@@ -49,6 +49,7 @@ class ObservationData( FourDVarData ):
         save_path = os.path.join( save_path, name )
         with open(save_path, 'wb') as picklefile:
             pickle.dump(self.value, picklefile)
+            pickle.dump(self.unc, picklefile)
         return None
         
     @classmethod
@@ -83,5 +84,9 @@ class ObservationData( FourDVarData ):
         output: ObservationData
         
         eg: observed = datadef.ObservationData.from_file( "saved_obs.data" )
-        """        
-        return cls()
+        """
+        with open(filename, 'rb') as picklefile:
+            val = pickle.dump( picklefile )
+            unc = pickle.dump( picklefile )
+        cls.unc = unc
+        return cls(val)
