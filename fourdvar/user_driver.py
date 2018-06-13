@@ -52,8 +52,8 @@ def get_background():
     global background
     
     if background is None:
-        background = d.PhysicalData( [-1., -1., -1.])
-        d.PhysicalData.set_unc( np.array([2.,2.,2.] )
+        background = d.PhysicalData( [-1., -1., -1.] )
+        d.PhysicalData.set_unc( np.array( [2.,2.,2.] ) )
     return background
 
 def get_observed():

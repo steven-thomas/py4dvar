@@ -51,7 +51,8 @@ class PhysicalAbstractData( FourDVarData ):
     
     @classmethod
     def set_unc( cls, unc ):
-        cls.unc = np.array( unc )
+        #define parent class explicitly so calling from child will set parents variable
+        PhysicalAbstractData.unc = np.array( unc )
         return None
     
     @classmethod
