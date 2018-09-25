@@ -8,7 +8,9 @@ import numpy as np
 
 import _get_root
 from fourdvar.datadef import UnknownData, PhysicalData
+import fourdvar.util.netcdf_handle as ncf
 from fourdvar.params.input_defn import inc_icon
+import fourdvar.params.template_defn as template
 
 def uncondition( unknown ):
     """
@@ -20,37 +22,56 @@ def uncondition( unknown ):
     """
     PhysicalData.assert_params()
     p = PhysicalData
-    emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
+    ncat = len( p.cat_emis )
+    emis_shape = ( ncat, p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
     emis_len = np.prod( emis_shape )
+    prop_shape = ( p.nstep_prop, p.nlays_emis, p.nrows, p.ncols, )
+    prop_len = np.prod( prop_shape )
     if inc_icon is True:
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_len = np.prod( icon_shape )
-        total_len = len( p.spcs_icon )*icon_len + len( p.spcs_out )*emis_len
-    else:
-        total_len = len( p.spcs_out ) * emis_len
+        raise ValueError('setup not configured to handle ICON')
+        #icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
+        #icon_len = np.prod( icon_shape )
     del p
+    
+    diurnal = ncf.get_variable( template.diurnal, PhysicalData.spcs_out_emis )
     
     vals = unknown.get_vector()
     if inc_icon is True:
-        icon_dict = {}
+        raise ValueError('setup not configured to handle ICON')
+        #icon_dict = {}
     emis_dict = {}
+    prop_dict = {}
     i = 0
     if inc_icon is True:
-        for spc in PhysicalData.spcs_icon:
-            icon = vals[ i:i+icon_len ]
-            i += icon_len
-            icon = icon.reshape( icon_shape )
-            icon = icon * PhysicalData.icon_unc[ spc ]
-            icon_dict[ spc ] = icon
-    for spc in PhysicalData.spcs_out:
-        emis = vals[ i:i+emis_len ]
-        i += emis_len        
-        emis = emis.reshape( emis_shape )
-        emis = emis * PhysicalData.emis_unc[ spc ]
-        emis_dict[ spc ] = emis
+        raise ValueError('setup not configured to handle ICON')
+        #for spc in PhysicalData.spcs_icon:
+        #    icon = vals[ i:i+icon_len ]
+        #    i += icon_len
+        #    icon = icon.reshape( icon_shape )
+        #    icon = icon * PhysicalData.icon_unc[ spc ]
+        #    icon_dict[ spc ] = icon
+    for spc in PhysicalData.spcs_out_emis:
+        emis_arr = np.zeros( emis_shape )
+        cat_arr = diurnal[ spc ][ :-1, :PhysicalData.nlays_emis, :, : ]
+        for c in range( ncat ):
+            nan_arr = (cat_arr == c).sum( axis=0, keepdims=True )
+            nan_arr = np.where( (nan_arr==0), np.nan, 0. )
+            emis_arr[ c, :, :, :, : ] = nan_arr
+
+        emis_len = np.count_nonzero( ~np.isnan(emis_arr) )
+        emis_vector = vals[ i:i+emis_len ]
+        emis_arr[ ~np.isnan(emis_arr) ] = emis_vector
+        emis_dict[ spc ] = emis_arr * PhysicalData.emis_unc[ spc ]
+        i += emis_len
+
+    for spc in PhysicalData.spcs_out_prop:
+        prop = vals[ i:i+prop_len ]
+        prop = prop.reshape( prop_shape )
+        prop_dict[ spc ] = prop * PhysicalData.prop_unc[ spc ]
+        i += prop_len
     
-    assert i == total_len, 'Some physical data left unassigned!'
+    assert i == len(vals), 'Some physical data left unassigned!'
     
-    if inc_icon is False:
-        icon_dict = None
-    return PhysicalData( icon_dict, emis_dict )
+    #if inc_icon is False:
+    #    icon_dict = None
+    return PhysicalData( emis_dict, prop_dict )

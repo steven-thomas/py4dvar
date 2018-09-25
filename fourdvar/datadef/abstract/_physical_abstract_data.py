@@ -24,27 +24,28 @@ class PhysicalAbstractData( FourDVarData ):
     """
     
     #Parameters
-    tsec = None          #No. seconds per timestep
-    nstep = None         #No. timesteps for emis data
-    nlays_emis = None    #No. layers for emis_data
-    nrows = None         #No. rows for all data
-    ncols = None         #No. columns for all data
-    spcs_out = None      #list of species constructed by proportion
-    spcs_in = None       #list of species used for proportion
-    emis_unc = None      #dict of emis uncertainty values
+    tday_emis = None        #No. days per emission timestep
+    nstep_emis = None       #No. timesteps for emis data
+    tsec_prop = None        #No. seconds per proportional timestep
+    nstep_prop = None       #No. timesteps for proportional data
+    nlays_emis = None       #No. layers for emission data
+    nrows = None            #No. rows for all data
+    ncols = None            #No. columns for all data
+    spcs_out_emis = None    #list of species with direct emissions (CO2 in mex-test)
+    spcs_out_prop = None    #list of species constructed by proportion (CO in mex-test)
+    spcs_in_prop = None     #list of species used for proportional emissions
+    prop_unc = None         #dict of proportion uncertainty values
+    emis_unc = None         #dict of direct emission uncertainty values
+    cat_emis = None         #list of diurnal category names for emission data
     
     if inc_icon is True:
-        nlays_icon = None  #No. layers for icon data
-        spcs_icon = None   #list of species used for initial conditions
-        icon_unc = None    #dict of icon uncertainty values
-        #this class variable should be overloaded in children
-        icon_units = 'NA'  #unit to attach to netCDF archive
+        raise ValueError('This build is not configured to solve for inital conditions')
 
     #these class variables should be overloaded in children
     archive_name = 'physical_abstract_data.ncf' #default archive filename
     emis_units = 'NA'  #unit to attach to netCDF archive
     
-    def __init__( self, icon_dict, emis_dict ):
+    def __init__( self, emis_dict, prop_dict ):
         """
         application: create an instance of PhysicalData
         input: user-defined
@@ -52,41 +53,43 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: new_phys =  datadef.PhysicalData( filelist )
         """
-        #icon_dict: {var-name: np.array([layer, row, column])
-        #emis_dict: {var-name: np.array([time, layer, row, column])
+        #prop_dict: {var-name: np.array([time, layer, row, column])
+        #emis_dict: {var-name: np.array([cat, time, layer, row, column])
         
         #params must all be set and not None (usally using cls.from_file)
         self.assert_params()
         
         if inc_icon is True:
-            assert set( icon_dict.keys() ) == set( self.spcs_icon ), 'invalid icon spcs.'
-            self.icon = {}
-            for spcs_name in self.spcs_icon:
-                icon_data = np.array( icon_dict[ spcs_name ] )
-                
-                assert len( icon_data.shape ) == 3, 'icon dimensions invalid.'
-                inl,inr,inc = icon_data.shape
-                assert inl == self.nlays_icon, 'icon layers invalid.'
-                assert inr == self.nrows, 'icon rows invalid.'
-                assert inc == self.ncols, 'icon columns invalid.'
-                
-                self.icon[ spcs_name ] = icon_data
+            msg = 'This build is not configured to solve for inital conditions'
+            raise ValueError( msg )
         
-        assert set( emis_dict.keys() ) == set( self.spcs_out ), 'invalid emis spcs.'
+        assert set( emis_dict.keys() ) == set( self.spcs_out_emis ), 'invalid emis spcs.'
+        assert set( prop_dict.keys() ) == set( self.spcs_out_prop ), 'invalid prop spcs.'
         self.emis = {}
+        self.prop = {}
         
-        for spcs_name in self.spcs_out:
-            
+        for spcs_name in self.spcs_out_emis:
             emis_data = np.array( emis_dict[ spcs_name ] )
-            
-            assert len( emis_data.shape ) == 4, 'emis dimensions invalid.'            
-            ent,enl,enr,enc = emis_data.shape
-            assert ent == self.nstep, 'emis timesteps invalid.'
+            assert len( emis_data.shape ) == 5, 'emis dimensions invalid.'
+            encat,ent,enl,enr,enc = emis_data.shape
+            assert encat == len(self.cat_emis), 'emis category indices invalid.'
+            assert ent == self.nstep_emis, 'emis timesteps invalid.'
             assert enl == self.nlays_emis, 'emis layers invalid.'
             assert enr == self.nrows, 'emis rows invalid.'
             assert enc == self.ncols, 'emis columns invalid.'
             
             self.emis[ spcs_name ] = emis_data
+        
+        for spcs_name in self.spcs_out_prop:
+            prop_data = np.array( prop_dict[ spcs_name ] )            
+            assert len( prop_data.shape ) == 4, 'prop dimensions invalid.'
+            pnt,pnl,pnr,pnc = prop_data.shape
+            assert pnt == self.nstep_prop, 'prop timesteps invalid.'
+            assert pnl == self.nlays_emis, 'prop layers invalid.'
+            assert pnr == self.nrows, 'prop rows invalid.'
+            assert pnc == self.ncols, 'prop columns invalid.'
+            
+            self.prop[ spcs_name ] = prop_data
         return None
     
     def archive( self, path=None ):
@@ -100,7 +103,10 @@ class PhysicalAbstractData( FourDVarData ):
         output is a netCDF file compatible with from_file method.
         """
         unc = lambda spc: spc + '_UNC'
-        
+
+        if inc_icon is True:
+            msg = 'This build is not configured to solve for inital conditions'
+            raise ValueError( msg )
         save_path = get_archive_path()
         if path is None:
             path = self.archive_name
@@ -109,39 +115,38 @@ class PhysicalAbstractData( FourDVarData ):
             os.remove( save_path )
         #construct netCDF file
         attr_dict = { 'SDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.start_date) ),
-                      'EDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.end_date) ), 
-                      'TSEC': self.tsec }
-
-        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
+                      'EDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.end_date) ) }
+        dim_dict = { 'LAY': self.nlays_emis, 'ROW': self.nrows, 'COL': self.ncols }
         
-        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
-                           is_root=True )
+        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict, is_root=True )
         
-        if inc_icon is True:
-            icon_dim = { 'LAY': self.nlays_icon }
-            spcs_txt = ''.join( [ '{:<16}'.format( s ) for s in self.spcs_icon ] )
-            icon_attr = { 'SPC': spcs_txt }
-            icon_var = {}
-            for spc in self.spcs_icon:
-                icon_var[ spc ] = ( 'f4', ('LAY','ROW','COL',), self.icon[ spc ] )
-                icon_var[ unc(spc) ] = ( 'f4', ('LAY','ROW','COL'),
-                                         self.icon_unc[ spc ] )
+        prop_dim = { 'TSTEP': None }
+        prop_attr = { 'TSEC': self.tsec_prop,
+                      'OUT_SPC': ''.join( ['{:<16}'.format(s)
+                                           for s in self.spcs_out_prop] ),
+                      'IN_SPC': ''.join( ['{:<16}'.format(s)
+                                          for s in self.spcs_in_prop] ) }
+        prop_var = {}
+        for spc in self.spcs_out_prop:
+            prop_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL',), self.prop[ spc ], )
+            prop_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL',),
+                                     self.prop_unc[ spc ], )
+        ncf.create( parent=root, name='prop', attr=prop_attr, dim = prop_dim,
+                    var = prop_var, is_root=False )
         
-        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
-        spcs_out_txt = ''.join( [ '{:<16}'.format( s ) for s in self.spcs_out ] )
-        spcs_in_txt = ''.join( [ '{:<16}'.format( s ) for s in self.spcs_in ] )
-        emis_attr = { 'SPC_OUT': spcs_out_txt, 'SPC_IN': spcs_in_txt }
+        emis_dim = { 'TSTEP': None, 'CAT': len(self.cat_emis) }
+        emis_attr = { 'TDAY': self.tday_emis,
+                      'OUT_SPC': ''.join( ['{:<16}'.format(s)
+                                           for s in self.spcs_out_emis ] ),
+                      'CAT_NAME': ''.join( ['{:<16}'.format(c)
+                                            for c in self.cat_emis ] ) }
         emis_var = {}
-        
-        for spc in self.spcs_out:
-            emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+        for spc in self.spcs_out_emis:
+            emis_var[ spc ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ] )
-            emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
+            emis_var[ unc(spc) ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
                                      self.emis_unc[ spc ] )
         
-        if inc_icon is True:
-            ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
-                        attr=icon_attr, is_root=False )
         ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
                     attr=emis_attr, is_root=False )
         root.close()
@@ -159,28 +164,31 @@ class PhysicalAbstractData( FourDVarData ):
         daysec = 24*60*60
         unc = lambda spc: spc + '_UNC'
         
+        if inc_icon is True:
+            msg = 'This build is not configured to solve for inital conditions'
+            raise ValueError( msg )
+        
         #get all data/parameters from file
         sdate = str( ncf.get_attr( filename, 'SDATE' ) )
         edate = str( ncf.get_attr( filename, 'EDATE' ) )
-        tsec = ncf.get_attr( filename, 'TSEC' )
-        spcs_out = ncf.get_attr( filename, 'SPC_OUT', group='emis' ).split()
-        spcs_in = ncf.get_attr( filename, 'SPC_IN', group='emis' ).split()
-        emis_unc_list = [ unc( spc ) for spc in spcs_out ]
+        tday_emis = ncf.get_attr( filename, 'TDAY', group='emis' )
+        tsec_prop = ncf.get_attr( filename, 'TSEC', group='prop' )
+        spcs_out_emis = ncf.get_attr( filename, 'OUT_SPC', group='emis' ).split()
+        spcs_out_prop = ncf.get_attr( filename, 'OUT_SPC', group='prop' ).split()
+        spcs_in_prop = ncf.get_attr( filename, 'IN_SPC', group='prop' ).split()
+        cat_emis = ncf.get_attr( filename, 'CAT_NAME', group='emis' ).split()
+        emis_unc_list = [ unc( spc ) for spc in spcs_out_emis ]
+        prop_unc_list = [ unc( spc ) for spc in spcs_out_prop ]
         
-        if inc_icon is True:
-            spcs_icon = ncf.get_attr( filename, 'SPC', group='icon' ).split()
-            icon_unc_list = [ unc( spc ) for spc in spcs_icon ]
-            icon_dict = ncf.get_variable( filename, spcs_icon, group='icon' )
-            icon_unc = ncf.get_variable( filename, icon_unc_list, group='icon' )
-        emis_dict = ncf.get_variable( filename, spcs_out, group='emis' )
+        emis_dict = ncf.get_variable( filename, spcs_out_emis, group='emis' )
         emis_unc = ncf.get_variable( filename, emis_unc_list, group='emis' )
-
-        if inc_icon is True:
-            for spc in spcs_icon:
-                icon_unc[ spc ] = icon_unc.pop( unc( spc ) )
+        prop_dict = ncf.get_variable( filename, spcs_out_prop, group='prop' )
+        prop_unc = ncf.get_variable( filename, prop_unc_list, group='prop' )
         
-        for spc in spcs_out:
+        for spc in spcs_out_emis:
             emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
+        for spc in spcs_out_prop:
+            prop_unc[ spc ] = prop_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
         msg = 'invalid start date'
@@ -191,39 +199,37 @@ class PhysicalAbstractData( FourDVarData ):
         emis_shape = [ e.shape for e in emis_dict.values() ]
         for eshape in emis_shape[1:]:
             assert eshape == emis_shape[0], 'all emis spcs must have the same shape.'
-        estep, elays, erows, ecols = emis_shape[0]
+        prop_shape = [ p.shape for p in prop_dict.values() ]
+        for pshape in prop_shape[1:]:
+            assert pshape == prop_shape[0], 'all prop spcs must have the same shape.'
+        ecat, estep, elays, erows, ecols = emis_shape[0]
+        pstep, plays, prows, pcols = prop_shape[0]
+                
+        assert max(daysec,tsec_prop) % min(daysec,tsec_prop) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
+        assert (tsec_prop >= daysec) or (pstep % (daysec//tsec_prop) == 0), 'nstep must cleanly divide into days.'
+        assert len(dt.get_datelist()) == tday_emis*estep, 'invalid emission tstep/tday'
+        valid_spcs = set(spcs_out_prop).isdisjoint(set(spcs_in_prop))
+        assert valid_spcs, 'spcs_out_prop & spcs_in_prop must be disjoint.'
+        valid_spcs = set(spcs_out_prop).isdisjoint(set(spcs_out_emis))
+        assert valid_spcs, 'spcs_out_prop & spcs_out_emis must be disjoint.'
         
-        if inc_icon is True:
-            icon_shape = [ i.shape for i in icon_dict.values() ]
-            for ishape in icon_shape[1:]:
-                assert ishape == icon_shape[0], 'all icon spcs must have the same shape.'
-            ilays, irows, icols = icon_shape[0]
-            assert irows == erows, 'icon & emis must match rows.'
-            assert icols == ecols, 'icon & emis must match columns.'
-        
-        assert max(daysec,tsec) % min(daysec,tsec) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
-        assert (tsec >= daysec) or (estep % (daysec//tsec) == 0), 'nstep must cleanly divide into days.'
-        if inc_icon is True:
-            msg = 'Icon uncertainty values are invalid for this data.'
-            for spc in spcs_icon:
-                assert icon_unc[ spc ].shape == icon_dict[ spc ].shape, msg
-                assert ( icon_unc[ spc ] > 0 ).all(), msg
-        for spc in spcs_out:
+        for spc in spcs_out_emis:
             msg = 'Emis uncertainty values are invalid for this data.'
             assert emis_unc[ spc ].shape == emis_dict[ spc ].shape, msg
             assert ( emis_unc[ spc ] > 0 ).all(), msg
-        prop_valid = set(spcs_out).isdisjoint(set(spcs_in))
-        assert prop_valid, 'spcs_out and spcs_in must be disjoint.'
+        for spc in spcs_out_prop:
+            msg = 'Prop uncertainty values are invalid for this data.'
+            assert prop_unc[ spc ].shape == prop_dict[ spc ].shape, msg
+            assert ( prop_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values.
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs_out',
-                    'spcs_in','emis_unc']
-        par_val = [tsec, estep, elays, erows, ecols, spcs_out, spcs_in, emis_unc]
-        par_mutable = ['emis_unc']
-        if inc_icon is True:
-            par_name += [ 'nlays_icon', 'spcs_icon', 'icon_unc' ]
-            par_val += [ ilays, spcs_icon, icon_unc ]
-            par_mutable += ['icon_unc']
+        par_name = ['tday_emis','nstep_emis','tsec_prop','nstep_prop',
+                    'nlays_emis','nrows','ncols','spcs_out_emis','spcs_out_prop',
+                    'spcs_in_prop','cat_emis','emis_unc','prop_unc']
+        par_val = [ tday_emis, estep, tsec_prop, pstep,
+                    elays, erows, ecols, spcs_out_emis, spcs_out_prop,
+                    spcs_in_prop, cat_emis, emis_unc, prop_unc]
+        par_mutable = ['emis_unc','prop_unc']
 
         for name, val in zip( par_name, par_val ):
             old_val = getattr( cls, name )
@@ -239,9 +245,7 @@ class PhysicalAbstractData( FourDVarData ):
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
-        if inc_icon is False:
-            icon_dict = None
-        return cls( icon_dict, emis_dict )
+        return cls( emis_dict, prop_dict )
 
     @classmethod
     def example( cls ):
@@ -255,22 +259,24 @@ class PhysicalAbstractData( FourDVarData ):
         notes: only used for testing.
         must have date_handle dates & PhysicalData parameters already defined.
         """
-        icon_val = 0
         emis_val = 0
+        prop_val = 0
         
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
         
         if inc_icon is True:
-            icon_val += np.zeros((cls.nlays_icon, cls.nrows, cls.ncols))
-            icon_dict = { spc: icon_val.copy() for spc in cls.spcs_icon }
-        else:
-            icon_dict = None
+            msg = 'This build is not configured to solve for inital conditions'
+            raise ValueError( msg )
         
-        emis_val += np.zeros((cls.nstep, cls.nlays_emis, cls.nrows, cls.ncols))
-        emis_dict = { spc: emis_val.copy() for spc in cls.spcs_out }
+        emis_val += np.zeros((len(cls.cat_emis), cls.nstep, cls.nlays_emis,
+                              cls.nrows, cls.ncols,))
+        prop_val += np.zeros((cls.nstep_prop, nls.nlays_emis,
+                              cls.nrows, cls.ncols,))
+        emis_dict = { spc: emis_val.copy() for spc in cls.spcs_out_emis }
+        prop_dict = { spc: prop_val.copy() for spc in cls.spcs_out_prop }
         
-        return cls( icon_dict, emis_dict )
+        return cls( emis_dict, prop_dict )
     
     @classmethod
     def assert_params( cls ):
@@ -281,15 +287,19 @@ class PhysicalAbstractData( FourDVarData ):
         
         notes: method raises assertion error if None valued parameter is found.
         """
-        par_name = ['tsec','nstep','nlays_emis','nrows','ncols','spcs_out',
-                    'spcs_in','emis_unc']
+        par_name = ['tday_emis','nstep_emis','tsec_prop','nstep_prop',
+                    'nlays_emis','nrows','ncols','spcs_out_emis','spcs_out_prop',
+                    'spcs_in_prop','cat_emis','emis_unc','prop_unc']
         if inc_icon is True:
-            par_name += [ 'nlays_icon', 'spcs_icon', 'icon_unc' ]
+            msg = 'This build is not configured to solve for inital conditions'
+            raise ValueError( msg )
         for param in par_name:
             msg = 'missing definition for {0}.{1}'.format( cls.__name__, param )
             assert getattr( cls, param ) is not None, msg
-        assert max(24*60*60,cls.tsec) % min(24*60*60,cls.tsec) == 0, 'invalid step size (tsec).'
-        assert (cls.tsec>=24*60*60) or (cls.nstep % ((24*60*60)//cls.tsec) == 0), 'invalid step count (nstep).'
+        assert max(24*60*60,cls.tsec_prop) % min(24*60*60,cls.tsec_prop) == 0, 'invalid step size (tsec).'
+        assert (cls.tsec_prop>=24*60*60) or (cls.nstep_prop % ((24*60*60)//cls.tsec_prop) == 0), 'invalid step count (nstep).'
+        assert len(dt.get_datelist()) % cls.tday_emis == 0, 'invalid step size (tday)'
+        assert cls.tday_emis*cls.nstep_emis == len(dt.get_datelist()), 'invalid step count (nstep)'
         return None
     
     def cleanup( self ):

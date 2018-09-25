@@ -15,11 +15,14 @@ from fourdvar.params.root_path_defn import root_path
 #'filelist': source = list of OCO2-Lite files
 #'directory': source = directory, use all files in source
 #'pattern': source = file_pattern_string, use all files that match pattern
-source_type = 'directory'
+#source_type = 'directory'
+source_type = 'filelist'
 
-source = os.path.join( root_path, 'SHORT_LN/obs_oco2_data' )
+#source = os.path.join( root_path, 'SHORT_LN/obs_oco2_data' )
+source = ['./GEOCARB_fake_OCO2_format.ncf']
 
-output_file = './oco2_observed.pickle.zip'
+#output_file = './oco2_observed.pickle.zip'
+output_file = './GEOCARB_CO2only_observed.pickle.zip'
 reject_log = './rejects.pickle.zip'
 
 #--------------------------------------------------------------------------

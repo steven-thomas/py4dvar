@@ -82,81 +82,76 @@ def map_sense( sensitivity ):
     datelist = dt.get_datelist()
     PhysicalAdjointData.assert_params()
     #all spcs use same dimension set, therefore only need to test 1.
-    test_spc = PhysicalAdjointData.spcs_out[0]
+    test_spc = PhysicalAdjointData.spcs_out_emis[0]
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
     xcell = float( ncf.get_attr( test_fname, 'XCELL' ) )
     ycell = float( ncf.get_attr( test_fname, 'YCELL' ) )
     cell_area = xcell*ycell
     
-    #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-    #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
-    #emis_dict = { spcs: np.ndarray( nstep, nlays_emis, nrows, ncols ) }
-    
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
     if inc_icon is True:
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs_icon }
-    emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
-    emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs_out }
+        raise ValueError('setup is not configured for ICON')
+        #icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
+        #icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs_icon }
+    ncat = len( p.cat_emis )
+    emis_shape = ( ncat, p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
+    emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs_out_emis }
+    prop_shape = ( p.nstep_prop, p.nlays_emis, p.nrows, p.ncols, )
+    prop_dict = { spc: np.zeros( prop_shape ) for spc in p.spcs_out_prop }
+
+    diurnal = ncf.get_variable( template.diurnal, p.spcs_out_emis )
     del p
-    
-    #construct icon_dict
-    if inc_icon is True:
-        icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
-        icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
-        icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
-        for spc in PhysicalAdjointData.spcs_icon:
-            data = icon_vars[ spc ][ 0, :, :, : ]
-            ilays, irows, icols = data.shape
-            msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
-            assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
-            assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
-    
-    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
+        
+    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec_prop
+    nlay = PhysicalAdjointData.nlays_emis
+    model_step = mod_shape[0]
+    nrow = mod_shape[2]
+    ncol = mod_shape[3]
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( datelist ):
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
+        sense_emis_dict = ncf.get_variable( sense_fname,
+                                            PhysicalAdjointData.spcs_out_emis )
+        sense_prop_dict = ncf.get_variable( sense_fname,
+                                            PhysicalAdjointData.spcs_out_prop )
         emis_fname = dt.replace_date( cmaq_config.emis_file, date )
-        sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs_out )
-        emis_input_dict = ncf.get_variable( emis_fname, PhysicalAdjointData.spcs_in )
+        emis_input_dict = ncf.get_variable( emis_fname,
+                                            PhysicalAdjointData.spcs_in_prop )
+
+        pstep = i // PhysicalAdjointData.tday_emis
+        unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
+        for spc in PhysicalAdjointData.spcs_out_emis:
+            cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
+            sense_arr = (sense_emis_dict[spc] * unit_convert)[ :-1, :nlay, :, : ]
+            model_avg = sense_arr.reshape((model_step-1,-1,
+                                           nlay,nrow,ncol,)).mean(axis=1)
+            for c in range( ncat ):
+                data = model_avg.copy()
+                data[ cat_arr != c ] = np.nan
+                data = np.nansum( data, axis=0 )
+                #insert NaN's if cell never had category c
+                nan_arr = (cat_arr == c).sum( axis=0 )
+                nan_arr = np.where( (nan_arr==0), np.nan, 0. )
+                data += nan_arr
+                emis_dict[spc][c,pstep,:,:,:] += data
+
         start = int( i * p_daysize )
         end = int( (i+1) * p_daysize )
         if start == end:
             end += 1
-        spcs_pair_list = zip( PhysicalAdjointData.spcs_out, PhysicalAdjointData.spcs_in )
+        spcs_pair_list = zip( PhysicalAdjointData.spcs_out_prop,
+                              PhysicalAdjointData.spcs_in_prop )
         for spc_out, spc_in in spcs_pair_list:
-            unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
-            sdata = sense_data_dict[ spc_out ][:] * unit_convert
-            edata = emis_input_dict[ spc_in ][:] / cell_area
-            sstep, slay, srow, scol = sdata.shape
-            #recast to match mod_shape
-            mstep, mlay, mrow, mcol = mod_shape
-            msg = 'emis_sense and ModelInputData {} are incompatible.'
-            assert ((sstep-1) >= (mstep-1)) and ((sstep-1) % (mstep-1) == 0), msg.format( 'TSTEP' )
-            assert slay >= mlay, msg.format( 'NLAYS' )
-            assert srow == mrow, msg.format( 'NROWS' )
-            assert scol == mcol, msg.format( 'NCOLS' )
-            fac = (sstep-1) // (mstep-1)
-            tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
-                             for i in range( fac ) ]).mean( axis=0 )
-            #adjoint prepare_model
-            assert tmp.shape == edata.shape, 'Error in shape re-casting.'
-            prop_arr = tmp / edata
-            msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
-            assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
-            assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = (mstep-1) // (end-start)
-            pdata = np.array([ prop_arr[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
-                               for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc_out ][ start:end, ... ] += pdata.copy()
-    
-    if inc_icon is False:
-        icon_dict = None
-    return PhysicalAdjointData( icon_dict, emis_dict )
+            sdata = (sense_prop_dict[ spc_out ][:] * unit_convert)[:-1,...]
+            edata = (emis_input_dict[ spc_in ][:] / cell_area)[:-1,...]
+            mod_avg = sdata[:,:nlay,:,:]
+            mod_avg = mod_avg.reshape((model_step-1,-1,nlay,nrow,ncol)).mean( axis=1 )
+            assert mod_avg.shape == edata.shape, 'Error in shape re-casting.'
+            prop_arr = mod_avg / edata
+            prop_arr = prop_arr.reshape((end-start,-1,nlay,nrow,ncol)).sum( axis=1 )
+            prop_dict[ spc_out ][ start:end, ... ] += prop_arr[:]
+            
+    return PhysicalAdjointData( emis_dict, prop_dict )

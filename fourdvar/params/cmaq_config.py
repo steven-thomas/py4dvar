@@ -8,11 +8,11 @@ from fourdvar.params.root_path_defn import root_path
 #with the year, month and day of the current model run
 
 #No. of processors per column
-npcol = 1
-#npcol = 4
+#npcol = 1
+npcol = 4
 #No. of processors per row
-nprow = 1
-#nprow = 4
+#nprow = 1
+nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -50,8 +50,8 @@ promptflag = False
 
 #output species
 #'template' means value calculated from template files
-conc_spcs = 'template'
-avg_conc_spcs = 'template'
+conc_spcs = 'CO2 CO'
+avg_conc_spcs = 'CO2 CO'
 
 #output layers
 #'template' means value calculated from template files
@@ -67,8 +67,8 @@ pertspcs = '2'
 pertdelt = '1.00'
 
 #application name
-fwd_appl = 'fwd_CO_CO2.<YYYYMMDD>'
-bwd_appl = 'bwd_CO_CO2.<YYYYMMDD>'
+fwd_appl = 'fwd_incCO2.<YYYYMMDD>'
+bwd_appl = 'bwd_incCO2.<YYYYMMDD>'
 
 #emis_date, use unknown
 emisdate = '<YYYYMMDD>'
@@ -83,10 +83,9 @@ sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
 runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
-cmaq_base = os.path.join( root_path, 'SHORT_LN/CMAQ' )
-input_path = os.path.join( cmaq_base, 'input' )
-output_path = os.path.join( cmaq_base, 'output' )
-mcip_path = os.path.join( cmaq_base, 'mcip' )
+cmaq_base = os.path.join( root_path, 'SHORT_LN_MEXICO/CMAQ' )
+output_path = os.path.join( cmaq_base, 'output', '<YYYY-MM-DD>' )
+mcip_path = os.path.join( cmaq_base, 'mcip', '<YYYY-MM-DD>' )
 grid_path = os.path.join( cmaq_base, 'grid' )
 jproc_path = os.path.join( cmaq_base, 'jproc' )
 bcon_path = os.path.join( cmaq_base, 'bcon' )
@@ -95,11 +94,12 @@ emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
 griddesc = os.path.join( grid_path, 'GRIDDESC' )
-gridname = 'CMAQ-BENCHMARK'
+#gridname = 'CMAQ-BENCHMARK'
+gridname = 'GMR_d03'
 
 #logfile
-fwd_logfile = os.path.join( output_path, 'fwd_CO_CO2.<YYYYMMDD>.log' )
-bwd_logfile = os.path.join( output_path, 'bwd_CO_CO2.<YYYYMMDD>.log' )
+fwd_logfile = os.path.join( output_path, 'fwd_incCO2.<YYYYMMDD>.log' )
+bwd_logfile = os.path.join( output_path, 'bwd_incCO2.<YYYYMMDD>.log' )
 
 #floor file
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
@@ -120,18 +120,18 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'icon_CO_CO2.ncf' )
-bcon_file = os.path.join( bcon_path, 'bcon_CO_CO2.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( emis_path, 'emis_CO_CO2.<YYYYMMDD>.ncf' )
+icon_file = os.path.join( icon_path, 'ICON_incCO2.ncf' )
+bcon_file = os.path.join( bcon_path, 'BCON_incCO2.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( emis_path, 'EMIS_incCO2.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
-ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.ncf' )
-grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_<YYYYMMDD>.ncf' )
-grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_<YYYYMMDD>.ncf' )
-met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.ncf' )
-met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.ncf' )
-met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.ncf' )
-met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_<YYYYMMDD>.ncf' )
+ocean_file = os.path.join( grid_path, 'surfzone_d03.nc' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_MX2006' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_MX2006' )
+met_cro_2d = os.path.join( mcip_path, 'METCRO2D_MX2006' )
+met_cro_3d = os.path.join( mcip_path, 'METCRO3D_MX2006' )
+met_dot_3d = os.path.join( mcip_path, 'METDOT3D_MX2006' )
+met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_MX2006' )
 layerfile = met_cro_3d
 depv_trac = met_cro_2d
 xj_data = os.path.join( jproc_path, 'JTABLE_<YYYYDDD>' )
@@ -154,9 +154,9 @@ irr2_file = os.path.join( output_path, 'IRR_2.<YYYYMMDD>.ncf' )
 irr3_file = os.path.join( output_path, 'IRR_3.<YYYYMMDD>.ncf' )
 rj1_file = os.path.join( output_path, 'RJ_1.<YYYYMMDD>.ncf' )
 rj2_file = os.path.join( output_path, 'RJ_2.<YYYYMMDD>.ncf' )
-conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
-emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
-emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
+conc_sense_file = os.path.join( output_path, 'LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
+emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
+emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
 
 curdir = os.path.realpath( os.curdir )
 
@@ -185,8 +185,8 @@ wipeout_list = [ fwd_logfile, bwd_logfile, floor_file,
                  fwd_stdout_log, bwd_stdout_log ]
 
 #drivers
-fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO_CO2', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO_CO2', 'ADJOINT_BWD' )
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_incCO2', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_incCO2', 'ADJOINT_BWD' )
 
 #shell used to call drivers
 cmd_shell = '/bin/csh'

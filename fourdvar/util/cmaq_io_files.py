@@ -16,10 +16,11 @@ def get_filedict( clsname ):
     """
     extension: return dictionary of files needed for data class
     input: string, name of dataclass
-    output: dict, filedict has 3 keys: actual, template and archive
+    output: dict, filedict has 4 keys: actual, template, archive and date
             actual: path to the file used by cmaq.
             template: path to the template file used to construct actual.
             archive: filename to use when saving an archived copy of file.
+            date: date the file data is for
     """
     msg = 'Must set date_handle.{}'
     assert dt.start_date is not None, msg.format('start_date')
@@ -52,12 +53,12 @@ def build_filedict():
     all_files[ 'SensitivityData' ] = sensitivity_files
 
     if input_defn.inc_icon is True:
-        model_input_files['icon'] = {
-            'actual': cmaq_config.icon_file,
-            'template': template.icon,
-            'archive': archive.icon_file,
-            'date': None }
-            #'date': dt.start_date }
+        raise ValueError('This build is not configured to handle ICON')
+        #model_input_files['icon'] = {
+        #    'actual': cmaq_config.icon_file,
+        #    'template': template.icon,
+        #    'archive': archive.icon_file,
+        #    'date': None }
 
     for date in dt.get_datelist():
         
