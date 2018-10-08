@@ -3,7 +3,7 @@ import os
 import _get_root
 from fourdvar.params.root_path_defn import root_path
 
-template_path = os.path.join( root_path, 'SHORT_LN/templates' )
+template_path = os.path.join( root_path, 'SHORT_LN_YC/templates' )
 
 #filepaths to template netCDF files used by CMAQ & fourdvar
 conc = os.path.join( template_path, 'conc_template.ncf' )

@@ -83,11 +83,11 @@ sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
 runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
-cmaq_base = os.path.join( root_path, 'SHORT_LN/CMAQ' )
+cmaq_base = os.path.join( root_path, 'SHORT_LN_YC/CMAQ' )
 input_path = os.path.join( cmaq_base, 'input' )
-output_path = os.path.join( cmaq_base, 'output' )
-mcip_path = os.path.join( cmaq_base, 'mcip' )
-grid_path = os.path.join( cmaq_base, 'grid' )
+output_path = os.path.join( cmaq_base, 'output/<YYYY-MM-DD>' )
+mcip_path = os.path.join( cmaq_base, 'mcip/<YYYY-MM-DD>' )
+grid_path = os.path.join( cmaq_base, 'grid/<YYYY-MM-DD>' )
 jproc_path = os.path.join( cmaq_base, 'jproc' )
 bcon_path = os.path.join( cmaq_base, 'bcon' )
 icon_path = os.path.join( cmaq_base, 'icon' )
@@ -95,7 +95,8 @@ emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
 griddesc = os.path.join( grid_path, 'GRIDDESC' )
-gridname = 'CMAQ-BENCHMARK'
+#gridname = 'CMAQ-BENCHMARK'
+gridname = 'AUS_d01'
 
 #logfile
 fwd_logfile = os.path.join( output_path, 'fwd_CO2only.<YYYYMMDD>.log' )
@@ -122,7 +123,7 @@ bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 #input files
 icon_file = os.path.join( icon_path, 'icon_CO2only.ncf' )
 bcon_file = os.path.join( bcon_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( emis_path, 'emis_CO2only.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( emis_path, 'emis.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.ncf' )

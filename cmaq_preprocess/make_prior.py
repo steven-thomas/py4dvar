@@ -16,7 +16,7 @@ from cmaq_preprocess.uncertainty import convert_unc
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( root_path, 'SHORT_LN/input/yc_prior.ncf' )
+save_path = os.path.join( root_path, 'SHORT_LN_YC/input/prior.ncf' )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
