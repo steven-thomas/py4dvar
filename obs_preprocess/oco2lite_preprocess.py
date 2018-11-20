@@ -71,6 +71,7 @@ for fname in filelist:
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
         obs = ObsOCO2.create( **src_dict )
+        obs.interp_time = False
         obs.model_process( model_grid )
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
