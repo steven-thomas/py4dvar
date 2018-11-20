@@ -34,12 +34,14 @@ class ObsOCO2( ObsMultiRay ):
         newobs = cls( obstype='OCO2_sounding' )
         newobs.out_dict['value'] = kwargs['xco2']
         newobs.out_dict['uncertainty'] = kwargs['xco2_uncertainty']
+
         column_xco2 = ( kwargs['pressure_weight'] *
                         kwargs['xco2_averaging_kernel'] *
                         kwargs['co2_profile_apriori'] )
         newobs.out_dict['offset_term'] = kwargs['xco2_apriori'] - column_xco2.sum()
-        newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
-        newobs.out_dict['warn_level'] = kwargs['warn_level']
+        # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
+        newobs.out_dict['surface_type'] = kwargs['surface_type']
+        newobs.out_dict['operation_mode'] = kwargs['operation_mode']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO2'
         newobs.src_data = kwargs.copy()
@@ -48,26 +50,34 @@ class ObsOCO2( ObsMultiRay ):
     def model_process( self, model_space ):
         ObsMultiRay.model_process( self, model_space )
         #now created self.out_dict[ 'weight_grid' ]
-        #need to rescale weight_grid so that values sum to 1
-        if self.valid is True:
-            tmp = self.out_dict[ 'weight_grid' ].copy()
-            total = sum( tmp.values() )
-            self.out_dict[ 'weight_grid' ] = { k:(v/total) for k,v in tmp.items() }
         return None
     
-    def get_visibility( self, coord_list, model_space ):
-        obs_pressure = self.src_data[ 'pressure_levels' ]
-        #obs pressure is TOA to surface in hPa, convert to model units
-        obs_pressure = [ 100.*p for p in obs_pressure[::-1] ]
-        #kernel ans pressure_weight are also TOA to surface, remember to flip!
-        obs_kernel = self.src_data[ 'xco2_averaging_kernel' ][::-1]
-        obs_pweight = self.src_data[ 'pressure_weight' ][::-1]
+    def add_visibility( self, proportion, model_space ):
+        #obs pressure is in hPa, convert to model units (Pa)
+        obs_pressure = 100. * np.array( self.src_data[ 'pressure_levels' ] )
+        obs_kernel = np.array( self.src_data[ 'xco2_averaging_kernel' ] )
+        obs_pweight = np.array( self.src_data[ 'pressure_weight' ] )
         obs_vis = obs_kernel * obs_pweight
-        model_vis = model_space.pressure_interp( obs_pressure, obs_vis )
-        def vis( coord ):
-            lay = coord[2]
-            return model_vis[ lay ]
-        return { coord: vis(coord) for coord in coord_list }
+        
+        #get sample model coordinate at surface
+        coord = [ c for c in proportion.keys() if c[2] == 0 ][0]
+        
+        model_vis = model_space.pressure_convert( obs_pressure, obs_vis, coord )
+        
+        weight_grid = {}
+        for l, weight in enumerate( model_vis ):
+            layer_slice = { c:v for c,v in proportion.items() if c[2] == l }
+            layer_sum = sum( layer_slice.values() )
+            weight_slice = { c: weight*v/layer_sum for c,v in layer_slice.items() }
+            weight_grid.update( weight_slice )
+        
+        m_vis_sum = sum(model_vis)
+        w_sum = sum(weight_grid.values())
+        w_len = len(weight_grid.values())
+        if abs(m_vis_sum-w_sum) > 1e6:
+            print '{:.4}\t{:.4}\t{:}'.format( m_vis_sum, w_sum, w_len )
+
+        return weight_grid
     
     def map_location( self, model_space ):
         assert model_space.gridmeta['GDTYP'] == 2, 'invalid GDTYP'
@@ -83,7 +93,6 @@ class ObsOCO2( ObsMultiRay ):
         p1 = (x1,y1,0)
         p0 = model_space.get_ray_top( p1, p0_zenith, p0_azimuth )
         p2 = model_space.get_ray_top( p1, p2_zenith, p2_azimuth )
-        toa_pcent = float(model_space.pressure[-1]) / float(model_space.pressure[0])
         
         ray_in = Ray( p0, p1 )
         ray_out = Ray( p1, p2 )
@@ -93,13 +102,6 @@ class ObsOCO2( ObsMultiRay ):
         except AssertionError:
             self.coord_fail( 'outside grid area' )
             return None
-        #add on to top layer of model the top of the atmosphere cut off by model
-        c_in = model_space.grid.get_cell( Point( p0 ) )
-        c_out = model_space.grid.get_cell( Point( p2 ) )
-        in_dict[c_in] = ( in_dict.get( c_in, 0 ) +
-                          (toa_pcent*ray_in.length)/(1-toa_pcent) )
-        out_dict[c_out] = ( out_dict.get( c_out, 0 ) +
-                            (toa_pcent*ray_out.length)/(1-toa_pcent) )
         
         dist_dict = in_dict.copy()
         for coord, val in out_dict.items():

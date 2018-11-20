@@ -31,7 +31,7 @@ class ModelSpace( object ):
         sdate = date_handle.start_date
         edate = date_handle.end_date
         METCRO3D = date_handle.replace_date( cmaq_config.met_cro_3d, sdate )
-        METCRO2D = date_handle.replace_date( cmaq_config.met_cro_2d, sdate )
+        METCRO2D = cmaq_config.met_cro_2d
         CONC = template_defn.conc
         date_range = [ sdate, edate ]
         return cls( METCRO3D, METCRO2D, CONC, date_range )
@@ -51,20 +51,17 @@ class ModelSpace( object ):
         with Dataset( METCRO3D, 'r' ) as f:
             zf = f.variables['ZF'][:].mean( axis=(0,2,3) )
             layer_height = np.append( np.zeros(1), zf )
-        with Dataset( METCRO2D, 'r' ) as f:
-            surface_pressure = f.variables['PRSFC'][:].mean()
+        
+        self.psurf_file = METCRO2D
+        self.psurf_date = None
+        self.psurf_arr = None
         
         #date co-ords are int YYYYMMDD format
         self.sdate = int( date_range[0].strftime('%Y%m%d') )
         self.edate = int( date_range[1].strftime('%Y%m%d') )
         
-        #get pressure (Pa) for each layer boundary
+        #Only works on one type of vertical projection
         assert ( self.gridmeta[ 'VGTYP' ] == 7 ), 'Invalid VGTYP'
-        vglvl = list( self.gridmeta[ 'VGLVLS' ] )
-        vgtop = float( self.gridmeta[ 'VGTOP' ] )
-        self.pressure = [ vgtop + sig*(surface_pressure - vgtop) for sig in vglvl ]
-        msg = 'pressure array must be strictly decreasing'
-        assert np.all( np.diff( self.pressure ) < 0.0 ), msg
         
         #record dimensional data
         self.ncol = self.gridmeta[ 'NCOLS' ]
@@ -137,27 +134,48 @@ class ModelSpace( object ):
                            dt.timedelta(days=1) ).strftime('%Y%m%d') )
         return (cdate, cstep)
     
-    def pressure_interp( self, pressure_arr, value_arr ):
-        #interpolate value_arr into layers using pressure values (in Pa)
-        assert len(pressure_arr) == len(value_arr), 'input arrays must match'
-        msg = ' pressure array must be strictly decreasing'
-        assert np.all( np.diff(pressure_arr) < 0.0 ), msg
-        #flip input arrays to use np.searchsorted
-        p_arr = pressure_arr[::-1]
-        v_arr = value_arr[::-1]
-        interped = []
-        mod_pressure = [ .5*(a+b) for a,b in zip(self.pressure[:-1],self.pressure[1:]) ]
-        for p in mod_pressure:
-            if p <= p_arr[0]:
-                val = v_arr[0]
-            elif p >= p_arr[-1]:
-                val = v_arr[-1]
-            else:
-                ind = np.searchsorted( p_arr, p ) - 1
-                pos = float(p-p_arr[ind]) / float( p_arr[ind+1] - p_arr[ind] )
-                val = v_arr[ind]*(1-pos) + v_arr[ind+1]*pos
-            interped.append( val )
-        return interped
+    def update_psurf( self, date_int ):
+        #replace the psurf array with the new file
+        new_date = dt.datetime.strptime(str(date_int),'%Y%m%d')
+        new_file = date_handle.replace_date( self.psurf_file, new_date )
+        with Dataset( new_file, 'r' ) as f:
+            self.psurf_arr = f.variables['PRSFC'][:,0,:,:]
+        self.psurf_date = date_int
+        return None
+    
+    def pressure_convert( self, obs_pressure, obs_value, target_coord ):
+        #convert obs_value array into model layers using pressure values (in Pa)
+        obs_p = np.array( obs_pressure )
+        obs_v = np.array( obs_value )
+        
+        date = target_coord[0]
+        time = target_coord[1]
+        row = target_coord[3]
+        col = target_coord[4]
+        
+        if date != self.psurf_date:
+            self.update_psurf( date )
+        vgbot = self.psurf_arr[time,row,col]
+        vglvl = np.array( self.gridmeta[ 'VGLVLS' ] )
+        vgtop = float( self.gridmeta[ 'VGTOP' ] )
+        
+        cbound = ( vglvl[::-1]*(vgbot-vgtop) + vgtop ).reshape((1,-1))
+        obound = np.concatenate(( obs_p[:1],
+                                  0.5*(obs_p[:-1] + obs_p[1:]),
+                                  obs_p[-1:] )).reshape((-1,1))
+        cbound[0,0] = min( cbound[0,0], obound[0,0] )
+        obound[0,0] = min( cbound[0,0], obound[0,0] )
+        cbound[0,-1] = max( cbound[0,-1], obound[-1,0] )
+        obound[-1,0] = max( cbound[0,-1], obound[-1,0] )
+        
+        osize = np.diff( obound, axis=0 )
+    
+        mask = np.zeros(( obound.size-1, cbound.size-1, ))
+        lower = np.maximum( mask+cbound[:,:-1], mask+obound[:-1,:] )
+        upper = np.minimum( mask+cbound[:,1:], mask+obound[1:,:] )
+    
+        convert_matrix = np.clip( ((upper-lower) / osize), 0, None )[:,::-1]
+        return np.matmul( obs_v, convert_matrix )
     
     def get_xy( self, lat, lon ):
         return self.proj( lon, lat )
