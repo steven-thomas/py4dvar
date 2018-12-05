@@ -9,14 +9,14 @@ import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.date_handle as dt
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import short_path
 from cmaq_preprocess.uncertainty import convert_unc
 
 #parameters
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( root_path, 'SHORT_LN_YC/input/prior.ncf' )
+save_path = os.path.join( short_path, 'input/prior.ncf' )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs

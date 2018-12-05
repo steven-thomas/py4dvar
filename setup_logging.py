@@ -3,6 +3,8 @@ import logging
 import os
 
 import _get_root
+from fourdvar.params.root_path_defn import root_path, short_path
+from fourdvar.params.cmaq_config import is_large_sim
 
 #levels in acending order: DEBUG, INFO, WARNING, ERROR, CRITICAL
 #to_screen_level = logging.INFO
@@ -19,11 +21,12 @@ logfile_name = 'full_report.log'
 
 reset_logfile = True
 
-
-root_path = os.path.realpath( os.path.dirname( __file__ ) )
 project_name = os.path.split( root_path )[1]
 
-logfile = os.path.join( root_path, logfile_name )
+if is_large_sim is True:
+    logfile = os.path.join( short_path, logfile_name )
+else:
+    logfile = os.path.join( root_path, logfile_name )
 
 if reset_logfile is True and os.path.isfile( logfile ):
     os.remove( logfile )

@@ -10,6 +10,7 @@ import netCDF4 as ncf
 
 import _get_root
 import fourdvar.util.date_handle as dt
+from fourdvar.params.cmaq_config import is_large_sim
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -53,7 +54,8 @@ def create_from_template( source, dest, var_change={}, date=None, overwrite=True
     designed for IOAPI compliant netCDF files, other netCDF files may not work.
     """
     assert validate( source, var_change ), 'changes to template are invalid'
-    logger.debug( 'copy {} to {}.'.format( source, dest ) )
+    if is_large_sim is False:
+        logger.debug( 'copy {} to {}.'.format( source, dest ) )
     shutil.copyfile( source, dest )
     with ncf.Dataset( dest, 'a' ) as ncf_file:
         for var, data in var_change.items():
@@ -130,7 +132,7 @@ def copy_compress( source, dest ):
         msg = 'Failed to ' + msg
         logger.error( msg )
         raise AssertionError( msg )
-    else:
+    elif is_large_sim is False:
         logger.debug( msg )
     return None
 

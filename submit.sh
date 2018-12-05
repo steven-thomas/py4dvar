@@ -11,4 +11,7 @@
 module use /g/data3/hh5/public/modules
 module load conda/analysis27
 
+module unload openmpi
+module load openmpi
+
 python runscript.py >& output.txt

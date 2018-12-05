@@ -40,7 +40,8 @@ def load_env( env_dict ):
     notes: all names and values must be strings
     """
     for name, value in env_dict.items():
-        logger.debug( 'setenv {} = {}'.format( name, value ) )
+        if cfg.is_large_sim is False:
+            logger.debug( 'setenv {} = {}'.format( name, value ) )
         os.environ[ name ] = value
     return None
 
@@ -287,6 +288,21 @@ def run_bwd_single( date, is_first ):
     clean_env( env_dict )
     return None
 
+def clear_local_logs():
+    """
+    extension: delete logfiles CMAQ puts in cwd
+    input: None
+    output: None
+    """
+    #delete every file that matches a pattern in cfg.cwd_logs
+    for file_pattern in cfg.cwd_logs:
+        file_list = glob.glob( file_pattern )
+        for file_name in file_list:
+            full_file_name = os.path.realpath( file_name )
+            if os.path.isfile( full_file_name ):
+                os.remove( full_file_name )
+    return None
+
 def run_fwd():
     """
     extension: run cmaq fwd from current config
@@ -297,6 +313,7 @@ def run_fwd():
     for cur_date in dt.get_datelist():
         run_fwd_single(cur_date, isfirst)
         isfirst = False
+        clear_local_logs()
     return None
 
 def run_bwd():
@@ -309,6 +326,7 @@ def run_bwd():
     for cur_date in dt.get_datelist()[::-1]:
         run_bwd_single(cur_date, isfirst)
         isfirst = False
+        clear_local_logs()
     return None
     
 def wipeout():
@@ -317,14 +335,7 @@ def wipeout():
     input: None
     output: None
     """
-    #cfg.cwd_logs, cfg.output_path
-    #delete every file that matches a pattern in cfg.cwd_logs
-    for file_pattern in cfg.cwd_logs:
-        file_list = glob.glob( file_pattern )
-        for file_name in file_list:
-            full_file_name = os.path.realpath( file_name )
-            if os.path.isfile( full_file_name ):
-                os.remove( full_file_name )
+    clear_local_logs()
     #delete every file in wipeout_list
     all_tags = dt.tag_map.keys()
     for pat_name in cfg.wipeout_list:
