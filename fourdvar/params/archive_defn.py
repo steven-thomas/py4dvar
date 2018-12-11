@@ -2,12 +2,12 @@
 import os
 import _get_root
 
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import short_path
 
 #Settings for archive processes
 
 #location of archive directory
-archive_path = os.path.join( root_path, 'SHORT_LN/archive' )
+archive_path = os.path.join( short_path, 'archive' )
 
 #experiment name & name of directory to save results in
 experiment = 'example_experiment'
