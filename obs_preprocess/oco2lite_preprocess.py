@@ -8,7 +8,7 @@ from netCDF4 import Dataset
 
 import _get_root
 import fourdvar.util.file_handle as fh
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import short_path
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -18,7 +18,7 @@ from fourdvar.params.root_path_defn import root_path
 #source_type = 'directory'
 source_type = 'filelist'
 
-#source = os.path.join( root_path, 'SHORT_LN/obs_oco2_data' )
+#source = os.path.join( short_path, 'obs_oco2_data' )
 source = ['./GEOCARB_fake_OCO2_format.ncf']
 
 #output_file = './oco2_observed.pickle.zip'

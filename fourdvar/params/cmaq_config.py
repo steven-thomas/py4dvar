@@ -2,10 +2,12 @@
 import os
 
 import _get_root
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import short_path
 
 #notes: the patterns <YYYYMMDD>, <YYYYDDD> & <YYYY-MM-DD> will be replaced
 #with the year, month and day of the current model run
+
+is_large_sim = False
 
 #No. of processors per column
 #npcol = 1
@@ -83,8 +85,15 @@ sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
 runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
-cmaq_base = os.path.join( root_path, 'SHORT_LN_MEXICO/CMAQ' )
+cmaq_base = os.path.join( short_path, 'CMAQ' )
 output_path = os.path.join( cmaq_base, 'output', '<YYYY-MM-DD>' )
+if is_large_sim is True:
+    chk_path = os.environ.get('PBS_JOBFS',None)
+    if chk_path is None:
+        msg = 'cannot find PBS_JOBFS, is_large_sim can only be run with qsub.'
+        raise ValueError(msg)
+else:
+    chk_path = output_path
 mcip_path = os.path.join( cmaq_base, 'mcip', '<YYYY-MM-DD>' )
 grid_path = os.path.join( cmaq_base, 'grid' )
 jproc_path = os.path.join( cmaq_base, 'jproc' )
@@ -105,15 +114,15 @@ bwd_logfile = os.path.join( output_path, 'bwd_incCO2.<YYYYMMDD>.log' )
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
 
 #checkpoint files
-chem_chk = os.path.join( output_path, 'CHEM_CHK.<YYYYMMDD>.ncf' )
-vdiff_chk = os.path.join( output_path, 'VDIFF_CHK.<YYYYMMDD>.ncf' )
-aero_chk = os.path.join( output_path, 'AERO_CHK.<YYYYMMDD>.ncf' )
-ha_rhoj_chk = os.path.join( output_path, 'HA_RHOJ_CHK.<YYYYMMDD>.ncf' )
-va_rhoj_chk = os.path.join( output_path, 'VA_RHOJ_CHK.<YYYYMMDD>.ncf' )
-hadv_chk = os.path.join( output_path, 'HADV_CHK.<YYYYMMDD>.ncf' )
-vadv_chk = os.path.join( output_path, 'VADV_CHK.<YYYYMMDD>.ncf' )
-emis_chk = os.path.join( output_path, 'EMIS_CHK.<YYYYMMDD>.ncf' )
-emist_chk = os.path.join( output_path, 'EMIST_CHK.<YYYYMMDD>.ncf' )
+chem_chk = os.path.join( chk_path, 'CHEM_CHK.<YYYYMMDD>.ncf' )
+vdiff_chk = os.path.join( chk_path, 'VDIFF_CHK.<YYYYMMDD>.ncf' )
+aero_chk = os.path.join( chk_path, 'AERO_CHK.<YYYYMMDD>.ncf' )
+ha_rhoj_chk = os.path.join( chk_path, 'HA_RHOJ_CHK.<YYYYMMDD>.ncf' )
+va_rhoj_chk = os.path.join( chk_path, 'VA_RHOJ_CHK.<YYYYMMDD>.ncf' )
+hadv_chk = os.path.join( chk_path, 'HADV_CHK.<YYYYMMDD>.ncf' )
+vadv_chk = os.path.join( chk_path, 'VADV_CHK.<YYYYMMDD>.ncf' )
+emis_chk = os.path.join( chk_path, 'EMIS_CHK.<YYYYMMDD>.ncf' )
+emist_chk = os.path.join( chk_path, 'EMIST_CHK.<YYYYMMDD>.ncf' )
 
 #xfirst file
 fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
