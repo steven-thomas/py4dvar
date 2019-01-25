@@ -8,7 +8,7 @@ from netCDF4 import Dataset
 
 import _get_root
 import fourdvar.util.file_handle as fh
-from fourdvar.params.root_path_defn import short_path
+from fourdvar.params.root_path_defn import store_path
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -17,7 +17,7 @@ from fourdvar.params.root_path_defn import short_path
 #'pattern': source = file_pattern_string, use all files that match pattern
 source_type = 'directory'
 
-source = os.path.join( short_path, 'obs_oco2_data' )
+source = os.path.join( store_path, 'obs_oco2_data' )
 
 output_file = './oco2_observed.pickle.zip'
 reject_log = './rejects.pickle.zip'
