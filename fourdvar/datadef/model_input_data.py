@@ -4,17 +4,16 @@ Built from the PhysicalData class.
 Used to handle any resolution/format changes between the model and backgroud/prior
 """
 # input class for the fwd model, generated from PhysicalData
+from __future__ import absolute_import
 
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
-import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.netcdf_handle as ncf
 
 class ModelInputData( FourDVarData ):
     """application

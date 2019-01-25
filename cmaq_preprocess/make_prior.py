@@ -1,16 +1,18 @@
 
-import os
-import numpy as np
-import gzip
-import cPickle as pickle
+from __future__ import absolute_import
 
-import _get_root
-import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.date_handle as dt
+import cPickle as pickle
+import gzip
+import numpy as np
+import os
+
+import context
+from .uncertainty import convert_unc
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
 from fourdvar.params.root_path_defn import store_path
-from cmaq_preprocess.uncertainty import convert_unc
+import fourdvar.util.date_handle as dt
+import fourdvar.util.netcdf_handle as ncf
 
 #parameters
 

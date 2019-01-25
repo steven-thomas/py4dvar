@@ -2,6 +2,7 @@
 framework: top-level abstraction for a data class
 any method added here will be available to all data classes
 """
+from __future__ import absolute_import
 
 import numpy as np
 

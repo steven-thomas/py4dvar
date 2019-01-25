@@ -1,7 +1,8 @@
 
+from __future__ import absolute_import
+
 import os
 
-import _get_root
 from fourdvar.params.root_path_defn import store_path
 
 #full path to the prior file used by user_driver.get_background

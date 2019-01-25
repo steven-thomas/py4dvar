@@ -2,18 +2,17 @@
 application: the adjoint forcing serves as input for the adjoint model run.
 expresses influence of weighted residual of observations on model adjoint run.
 """
+from __future__ import absolute_import
 
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
-import fourdvar.util.netcdf_handle as ncf
 import fourdvar.params.template_defn as template
-from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.netcdf_handle as ncf
 
 class AdjointForcingData( FourDVarData ):
     """application

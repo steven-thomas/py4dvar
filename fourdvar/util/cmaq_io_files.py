@@ -1,10 +1,11 @@
 
-import _get_root
-import fourdvar.util.date_handle as dt
-import fourdvar.params.template_defn as template
+from __future__ import absolute_import
+
 import fourdvar.params.archive_defn as archive
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
+import fourdvar.params.template_defn as template
+import fourdvar.util.date_handle as dt
 
 all_files = { 'ModelInputData': {},
               'ModelOutputData': {},

@@ -3,10 +3,10 @@ application: simulate set of observations from output of the forward model
 like all transform in transfunc this is referenced from the transform function
 eg: transform( model_output_instance, datadef.ObservationData ) == obs_operator( model_output_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ModelOutputData, ObservationData
 import fourdvar.util.netcdf_handle as ncf
 

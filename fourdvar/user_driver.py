@@ -2,24 +2,22 @@
 application: driver functions that require user definition
 handles driver IO and the minimizer function
 """
+from __future__ import absolute_import
 
-from __future__ import print_function
-
-import numpy as np
-import sys
-import os
-import shutil
 import cPickle as pickle
+import numpy as np
+import os
 from scipy.optimize import fmin_l_bfgs_b as minimize
+import shutil
+import sys
 
-import _get_root
+from fourdvar._transform import transform
 import fourdvar.datadef as d
+import fourdvar.params.input_defn as input_defn
 import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq
-import fourdvar.params.input_defn as input_defn
-from fourdvar._transform import transform
-
 import setup_logging
+
 logger = setup_logging.get_logger( __file__ )
 
 observed = None

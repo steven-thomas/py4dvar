@@ -3,16 +3,16 @@ application: convert output of adjoint function to sensitivities to physical var
 like all transform in transfunc this is referenced from the transform function
 eg: transform( sensitivity_instance, datadef.PhysicalAdjointData ) == condition_adjoint( sensitivity_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import SensitivityData, PhysicalAdjointData
-import fourdvar.util.date_handle as dt
-import fourdvar.params.template_defn as template
-import fourdvar.util.netcdf_handle as ncf
 import fourdvar.params.cmaq_config as cmaq_config
 from fourdvar.params.input_defn import inc_icon
+import fourdvar.params.template_defn as template
+import fourdvar.util.date_handle as dt
+import fourdvar.util.netcdf_handle as ncf
 
 unit_key = 'units.<YYYYMMDD>'
 unit_convert_dict = None

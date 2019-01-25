@@ -3,10 +3,10 @@ application: undo pre-conditioning to UnknownData, get back PhysicalData (format
 like all transform in transfunc this is referenced from the transform function
 eg: transform( unknown_instance, datadef.PhysicalData ) == uncondition( unknown_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import UnknownData, PhysicalData
 from fourdvar.params.input_defn import inc_icon
 

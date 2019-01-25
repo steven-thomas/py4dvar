@@ -1,14 +1,17 @@
+
+from __future__ import absolute_import
+
+import cPickle as pickle
+import numpy as np
 import os
 import time
-import numpy as np
-import cPickle as pickle
 
-import _get_root
-import fourdvar.user_driver as user
-import fourdvar.datadef as d
+import context
 from fourdvar._transform import transform
-import fourdvar.util.archive_handle as archive
+import fourdvar.datadef as d
 import fourdvar.params.archive_defn as archive_defn
+import fourdvar.user_driver as user
+import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq
 
 archive_defn.experiment = 'tmp_grad_verbose'

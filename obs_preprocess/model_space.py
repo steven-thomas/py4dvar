@@ -1,13 +1,13 @@
 
-import numpy as np
-import datetime as dt
-import pyproj
-from netCDF4 import Dataset
+from __future__ import absolute_import
+
 from copy import deepcopy
+import datetime as dt
+from netCDF4 import Dataset
+import numpy as np
+import pyproj
 
-from ray_trace import Grid
-
-import _get_root
+from .ray_trace import Grid
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template_defn
 import fourdvar.util.date_handle as date_handle

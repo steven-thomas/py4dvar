@@ -1,17 +1,17 @@
 
-import os
+from __future__ import absolute_import
+
 import glob
+import os
 import subprocess
 
-import _get_root
-import fourdvar.util.date_handle as dt
 import fourdvar.params.cmaq_config as cfg
 import fourdvar.params.template_defn as template
-import fourdvar.util.netcdf_handle as ncf
+import fourdvar.util.date_handle as dt
 import fourdvar.util.file_handle as fh
-
-
+import fourdvar.util.netcdf_handle as ncf
 import setup_logging as logging
+
 logger = logging.get_logger( __file__ )
 
 def parse_env_dict( env_dict, date ):

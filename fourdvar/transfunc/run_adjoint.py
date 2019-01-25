@@ -3,10 +3,10 @@ application: run the adjoint model, construct SensitivityData from results
 like all transform in transfunc this is referenced from the transform function
 eg: transform( adjoint_forcing_instance, datadef.SensitivityData ) == run_adjoint( adjoint_forcing_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import AdjointForcingData, SensitivityData
 import fourdvar.util.cmaq_handle as cmaq
 

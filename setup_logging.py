@@ -1,8 +1,9 @@
 
+from __future__ import absolute_import
+
 import logging
 import os
 
-import _get_root
 from fourdvar.params.root_path_defn import root_path, store_path
 
 #levels in acending order: DEBUG, INFO, WARNING, ERROR, CRITICAL

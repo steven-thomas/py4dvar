@@ -1,10 +1,12 @@
 """
 Copies current cmaq input files into archive.
 """
-import _get_root
-import fourdvar.util.archive_handle as archive_handle
-import fourdvar.params.archive_defn as archive_defn
+from __future__ import absolute_import
+
+import context
 import fourdvar.datadef as d
+import fourdvar.params.archive_defn as archive_defn
+import fourdvar.util.archive_handle as archive_handle
 
 # archive file name
 archive_fname = 'original_CMAQ_input'

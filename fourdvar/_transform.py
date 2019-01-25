@@ -1,10 +1,10 @@
 """
 framework: API for easy access to all the transform functions
 """
+from __future__ import absolute_import
 
-import _get_root
-from fourdvar import transfunc as t
 from fourdvar import datadef as d
+from fourdvar import transfunc as t
 
 #map of input/output classes to functions used
 transmap = {

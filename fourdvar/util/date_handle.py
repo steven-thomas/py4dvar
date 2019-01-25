@@ -1,7 +1,8 @@
 
+from __future__ import absolute_import
+
 import datetime as dt
 
-import _get_root
 import fourdvar.params.date_defn as defn
 
 start_date = dt.datetime.strptime( str( defn.start_date ), '%Y%m%d' ).date()

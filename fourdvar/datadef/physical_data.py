@@ -2,8 +2,8 @@
 application: stores data on physical space of interest
 used to store prior/background, construct model input and minimizer input
 """
+from __future__ import absolute_import
 
-import _get_root
 from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
 from fourdvar.params.input_defn import inc_icon
 

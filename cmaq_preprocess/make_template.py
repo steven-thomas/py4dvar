@@ -1,12 +1,14 @@
 
+from __future__ import absolute_import
+
 import numpy as np
 
-import _get_root
-import fourdvar.util.date_handle as dt
-import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.cmaq_handle as cmaq_handle
+import context
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template
+import fourdvar.util.cmaq_handle as cmaq_handle
+import fourdvar.util.date_handle as dt
+import fourdvar.util.netcdf_handle as ncf
 
 # define cmaq filenames for first day of model run.
 emis_file = dt.replace_date( cmaq_config.emis_file, dt.start_date )

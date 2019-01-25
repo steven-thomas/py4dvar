@@ -1,11 +1,12 @@
 
+from __future__ import absolute_import
+
 import os
 
-import _get_root
-import fourdvar.util.file_handle as file_handle
 import fourdvar.params.archive_defn as defn
-
+import fourdvar.util.file_handle as file_handle
 import setup_logging
+
 logger = setup_logging.get_logger( __file__ )
 
 finished_setup = False

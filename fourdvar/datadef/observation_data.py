@@ -1,21 +1,20 @@
 """
 application: structure for the data from observations, both observed and simulated
 """
+from __future__ import absolute_import
 
+from copy import deepcopy
 import os
 import numpy as np
-from copy import deepcopy
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
-from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.file_handle as fh
-import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
+from fourdvar.util.archive_handle import get_archive_path
+import fourdvar.util.date_handle as dt
+import fourdvar.util.file_handle as fh
 import fourdvar.util.netcdf_handle as ncf
-
 import setup_logging
+
 logger = setup_logging.get_logger( __file__ )
 
 class ObservationData( FourDVarData ):

@@ -1,14 +1,15 @@
 
-import os
+from __future__ import absolute_import
+
 import glob
-
-from obsOCO2_defn import ObsOCO2
-from model_space import ModelSpace
 from netCDF4 import Dataset
+import os
 
-import _get_root
-import fourdvar.util.file_handle as fh
+import context
+from .obsOCO2_defn import ObsOCO2
+from .model_space import ModelSpace
 from fourdvar.params.root_path_defn import store_path
+import fourdvar.util.file_handle as fh
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 

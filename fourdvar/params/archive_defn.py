@@ -1,6 +1,7 @@
 
+from __future__ import absolute_import
+
 import os
-import _get_root
 
 from fourdvar.params.root_path_defn import store_path
 

@@ -2,17 +2,16 @@
 application: stores/references the output of the forward model.
 used to construct the simulated observations.
 """
+from __future__ import absolute_import
 
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
-import fourdvar.util.netcdf_handle as ncf
-from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.archive_handle import get_archive_path
+from fourdvar.util.cmaq_io_files import get_filedict
 from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.netcdf_handle as ncf
 
 class ModelOutputData( FourDVarData ):
     """application

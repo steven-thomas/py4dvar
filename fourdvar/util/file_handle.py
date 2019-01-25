@@ -2,14 +2,14 @@
 extension: all the file IO functions needed for the program
 in this example all files are saved to and read from the fourdvar/data directory
 """
+from __future__ import absolute_import
 
-import os
-import sys
+import cPickle as pickle
 import gzip
 import numpy as np
-import cPickle as pickle
+import os
+import sys
 
-import _get_root
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )

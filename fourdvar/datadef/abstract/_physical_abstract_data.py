@@ -4,19 +4,18 @@ parent of PhysicalData & PhysicalAdjointData classes,
 the two child classes share almost all attributes
 therefore most of their code is here.
 """
+from __future__ import absolute_import
 
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
-import fourdvar.util.netcdf_handle as ncf
+from fourdvar.params.input_defn import inc_icon
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.date_handle as dt
-from fourdvar.params.input_defn import inc_icon
-
+import fourdvar.util.netcdf_handle as ncf
 import setup_logging
+
 logger = setup_logging.get_logger( __file__ )
 
 class PhysicalAbstractData( FourDVarData ):

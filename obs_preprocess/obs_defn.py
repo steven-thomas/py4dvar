@@ -1,7 +1,10 @@
 
-import numpy as np
-from ray_trace import Point, Ray
+from __future__ import absolute_import
+
 from copy import deepcopy
+import numpy as np
+
+from .ray_trace import Point, Ray
 
 class ObsGeneral( object ):
     """base class for observations."""

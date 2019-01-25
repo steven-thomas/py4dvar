@@ -1,5 +1,5 @@
 
-import _get_root
+from __future__ import absolute_import
 
 # start date in int(YYYYMMDD) format
 start_date = 20150301

@@ -2,10 +2,10 @@
 application: structure for the vector handled by the minimizer.
 is the pre-conditioned form of physical data, can be converted back and forth via transform function
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 class UnknownData( FourDVarData ):

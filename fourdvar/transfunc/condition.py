@@ -3,12 +3,12 @@ application: apply pre-conditioning to PhysicalData, get vector to optimize
 like all transform in transfunc this is referenced from the transform function
 eg: transform( physical_instance, datadef.UnknownData ) == condition( physical_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
-from fourdvar.datadef import UnknownData
 from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
+from fourdvar.datadef import UnknownData
 from fourdvar.params.input_defn import inc_icon
 
 def condition_adjoint( physical_adjoint ):

@@ -1,16 +1,15 @@
 """
 extension: toolkit for interacting with netCDF files
 """
+from __future__ import absolute_import
 
+import netCDF4 as ncf
 import numpy as np
 import os
 import shutil
 import subprocess
-import netCDF4 as ncf
 
-import _get_root
 import fourdvar.util.date_handle as dt
-from fourdvar.params.cmaq_config import is_large_sim
 import setup_logging as logging
 
 logger = logging.get_logger( __file__ )

@@ -3,15 +3,16 @@ restarts a previous unfinished minimization run.
 You MUST ensure that the observation_data, prior and archive experiment name
 are all unchanged from the previous run.
 """
+from __future__ import absolute_import
+
 import os
 
-import _get_root
-import fourdvar.user_driver as user
 import fourdvar._main_driver as main
-import fourdvar.util.archive_handle as archive_handle
-import fourdvar.params.archive_defn as archive_defn
-import fourdvar.datadef as d
 from fourdvar._transform import transform
+import fourdvar.datadef as d
+import fourdvar.params.archive_defn as archive_defn
+import fourdvar.user_driver as user
+import fourdvar.util.archive_handle as archive_handle
 
 # If true restart_script uses last iteration in archive
 restart_from_last = True

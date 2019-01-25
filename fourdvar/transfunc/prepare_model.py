@@ -3,16 +3,16 @@ application: produce model input from physical data (prior/background format)
 like all transform in transfunc this is referenced from the transform function
 eg: transform( physical_instance, datadef.ModelInputData ) == prepare_model( physical_instance )
 """
+from __future__ import absolute_import
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import PhysicalData, ModelInputData
-import fourdvar.util.date_handle as dt
-import fourdvar.params.template_defn as template
-import fourdvar.util.netcdf_handle as ncf
-import fourdvar.util.cmaq_handle as cmaq
 from fourdvar.params.input_defn import inc_icon
+import fourdvar.params.template_defn as template
+import fourdvar.util.cmaq_handle as cmaq
+import fourdvar.util.date_handle as dt
+import fourdvar.util.netcdf_handle as ncf
 
 #value to convert units for each days emissions
 unit_convert = None
