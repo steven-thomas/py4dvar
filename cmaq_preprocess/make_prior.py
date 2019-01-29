@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 import context
-from .uncertainty import convert_unc
+from cmaq_preprocess.uncertainty import convert_unc
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
 from fourdvar.params.root_path_defn import store_path

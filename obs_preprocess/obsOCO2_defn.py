@@ -4,8 +4,8 @@ from __future__ import absolute_import
 import datetime as dt
 import numpy as np
 
-from .ray_trace import Point, Ray
-from .obs_defn import ObsMultiRay
+from obs_preprocess.obs_defn import ObsMultiRay
+from obs_preprocess.ray_trace import Point, Ray
 
 class ObsOCO2( ObsMultiRay ):
     """Single observation (or sounding) from OCO2 satellite
@@ -45,6 +45,7 @@ class ObsOCO2( ObsMultiRay ):
         # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
         newobs.out_dict['surface_type'] = kwargs['surface_type']
         newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        newobs.out_dict['xco2_quality_flag'] = kwargs['xco2_quality_flag']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO2'
         newobs.src_data = kwargs.copy()
@@ -74,12 +75,6 @@ class ObsOCO2( ObsMultiRay ):
             weight_slice = { c: weight*v/layer_sum for c,v in layer_slice.items() }
             weight_grid.update( weight_slice )
         
-        m_vis_sum = sum(model_vis)
-        w_sum = sum(weight_grid.values())
-        w_len = len(weight_grid.values())
-        if abs(m_vis_sum-w_sum) > 1e6:
-            print '{:.4}\t{:.4}\t{:}'.format( m_vis_sum, w_sum, w_len )
-
         return weight_grid
     
     def map_location( self, model_space ):

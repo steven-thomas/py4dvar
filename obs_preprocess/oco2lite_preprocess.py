@@ -6,10 +6,11 @@ from netCDF4 import Dataset
 import os
 
 import context
-from .obsOCO2_defn import ObsOCO2
-from .model_space import ModelSpace
 from fourdvar.params.root_path_defn import store_path
 import fourdvar.util.file_handle as fh
+from model_space import ModelSpace
+from obsOCO2_defn import ObsOCO2
+import super_obs_util as so_util
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -19,9 +20,12 @@ import fourdvar.util.file_handle as fh
 source_type = 'directory'
 
 source = os.path.join( store_path, 'obs_oco2_data' )
+#source = os.path.join( store_path, 'obs_1day' )
 
-output_file = './oco2_observed.pickle.zip'
-reject_log = './rejects.pickle.zip'
+output_file = './oco2_observed.pic.gz'
+
+#if true interpolate between 2 closest time-steps, else assign to closet time-step
+interp_time = False
 
 #--------------------------------------------------------------------------
 
@@ -45,7 +49,7 @@ root_var = [ 'sounding_id',
              'time',
              'solar_zenith_angle',
              'sensor_zenith_angle',
-             'warn_level',
+             'xco2_quality_flag',
              'xco2',
              'xco2_uncertainty',
              'xco2_apriori',
@@ -53,9 +57,10 @@ root_var = [ 'sounding_id',
              'co2_profile_apriori',
              'xco2_averaging_kernel',
              'pressure_weight' ]
-sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle' ]
+sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle', 'operation_mode' ]
+retrieval_var = ['surface_type']
+
 obslist = []
-reject = {}
 for fname in filelist:
     print 'read {}'.format( fname )
     var_dict = {}
@@ -65,26 +70,53 @@ for fname in filelist:
             var_dict[ var ] = f.variables[ var ][:]
         for var in sounding_var:
             var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
+        for var in retrieval_var:
+            var_dict[ var ] = f.groups[ 'Retrieval' ].variables[ var ][:]
     print 'found {} soundings'.format( size )
     
-    reject[ fname ] = []
-    
+    sounding_list = []
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
-        obs = ObsOCO2.create( **src_dict )
-        obs.interp_time = False
+        lat = src_dict['latitude']
+        lon = src_dict['longitude']
+        if so_util.max_quality_only is True and src_dict['xco2_quality_flag'] != 0:
+            pass
+        elif model_grid.lat_lon_inside( lat=lat, lon=lon ):
+            if so_util.group_by_second is True:
+                src_dict['sec'] = int( src_dict['time'] )
+            sounding_list.append( src_dict )
+    del var_dict
+
+    if so_util.group_by_second is True:
+        sec_list = list( set( [ s['sec'] for s in sounding_list ] ) )
+        merge_list = []
+        for sec in sec_list:
+            sounding = so_util.merge_second( [ s
+                       for s in sounding_list if s['sec'] == sec ] )
+            merge_list.append( sounding )
+        sounding_list = merge_list
+
+    for sounding in sounding_list:
+        obs = ObsOCO2.create( **sounding )
+        obs.interp_time = interp_time
         obs.model_process( model_grid )
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
-        else:
-            reject[ fname ].append( 'Obs {}: {}'.format(i, obs.fail_reason) )
+
+if so_util.group_by_column is True:
+    obslist = [ o for o in obslist if so_util.is_single_column(o) ]
+    col_list = list( set( [ so_util.get_col_id(o) for o in obslist ] ) )
+    merge_list = []
+    for col in col_list:
+        obs = so_util.merge_column( [ o for o in obslist
+                                      if so_util.get_col_id(o) == col ] )
+        merge_list.append( obs )
+    obslist = merge_list
 
 if len( obslist ) > 0:
     domain = model_grid.get_domain()
     datalist = [ domain ] + obslist
     fh.save_list( datalist, output_file )
     print 'recorded observations to {}'.format( output_file )
-    fh.save_list( reject.items(), reject_log )
-    print 'rejected indicies logged in {}'.format( reject_log )
 else:
     print 'No valid observations found, no output file generated.'

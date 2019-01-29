@@ -7,10 +7,10 @@ from netCDF4 import Dataset
 import numpy as np
 import pyproj
 
-from .ray_trace import Grid
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template_defn
 import fourdvar.util.date_handle as date_handle
+from obs_preprocess.ray_trace import Grid
 
 #convert HHMMSS into sec
 tosec = lambda t: 3600*(int(t)//10000) + 60*( (int(t)//100) % 100 ) + (int(t)%100)
@@ -179,6 +179,11 @@ class ModelSpace( object ):
     
     def get_xy( self, lat, lon ):
         return self.proj( lon, lat )
+
+    def lat_lon_inside( self, lat, lon ):
+        x1,y1 = self.get_xy( lat, lon )
+        xlim,ylim,_ = [ (e[0],e[-1],) for e in self.grid.edges ]
+        return ( (min(xlim) < x1 < max(xlim)) and (min(ylim) < y1 < max(ylim)) )
     
     def get_ray_top( self, start, zenith, azimuth ):
         """get the (x,y,z) point where a ray leaves the top of the model
