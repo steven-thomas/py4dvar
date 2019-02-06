@@ -7,7 +7,6 @@ from copy import deepcopy
 
 from ray_trace import Grid
 
-import _get_root
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template_defn
 import fourdvar.util.date_handle as date_handle

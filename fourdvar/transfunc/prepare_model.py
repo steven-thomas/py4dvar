@@ -6,7 +6,6 @@ eg: transform( physical_instance, datadef.ModelInputData ) == prepare_model( phy
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import PhysicalData, ModelInputData
 import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template

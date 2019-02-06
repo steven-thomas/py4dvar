@@ -6,7 +6,6 @@ eg: transform( model_output_instance, datadef.ObservationData ) == obs_operator(
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ModelOutputData, ObservationData
 import fourdvar.util.netcdf_handle as ncf
 
