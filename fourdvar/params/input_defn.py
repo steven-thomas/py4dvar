@@ -11,4 +11,4 @@ prior_file = os.path.join( root_path, 'SHORT_LN/input/prior.ncf' )
 obs_file = os.path.join( root_path, 'SHORT_LN/input/obs_oco2.pickle.zip' )
 
 #include model initial conditions in solution
-inc_icon = True
+inc_icon = False

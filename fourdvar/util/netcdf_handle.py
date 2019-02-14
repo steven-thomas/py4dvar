@@ -123,15 +123,18 @@ def copy_compress( source, dest ):
     """
     #Current version does not compress.
     msg = 'copy {} to {}.'.format( source, dest )
-    copy_cmd = [ 'ncks', '-4', '-L4', '-O', source, dest ]
-    with open( os.devnull, 'w' ) as DEVNULL:
-        statcode = subprocess.call( copy_cmd, stdout=DEVNULL, stderr=DEVNULL )
-    if statcode != 0:
-        msg = 'Failed to ' + msg
-        logger.error( msg )
-        raise AssertionError( msg )
-    else:
-        logger.debug( msg )
+    #ncks doesn't work in schooner yet. using non-compressing version
+    #copy_cmd = [ 'ncks', '-4', '-L4', '-O', source, dest ]
+    #with open( os.devnull, 'w' ) as DEVNULL:
+    #    statcode = subprocess.call( copy_cmd, stdout=DEVNULL, stderr=DEVNULL )
+    #if statcode != 0:
+    #    msg = 'Failed to ' + msg
+    #    logger.error( msg )
+    #    raise AssertionError( msg )
+    #else:
+    #    logger.debug( msg )
+    shutil.copyfile( source, dest )
+    logger.debug( msg )
     return None
 
 def set_date( fileobj, start_date ):

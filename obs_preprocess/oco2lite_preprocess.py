@@ -59,7 +59,7 @@ for fname in filelist:
     print 'read {}'.format( fname )
     var_dict = {}
     with Dataset( fname, 'r' ) as f:
-        size = f.dimensions[ 'sounding_id' ].size
+        size = len( f.dimensions[ 'sounding_id' ] )
         for var in root_var:
             var_dict[ var ] = f.variables[ var ][:]
         for var in sounding_var:

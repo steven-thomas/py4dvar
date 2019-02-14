@@ -1,14 +1,18 @@
 #!/bin/bash
 
-#PBS -N py4dvar
-#PBS -l walltime=12:00:00
-#PBS -l mem=2GB
-#PBS -l ncpus=1
-#PBS -q express
-#PBS -l wd
-#PBS -l jobfs=5GB
+#SBATCH --partition=normal
+#SBATCH --exclusive
+#SBATCH --nodes=1
+#SBATCH --ntasks=16
+#SBATCH --ntasks-per-node=16
+#SBATCH --mem=32000
+#SBATCH --output=fourdvar.%J.stdout.txt
+#SBATCH --error=fourdvar.%J.stderr.txt
+#SBATCH --time=12:00:00
+#SBATCH --job-name=fourdvar_main
+#SBATCH --chdir=/home/sthomas/4DVAR/py4dvar
 
-module use /g/data3/hh5/public/modules
-module load conda/analysis27
+module purge
+module load netCDF-Fortran/4.4.4-iomkl-2018a
 
-python runscript.py >& output.txt
+python runscript.py

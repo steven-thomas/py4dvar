@@ -39,9 +39,9 @@ class ObsOCO2( ObsMultiRay ):
                         kwargs['xco2_averaging_kernel'] *
                         kwargs['co2_profile_apriori'] )
         newobs.out_dict['offset_term'] = kwargs['xco2_apriori'] - column_xco2.sum()
-        # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
-        newobs.out_dict['surface_type'] = kwargs['surface_type']
-        newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
+        #newobs.out_dict['surface_type'] = kwargs['surface_type']
+        #newobs.out_dict['operation_mode'] = kwargs['operation_mode']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO2'
         newobs.src_data = kwargs.copy()
