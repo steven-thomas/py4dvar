@@ -9,7 +9,6 @@ imports listed here are for easier access to data classes
 eg: "import datadef.UnknownData" instead of "import datadef.unknown_data.UnknownData"
 """
 
-import _get_root
 from fourdvar.datadef.unknown_data import UnknownData
 from fourdvar.datadef.physical_data import PhysicalData
 from fourdvar.datadef.model_input_data import ModelInputData

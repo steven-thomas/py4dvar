@@ -8,7 +8,6 @@ Used to handle any resolution/format changes between the model and backgroud/pri
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 import fourdvar.util.netcdf_handle as ncf

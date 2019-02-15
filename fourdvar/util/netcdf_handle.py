@@ -8,11 +8,10 @@ import shutil
 import subprocess
 import netCDF4 as ncf
 
-import _get_root
 import fourdvar.util.date_handle as dt
-import setup_logging
+import setup_logging as logging
 
-logger = setup_logging.get_logger( __file__ )
+logger = logging.get_logger( __file__ )
 
 def validate( filepath, dataset ):
     """
@@ -53,7 +52,8 @@ def create_from_template( source, dest, var_change={}, date=None, overwrite=True
     designed for IOAPI compliant netCDF files, other netCDF files may not work.
     """
     assert validate( source, var_change ), 'changes to template are invalid'
-    logger.debug( 'copy {} to {}.'.format( source, dest ) )
+    if logging.verbose_logfile is True:
+        logger.debug( 'copy {} to {}.'.format( source, dest ) )
     shutil.copyfile( source, dest )
     with ncf.Dataset( dest, 'a' ) as ncf_file:
         for var, data in var_change.items():
@@ -134,7 +134,8 @@ def copy_compress( source, dest ):
     #else:
     #    logger.debug( msg )
     shutil.copyfile( source, dest )
-    logger.debug( msg )
+    if logging.verbose_logfile is True:
+        logger.debug( msg )
     return None
 
 def set_date( fileobj, start_date ):

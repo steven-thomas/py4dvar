@@ -2,7 +2,6 @@
 framework: API for easy access to all the transform functions
 """
 
-import _get_root
 from fourdvar import transfunc as t
 from fourdvar import datadef as d
 

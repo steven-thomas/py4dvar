@@ -1,7 +1,8 @@
 
 import numpy as np
-from ray_trace import Point, Ray
 from copy import deepcopy
+
+from obs_preprocess.ray_trace import Point, Ray
 
 class ObsGeneral( object ):
     """base class for observations."""

@@ -1,8 +1,9 @@
 
 import numpy as np
 import datetime as dt
-from ray_trace import Point, Ray
-from obs_defn import ObsMultiRay
+
+from obs_preprocess.ray_trace import Point, Ray
+from obs_preprocess.obs_defn import ObsMultiRay
 
 class ObsOCO2( ObsMultiRay ):
     """Single observation (or sounding) from OCO2 satellite

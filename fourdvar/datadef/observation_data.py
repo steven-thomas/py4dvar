@@ -6,7 +6,6 @@ import os
 import numpy as np
 from copy import deepcopy
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 
 from fourdvar.util.archive_handle import get_archive_path

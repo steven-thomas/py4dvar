@@ -1,8 +1,7 @@
 
 import os
 
-import _get_root
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import store_path
 
 #notes: the patterns <YYYYMMDD>, <YYYYDDD> & <YYYY-MM-DD> will be replaced
 #with the year, month and day of the current model run
@@ -83,7 +82,7 @@ sttime = [0,0,0] #start time of single run [hours, minutes, seconds]
 runlen = [24,0,0] #duration of single run [hours, minutes, seconds] #DO NOT MODIFY
 tstep = [1,0,0] #output timestep [hours, minutes, seconds]
 
-cmaq_base = os.path.join( root_path, 'SHORT_LN/CMAQ' )
+cmaq_base = os.path.join( store_path, 'CMAQ' )
 input_path = os.path.join( cmaq_base, 'input' )
 output_path = os.path.join( cmaq_base, 'output' )
 mcip_path = os.path.join( cmaq_base, 'mcip' )
