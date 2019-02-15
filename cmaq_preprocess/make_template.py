@@ -3,6 +3,7 @@ import numpy as np
 
 import context
 import fourdvar.util.date_handle as dt
+import fourdvar.util.file_handle as fh
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.cmaq_handle as cmaq_handle
 import fourdvar.params.cmaq_config as cmaq_config
@@ -54,6 +55,10 @@ conc_data = ncf.get_variable( conc_file, conc_spcs )
 force_data = { k:np.zeros(v.shape) for k,v in conc_data.items() }
 ncf.create_from_template( conc_file, force_file, force_data )
 cmaq_handle.run_bwd_single( dt.start_date, is_first=True )
+
+#ensure template and record directories exist
+fh.ensure_path( template.template_path, inc_file=False )
+fh.ensure_path( template.record_path, inc_file=False )
 
 # create record for icon & emis files
 ncf.copy_compress( icon_file, template.icon )
