@@ -6,6 +6,7 @@ from obsOCO2_defn import ObsOCO2
 from model_space import ModelSpace
 from netCDF4 import Dataset
 
+import context
 import fourdvar.util.file_handle as fh
 from fourdvar.params.root_path_defn import store_path
 
@@ -19,7 +20,6 @@ source_type = 'directory'
 source = os.path.join( store_path, 'obs_oco2_data' )
 
 output_file = './oco2_observed.pickle.zip'
-reject_log = './rejects.pickle.zip'
 
 #--------------------------------------------------------------------------
 
@@ -53,7 +53,6 @@ root_var = [ 'sounding_id',
              'pressure_weight' ]
 sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle' ]
 obslist = []
-reject = {}
 for fname in filelist:
     print 'read {}'.format( fname )
     var_dict = {}
@@ -65,8 +64,6 @@ for fname in filelist:
             var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
     print 'found {} soundings'.format( size )
     
-    reject[ fname ] = []
-    
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
         obs = ObsOCO2.create( **src_dict )
@@ -74,15 +71,11 @@ for fname in filelist:
         obs.model_process( model_grid )
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
-        else:
-            reject[ fname ].append( 'Obs {}: {}'.format(i, obs.fail_reason) )
 
 if len( obslist ) > 0:
     domain = model_grid.get_domain()
     datalist = [ domain ] + obslist
     fh.save_list( datalist, output_file )
     print 'recorded observations to {}'.format( output_file )
-    fh.save_list( reject.items(), reject_log )
-    print 'rejected indicies logged in {}'.format( reject_log )
 else:
     print 'No valid observations found, no output file generated.'

@@ -1,10 +1,12 @@
 
+import os
 import numpy as np
 
 import context
 import fourdvar.util.date_handle as dt
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.cmaq_handle as cmaq_handle
+import fourdvar.util.file_handle as fh
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template
 
@@ -56,13 +58,19 @@ ncf.create_from_template( conc_file, force_file, force_data )
 cmaq_handle.run_bwd_single( dt.start_date, is_first=True )
 
 # create record for icon & emis files
+fh.ensure_path( os.path.dirname( template.icon ) )
 ncf.copy_compress( icon_file, template.icon )
 for date in dt.get_datelist():
     emis_src = dt.replace_date( cmaq_config.emis_file, date )
     emis_dst = dt.replace_date( template.emis, date )
+    fh.ensure_path( os.path.dirname( emis_dst ) )
     ncf.copy_compress( emis_src, emis_dst )
 
 # create template for conc, force & sense files
+fh.ensure_path( os.path.dirname( template.conc ) )
+fh.ensure_path( os.path.dirname( template.force ) )
+fh.ensure_path( os.path.dirname( template.sense_emis ) )
+fh.ensure_path( os.path.dirname( template.sense_conc ) )
 ncf.copy_compress( conc_file, template.conc )
 ncf.copy_compress( force_file, template.force )
 ncf.copy_compress( sense_emis_file, template.sense_emis )
