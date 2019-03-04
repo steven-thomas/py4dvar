@@ -8,7 +8,4 @@
 #PBS -l wd
 #PBS -l jobfs=5GB
 
-module use /g/data3/hh5/public/modules
-module load conda/analysis27
-
 python test_grad_verbose.py >& output_grad_verbose.txt

@@ -8,7 +8,4 @@
 #PBS -l wd
 #PBS -l jobfs=5GB
 
-module use /g/data3/hh5/public/modules
-module load conda/analysis27
-
 python make_template.py >& output.txt
