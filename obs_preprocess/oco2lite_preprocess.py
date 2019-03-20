@@ -81,6 +81,10 @@ for fname in filelist:
         lon = src_dict['longitude']
         if so_util.max_quality_only is True and src_dict['xco2_quality_flag'] != 0:
             pass
+        elif so_util.surface_type != -1 and src_dict['surface_type'] != so_util.surface_type:
+            pass
+        elif so_util.operation_mode != -1 and src_dict['operation_mode'] != so_util.operation_mode:
+            pass
         elif model_grid.lat_lon_inside( lat=lat, lon=lon ):
             if so_util.group_by_second is True:
                 src_dict['sec'] = int( src_dict['time'] )
