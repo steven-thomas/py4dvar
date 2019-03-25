@@ -20,8 +20,10 @@ nprow = 4
 ioapi_logging = False
 
 #max & min No. seconds per sync (science) step
-maxsync = 600
-minsync = 600
+#maxsync = 600
+#minsync = 600
+maxsync = 300 #shorter sync for extreme vert. wind resolving
+minsync = 300
 
 #use PT3DEMIS (option not supported)
 #DO NOT MODIFY
@@ -51,8 +53,8 @@ promptflag = False
 
 #output species
 #'template' means value calculated from template files
-conc_spcs = 'CO2 CO'
-avg_conc_spcs = 'CO2 CO'
+conc_spcs = 'CO CO2'
+avg_conc_spcs = 'CO CO2'
 
 #output layers
 #'template' means value calculated from template files
@@ -68,8 +70,8 @@ pertspcs = '2'
 pertdelt = '1.00'
 
 #application name
-fwd_appl = 'fwd_incCO2.<YYYYMMDD>'
-bwd_appl = 'bwd_incCO2.<YYYYMMDD>'
+fwd_appl = 'fwd_CO_CO2.<YYYYMMDD>'
+bwd_appl = 'bwd_CO_CO2.<YYYYMMDD>'
 
 #emis_date, use unknown
 emisdate = '<YYYYMMDD>'
@@ -106,8 +108,8 @@ griddesc = os.path.join( grid_path, 'GRIDDESC' )
 gridname = 'GMR_d03'
 
 #logfile
-fwd_logfile = os.path.join( output_path, 'fwd_incCO2.<YYYYMMDD>.log' )
-bwd_logfile = os.path.join( output_path, 'bwd_incCO2.<YYYYMMDD>.log' )
+fwd_logfile = os.path.join( output_path, 'fwd_CO_CO2.<YYYYMMDD>.log' )
+bwd_logfile = os.path.join( output_path, 'bwd_CO_CO2.<YYYYMMDD>.log' )
 
 #floor file
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
@@ -128,9 +130,9 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'ICON_incCO2.ncf' )
-bcon_file = os.path.join( bcon_path, 'BCON_incCO2.<YYYYMMDD>.ncf' )
-emis_file = os.path.join( emis_path, 'EMIS_incCO2.<YYYYMMDD>.ncf' )
+icon_file = os.path.join( icon_path, 'ICON_CO_CO2.ncf' )
+bcon_file = os.path.join( bcon_path, 'BCON_CO_CO2.<YYYYMMDD>.ncf' )
+emis_file = os.path.join( emis_path, 'EMIS_CO_CO2.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surfzone_d03.nc' )
@@ -162,9 +164,9 @@ irr2_file = os.path.join( output_path, 'IRR_2.<YYYYMMDD>.ncf' )
 irr3_file = os.path.join( output_path, 'IRR_3.<YYYYMMDD>.ncf' )
 rj1_file = os.path.join( output_path, 'RJ_1.<YYYYMMDD>.ncf' )
 rj2_file = os.path.join( output_path, 'RJ_2.<YYYYMMDD>.ncf' )
-conc_sense_file = os.path.join( output_path, 'LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
-emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
-emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_incCO2.<YYYYMMDD>.ncf' )
+conc_sense_file = os.path.join( output_path, 'LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
+emis_sense_file = os.path.join( output_path, 'EM.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
+emis_scale_sense_file = os.path.join( output_path, 'EM_SF.LGRID.bwd_CO_CO2.<YYYYMMDD>.ncf' )
 
 curdir = os.path.realpath( os.curdir )
 
@@ -193,8 +195,8 @@ wipeout_list = [ fwd_logfile, bwd_logfile, floor_file,
                  fwd_stdout_log, bwd_stdout_log ]
 
 #drivers
-fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_incCO2', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_incCO2', 'ADJOINT_BWD' )
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO_CO2', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO_CO2', 'ADJOINT_BWD' )
 
 #shell used to call drivers
 cmd_shell = '/bin/csh'
