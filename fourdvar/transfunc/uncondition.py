@@ -22,9 +22,6 @@ def uncondition( unknown ):
     p = PhysicalData
     emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols )
-    if inc_icon is True:
-        icon_len = p.nlays_icon * p.nrows * p.ncols
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols )
     del p
     
     vals = unknown.get_vector()
@@ -34,9 +31,8 @@ def uncondition( unknown ):
     i = 0
     for spc in PhysicalData.spcs:
         if inc_icon is True:
-            icon = vals[ i:i+icon_len ]
-            i += icon_len
-            icon = icon.reshape( icon_shape )
+            icon = vals[ i ]
+            i += 1
             icon = icon * PhysicalData.icon_unc[ spc ]
             icon_dict[ spc ] = icon
     

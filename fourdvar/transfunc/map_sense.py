@@ -93,25 +93,23 @@ def map_sense( sensitivity ):
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
     if inc_icon is True:
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
+        icon_dict = { spc: 1. for spc in p.spcs }
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
     del p
     
     #construct icon_dict
     if inc_icon is True:
-        icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
-        icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
-        icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
+        i_sense_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
+        i_sense_fname = sensitivity.file_data[ i_sense_label ][ 'actual' ]
+        i_sense_vars = ncf.get_variable( i_sense_fname, icon_dict.keys() )
+        icon_vars = ncf.get_variable( template.icon, icon_dict.keys() )
         for spc in PhysicalAdjointData.spcs:
-            data = icon_vars[ spc ][ 0, :, :, : ]
-            ilays, irows, icols = data.shape
-            msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
-            assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
-            assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
+            sense_data = i_sense_vars[ spc ][ 0, ... ]
+            icon_data = icon_vars[ spc ] [ 0, ... ]
+            msg = 'conc_sense and template.icon are incompatible'
+            assert sense_data.shape == icon_data.shape, msg
+            icon_dict[ spc ] = (sense_data * icon_data).mean()
     
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'

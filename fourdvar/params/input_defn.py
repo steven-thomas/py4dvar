@@ -12,4 +12,4 @@ prior_file = os.path.join( store_path, 'input/prior.ncf' )
 obs_file = os.path.join( store_path, 'input/obs_oco2.pickle.zip' )
 
 #include model initial conditions in solution
-inc_icon = False
+inc_icon = True

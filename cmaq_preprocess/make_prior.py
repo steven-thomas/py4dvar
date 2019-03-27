@@ -42,8 +42,11 @@ tstep = 'single'
 emis_unc_vector = 'tmp_unc_vector.pickle.zip'
 emis_corr_matrix = 'tmp_corr_matrix.pickle.zip'
 
+# data for ICON scaling
+# list of values, one for each species
+icon_scale = [1.0]
+icon_unc = [0.01]
 
-assert input_defn.inc_icon is False, 'make_prior not configured for ICON optimization.'
 
 # convert spc_list into valid list
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
@@ -64,6 +67,11 @@ else:
     except:
         print 'invalid spc_list'
         raise
+
+# check that icon_scale & icon_unc are valid
+if input_defn.inc_icon is True:
+    assert len(spc_list)==len(icon_scale), 'Invalid icon_scale size'
+    assert len(spc_list)==len(icon_unc), 'Invalid icon_unc size'
 
 # convert emis_nlay into valid number
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
@@ -156,8 +164,17 @@ root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) )
               'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
               'TSTEP': [ np.int32( tstep[0] ), np.int32( tstep[1] ) ],
               'VAR-LIST': ''.join( [ '{:<16}'.format(s) for s in spc_list ] ) }
+#if input_defn.inc_icon is True:
+#    root_attr['ICON-SCALE'] = icon_scale
+#    root_attr['ICON-UNC'] = icon_unc
 
 root = ncf.create( path=save_path, attr=root_attr, dim=root_dim, is_root=True )
+
+if input_defn.inc_icon is True:
+    icon_dim = { 'SPC': len(spc_list) }
+    icon_var = { 'ICON-SCALE': ('f4', ('SPC',), np.array(icon_scale) ),
+                 'ICON-UNC': ('f4', ('SPC',), np.array(icon_unc) ) }
+    ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
 
 emis_dim = { 'TSTEP': None, 'LAY': emis_nlay }
 emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }

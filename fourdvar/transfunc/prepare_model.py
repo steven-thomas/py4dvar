@@ -43,9 +43,10 @@ def prepare_model( physical_data ):
 
     if inc_icon is True:
         model_input_args = { 'icon': {} }
-        #physical icon has no time dim, model input icon has time dim of len 1
-        for spcs, icon_array in physical_data.icon.items():
-            model_input_args['icon'][spcs] = icon_array.reshape( (1,)+icon_array.shape )
+        for spcs, icon_scale in physical_data.icon.items():
+            icon_array = ncf.get_variable( template.icon, spcs )
+            #ModelInput adds array values to template, change icon_scale accordingly
+            model_input_args['icon'][spcs] = (icon_scale-1.)*icon_array
     else:
         model_input_args = {}
 
