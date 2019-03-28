@@ -109,7 +109,7 @@ def map_sense( sensitivity ):
             icon_data = icon_vars[ spc ] [ 0, ... ]
             msg = 'conc_sense and template.icon are incompatible'
             assert sense_data.shape == icon_data.shape, msg
-            icon_dict[ spc ] = (sense_data * icon_data).mean()
+            icon_dict[ spc ] = (sense_data * icon_data).sum()
     
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
     emis_pattern = 'emis.<YYYYMMDD>'
