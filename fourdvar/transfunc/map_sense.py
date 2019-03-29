@@ -143,7 +143,7 @@ def map_sense( sensitivity ):
             assert scol == mcol, msg.format( 'NCOLS' )
             fac = (sstep-1) // (mstep-1)
             tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
-                             for i in range( fac ) ]).mean( axis=0 )
+                             for i in range( fac ) ]).sum( axis=0 )
             #adjoint prepare_model
             assert tmp.shape == edata.shape, 'Error in shape re-casting.'
             prop_arr = tmp / edata
