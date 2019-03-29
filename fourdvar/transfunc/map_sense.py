@@ -125,10 +125,10 @@ def map_sense( sensitivity ):
         for spc in PhysicalAdjointData.spcs_out_emis:
             cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
             sense_arr = (sense_emis_dict[spc] * unit_convert)[ :-1, :nlay, :, : ]
-            model_avg = sense_arr.reshape((model_step-1,-1,
-                                           nlay,nrow,ncol,)).mean(axis=1)
+            model_arr = sense_arr.reshape((model_step-1,-1,
+                                           nlay,nrow,ncol,)).sum(axis=1)
             for c in range( ncat ):
-                data = model_avg.copy()
+                data = model_arr.copy()
                 data[ cat_arr != c ] = np.nan
                 data = np.nansum( data, axis=0 )
                 #insert NaN's if cell never had category c
