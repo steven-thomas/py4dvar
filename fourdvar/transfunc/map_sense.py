@@ -132,19 +132,21 @@ def map_sense( sensitivity ):
             assert slay >= mlay, msg.format( 'NLAYS' )
             assert srow == mrow, msg.format( 'NROWS' )
             assert scol == mcol, msg.format( 'NCOLS' )
-            fac = (sstep-1) // (mstep-1)
-            tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
-                             for i in range( fac ) ]).mean( axis=0 )
+            sense_arr = sdata[:-1,:mlay,:,:]
+            model_arr = sense_arr.reshape((mstep-1,-1,mlay,mrow,mcol)).sum(axis=1)
             #adjoint prepare_model
+            pstep = end-start
+            play = PhysicalAdjointData.nlays_emis
+            prow = PhysicalAdjointData.nrows
+            pcol = PhysicalAdjointData.ncols
             msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
-            assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
-            assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = (mstep-1) // (end-start)
-            pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
-                               for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc ][ start:end, ... ] += pdata.copy()
+            assert ((mstep-1) >= (pstep)) and ((mstep-1) % (pstep) == 0), msg.format('nstep')
+            assert mlay >= play, msg.format( 'nlays_emis' )
+            assert mrow == prow, msg.format( 'nrows' )
+            assert mcol == pcol, msg.format( 'ncols' )
+            model_arr = model_arr[ :, :play, :, : ]
+            phys_arr = model_arr.reshape((pstep,-1,play,prow,pcol)).sum(axis=1)
+            emis_dict[ spc ][ start:end, ... ] += phys_arr.copy()
     
     if inc_icon is False:
         icon_dict = None
