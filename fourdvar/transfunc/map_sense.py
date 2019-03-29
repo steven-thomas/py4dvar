@@ -122,7 +122,7 @@ def map_sense( sensitivity ):
         for spc in PhysicalAdjointData.spcs:
             cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
             sense_data = (sense_data_dict[ spc ] * unit_convert)[ :-1, :nlay, :, : ]
-            model_avg = sense_data.reshape((model_step,-1,nlay,nrow,ncol)).mean( axis=1 )
+            model_avg = sense_data.reshape((model_step,-1,nlay,nrow,ncol)).sum( axis=1 )
             for c in range( ncat ):
                 data = model_avg.copy()
                 data[ cat_arr != c ] = np.nan
