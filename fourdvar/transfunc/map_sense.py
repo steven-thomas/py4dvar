@@ -12,6 +12,7 @@ import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.params.cmaq_config as cmaq_config
 from fourdvar.params.input_defn import inc_icon
+import fourdvar.util.data_access as access
 
 unit_key = 'units.<YYYYMMDD>'
 unit_convert_dict = None
@@ -102,6 +103,10 @@ def map_sense( sensitivity ):
 
     diurnal = ncf.get_variable( template.diurnal, p.spcs_out_emis )
     del p
+
+    spcs_pair_list = zip( PhysicalAdjointData.spcs_out_prop,
+                          PhysicalAdjointData.spcs_in_prop )
+    spcs_pair_dict = { spc_in:spc_out for spc_out,spc_in in spcs_pair_list }
         
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec_prop
     nlay = PhysicalAdjointData.nlays_emis
@@ -120,6 +125,11 @@ def map_sense( sensitivity ):
         emis_input_dict = ncf.get_variable( emis_fname,
                                             PhysicalAdjointData.spcs_in_prop )
 
+        start = int( i * p_daysize )
+        end = int( (i+1) * p_daysize )
+        if start == end:
+            end += 1
+
         pstep = i // PhysicalAdjointData.tday_emis
         unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
         for spc in PhysicalAdjointData.spcs_out_emis:
@@ -127,6 +137,17 @@ def map_sense( sensitivity ):
             sense_arr = (sense_emis_dict[spc] * unit_convert)[ :-1, :nlay, :, : ]
             model_arr = sense_arr.reshape((model_step-1,-1,
                                            nlay,nrow,ncol,)).sum(axis=1)
+            if spc in spcs_pair_dict.keys():
+                p_spc = spcs_pair_dict[ spc ]
+                p_sense = ncf.get_variable( sense_fname, p_spc )
+                p_sense = (p_sense * unit_convert)[ :-1, :nlay, :, : ]
+                p_sense = p_sense.reshape((model_step-1,-1,
+                                           nlay,nrow,ncol,)).sum(axis=1)
+                prop_arr = access.phys_current.prop[ p_spc ][ start:end, ... ]
+                prop_arr = np.repeat( prop_arr, (model_step-1) // (end-start),
+                                      axis=0 )
+                model_arr += (prop_arr * p_sense)
+                
             for c in range( ncat ):
                 data = model_arr.copy()
                 data[ cat_arr != c ] = np.nan
@@ -137,20 +158,13 @@ def map_sense( sensitivity ):
                 data += nan_arr
                 emis_dict[spc][c,pstep,:,:,:] += data
 
-        start = int( i * p_daysize )
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
-        spcs_pair_list = zip( PhysicalAdjointData.spcs_out_prop,
-                              PhysicalAdjointData.spcs_in_prop )
         for spc_out, spc_in in spcs_pair_list:
-            sdata = (sense_prop_dict[ spc_out ][:] * unit_convert)[:-1,...]
-            edata = (emis_input_dict[ spc_in ][:] / cell_area)[:-1,...]
-            mod_avg = sdata[:,:nlay,:,:]
-            mod_avg = mod_avg.reshape((model_step-1,-1,nlay,nrow,ncol)).mean( axis=1 )
-            assert mod_avg.shape == edata.shape, 'Error in shape re-casting.'
-            prop_arr = mod_avg / edata
+            sdata = (sense_prop_dict[ spc_out ][:] * unit_convert)[:-1,:nlay,:,:]
+            edata = (emis_input_dict[ spc_in ][:] / cell_area)[:-1,:nlay,:,:]
+            mod_sum = sdata.reshape((model_step-1,-1,nlay,nrow,ncol)).sum( axis=1 )
+            assert mod_sum.shape == edata.shape, 'Error in shape re-casting.'
+            prop_arr = mod_sum * edata
             prop_arr = prop_arr.reshape((end-start,-1,nlay,nrow,ncol)).sum( axis=1 )
             prop_dict[ spc_out ][ start:end, ... ] += prop_arr[:]
             
-    return PhysicalAdjointData( emis_dict, prop_dict )
+    return PhysicalAdjointData.create_new( emis_dict, prop_dict )

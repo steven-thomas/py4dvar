@@ -243,7 +243,7 @@ class PhysicalAbstractData( FourDVarData ):
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
-        return cls( emis_dict, prop_dict )
+        return cls.create_new( emis_dict, prop_dict )
 
     @classmethod
     def example( cls ):
@@ -274,7 +274,7 @@ class PhysicalAbstractData( FourDVarData ):
         emis_dict = { spc: emis_val.copy() for spc in cls.spcs_out_emis }
         prop_dict = { spc: prop_val.copy() for spc in cls.spcs_out_prop }
         
-        return cls( emis_dict, prop_dict )
+        return cls.create_new( emis_dict, prop_dict )
     
     @classmethod
     def assert_params( cls ):

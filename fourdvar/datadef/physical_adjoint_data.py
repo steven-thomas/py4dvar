@@ -14,3 +14,8 @@ class PhysicalAdjointData( PhysicalAbstractData ):
     emis_units = 'CF/(mol/(s*m^2))'
     if inc_icon is True:
         icon_units = 'CF/ppm'
+
+    @classmethod
+    def create_new( cls, *args ):
+        new_inst = cls( *args )
+        return new_inst

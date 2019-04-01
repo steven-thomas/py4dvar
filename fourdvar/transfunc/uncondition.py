@@ -73,4 +73,4 @@ def uncondition( unknown ):
     
     #if inc_icon is False:
     #    icon_dict = None
-    return PhysicalData( emis_dict, prop_dict )
+    return PhysicalData.create_new( emis_dict, prop_dict )
