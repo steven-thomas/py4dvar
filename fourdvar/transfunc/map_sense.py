@@ -55,9 +55,12 @@ def get_unit_convert():
         assert (target_shape[0]-1) % (rhoj.shape[0]-1) == 0, 'incompatible timesteps'
         reps = (target_shape[0]-1) // (rhoj.shape[0]-1)
         
-        rhoj_mapped = rhoj[ :-1, ... ].repeat( reps, axis=0 )
-        rhoj_mapped = np.append( rhoj_mapped, rhoj[ -1:, ... ], axis=0 )
-        unit_array = (ppm_scale*kg_scale*mwair) / (rhoj_mapped*lay_thick)
+        rhoj_interp = np.zeros(target_shape)
+        for r in range(reps):
+            frac = float(2*r+1) / float(2*reps)
+            rhoj_interp[r:-1:reps,...] = (1-frac)*rhoj[:-1,...] + frac*rhoj[1:,...]
+        rhoj_interp[-1,...] = rhoj[-1,...]
+        unit_array = (ppm_scale*kg_scale*mwair) / (rhoj_interp*lay_thick)
         
         day_label = dt.replace_date( unit_key, date )
         unit_dict[ day_label ] = unit_array
