@@ -122,8 +122,8 @@ def bwd_no_transport( adjoint_forcing ):
             bwd_arr[:-1,:,:,:] = force[spc][1:,:s_lay,:,:]
             s_arr = np.cumsum( bwd_arr[::-1,:,:,:], axis=0 )[::-1,:,:,:]
             icon[spc][:] = s_arr[0,:,:,:].copy()
-            conc[spc] = s_arr[:,:,:,:].copy()
-            emis[spc] = s_arr[:,:,:,:].copy() * float(tsec)
+            conc[spc] = s_arr[:,:s_lay,:,:].copy()
+            emis[spc] = s_arr[:,:e_lay,:,:].copy() * float(tsec)
         #write sensitivity files
         c_file = dt.replace_date( cmaq.conc_sense_file, date )
         e_file = dt.replace_date( cmaq.emis_sense_file, date )
