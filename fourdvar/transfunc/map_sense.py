@@ -75,7 +75,6 @@ def map_sense( sensitivity ):
         unit_convert_dict = get_unit_convert()
     
     #check that:
-    #- date_handle dates exist
     #- PhysicalAdjointData params exist
     #- template.emis & template.sense_emis are compatible
     #- template.icon & template.sense_conc are compatible
@@ -86,43 +85,65 @@ def map_sense( sensitivity ):
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
     
-    #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-    #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
+    #phys_params = ['tstep','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
+    #icon_dict = { spcs: scale_value }
     #emis_dict = { spcs: np.ndarray( nstep, nlays_emis, nrows, ncols ) }
     
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
     if inc_icon is True:
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
+        icon_dict = { spc: 1. for spc in p.spcs }
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
     del p
     
     #construct icon_dict
     if inc_icon is True:
-        icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
-        icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
-        icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
+        i_sense_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
+        i_sense_fname = sensitivity.file_data[ i_sense_label ][ 'actual' ]
+        i_sense_vars = ncf.get_variable( i_sense_fname, icon_dict.keys() )
+        icon_vars = ncf.get_variable( template.icon, icon_dict.keys() )
         for spc in PhysicalAdjointData.spcs:
-            data = icon_vars[ spc ][ 0, :, :, : ]
-            ilays, irows, icols = data.shape
-            msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
-            assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
-            assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
-    
-    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
+            sense_data = i_sense_vars[ spc ][ 0, ... ]
+            icon_data = icon_vars[ spc ] [ 0, ... ]
+            msg = 'conc_sense and template.icon are incompatible'
+            assert sense_data.shape == icon_data.shape, msg
+            icon_dict[ spc ] = (sense_data * icon_data).sum()
+
+    daysec = 24*60*60
+    t = int( ncf.get_attr( test_fname, 'TSTEP' ) )
+    m_tstep = 3600*( t//10000 ) + 60*( (t//100) % 100 ) + ( t%100 )
+
+    p_tstep = [ t for t in PhysicalAdjointData.tstep ]
+    msg = 'physical & model input emis TSTEP incompatible.'
+    assert all([ t % m_tstep == 0 for t in p_tstep ]), msg
+
+    e_count = [ p//m_tstep for p in p_tstep ] #emis count per phys timestep
+    t = 0 #current phys time index
+    m_len = daysec // m_tstep #No. emis steps per model day
     emis_pattern = 'emis.<YYYYMMDD>'
-    for i,date in enumerate( datelist ):
+    for date in datelist:
+        p_ind = [] #time index of phys data
+        m_slice = [0] #No. repeats of phys index above (for today)
+        r = 0
+        #drain phys reps until a full day is filled, record which index's used
+        while r < m_len:
+            p_ind.append( t )
+            s = min(e_count[t],m_len)
+            m_slice.append( r+s )
+            r += s
+            e_count[t] -= s
+            if e_count[t] <= 0:
+                t += 1
+        m_slice = [ (t0,t1) for t0,t1 in zip(m_slice[:-1],m_slice[1:]) ]
+        #check index & rep
+        assert (np.diff( p_ind ) == 1).all(), "index out of alignment"
+        assert m_slice[-1][1] == m_len, "m_slice doesn't cover all emis timesteps"
+
+        # get sensitivity data
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
-        start = int( i * p_daysize )
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
         for spc in PhysicalAdjointData.spcs:
             unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
             sdata = sense_data_dict[ spc ][:] * unit_convert
@@ -134,19 +155,15 @@ def map_sense( sensitivity ):
             assert slay >= mlay, msg.format( 'NLAYS' )
             assert srow == mrow, msg.format( 'NROWS' )
             assert scol == mcol, msg.format( 'NCOLS' )
-            fac = (sstep-1) // (mstep-1)
-            tmp = np.array([ sdata[ i::fac, 0:mlay, ... ]
-                             for i in range( fac ) ]).mean( axis=0 )
-            #adjoint prepare_model
-            msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= (end-start)) and ((mstep-1) % (end-start) == 0), msg.format('nstep')
-            assert mlay >= PhysicalAdjointData.nlays_emis, msg.format( 'nlays_emis' )
-            assert mrow == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert mcol == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            fac = (mstep-1) // (end-start)
-            pdata = np.array([ tmp[ i:-1:fac, 0:PhysicalAdjointData.nlays_emis, ... ]
-                               for i in range( fac ) ]).sum( axis=0 )
-            emis_dict[ spc ][ start:end, ... ] += pdata.copy()
+            sense_arr = sdata[ :-1, :mlay, :, : ]
+            model_arr = sense_arr.reshape((mstep-1,-1,mlay,mrow,mcol)).sum(axis=1)
+            play = PhysicalAdjointData.nlays_emis
+            model_arr = model_arr[ :, :play, :, : ]
+
+            #add p_rep model_arr steps to p_ind physical timstep
+            for ind, (start,end) in zip( p_ind, m_slice ):
+                phys_arr = model_arr[ start:end, ... ].sum( axis=0 )
+                emis_dict[ spc ][ ind, ... ] += phys_arr
     
     if inc_icon is False:
         icon_dict = None
