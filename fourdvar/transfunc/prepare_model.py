@@ -49,31 +49,52 @@ def prepare_model( physical_data ):
             model_input_args['icon'][spcs] = (icon_scale-1.)*icon_array
     else:
         model_input_args = {}
-
     
-    #all emis files & spcs for model_input use same NSTEP dimension, get it's size
+    # work with emis timesteps in seconds
+    daysec = 24*60*60
     emis_fname = dt.replace_date( template.emis, dt.start_date )
-    m_daysize = ncf.get_variable( emis_fname, physical_data.spcs[0] ).shape[0] - 1
-    dlist = dt.get_datelist()
-    p_daysize = float(physical_data.nstep) / len( dlist )
-    assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'
-    
+    t = int( ncf.get_attr( emis_fname, 'TSTEP' ) )
+    m_tstep = 3600*( t//10000 ) + 60*( (t//100) % 100 ) + ( t%100 )
+
+    p_tstep = physical_data.tstep
+    msg = 'physical & model input emis TSTEP incompatible.'
+    assert all([ t % m_tstep == 0 for t in p_tstep ]), msg
+
+    e_count = [ p//m_tstep for p in p_tstep ] #emis count per phys timestep
+    t = 0 #current phys time index
+    m_len = daysec // m_tstep #No. emis steps per model day
     emis_pattern = 'emis.<YYYYMMDD>'
-    for i,date in enumerate( dlist ):
+    for date in dt.get_datelist():
+        p_ind = [] #time index of phys data
+        p_rep = [] #No. repeats of phys index above (for today)
+        r = 0
+        #drain phys reps until a full day is filled, record which index's used
+        while r < m_len:
+            p_ind.append( t )
+            p_rep.append( min(e_count[t],m_len) )
+            r += p_rep[-1]
+            e_count[t] -= p_rep[-1]
+            if e_count[t] <= 0:
+                t += 1
+        #handle final timestep, repeat of next day OR last phys tstep
+        if (t == len(e_count)) or (e_count[t] > 0):
+            p_rep[-1] += 1
+        else:
+            p_ind.append( t )
+            p_rep.append( 1 )
+        #check index & rep
+        assert (np.diff( p_ind ) == 1).all(), 'index out of alignment'
+        assert sum( p_rep ) == ( m_len+1 ), 'reps do not sum to emis requirements'
+
+        #build days emis spcs dict from phys
         spcs_dict = {}
-        start = int(i * p_daysize)
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
-        for spcs_name in physical_data.spcs:
-            phys_data = physical_data.emis[ spcs_name ][ start:end, ... ]
-            if end < physical_data.nstep:
-                last_slice = physical_data.emis[ spcs_name ][ end:end+1, ... ]
-            else:
-                last_slice = physical_data.emis[ spcs_name ][ end-1:end, ... ]
-            mod_data = np.repeat( phys_data, m_daysize // (end-start), axis=0 )
-            mod_data = np.append( mod_data, last_slice, axis=0 )
-            spcs_dict[ spcs_name ] = mod_data * unit_convert
+        for spc in physical_data.spcs:
+            start = p_ind[0]
+            end = p_ind[-1] + 1
+            phys_data = physical_data.emis[spc][ start:end, ... ]
+            mod_data = np.repeat( phys_data, p_rep, axis=0 )
+            spcs_dict[ spc ] = mod_data * unit_convert
+        # attach species dict to model input args
         emis_argname = dt.replace_date( emis_pattern, date )
         model_input_args[ emis_argname ] = spcs_dict
     

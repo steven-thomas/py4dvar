@@ -18,7 +18,7 @@ import fourdvar.util.netcdf_handle as ncf
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( store_path, 'input/prior.ncf' )
+save_path = os.path.join( store_path, 'input/prior_timevar.nc' )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
@@ -32,15 +32,20 @@ emis_nlay = 'all'
 # allowed values:
 # 'emis' to use timestep from emissions file
 # 'single' for using a single average across the entire model run
-# [ days, HoursMinutesSeconds ] for custom length eg: (half-hour = [0,3000])
-#tstep = [1,0] #daily average emissions
-tstep = 'single'
+# 'month' to use one timestep per month
+# [ sec1, sec2, ... ] for custom lengths
+# int(sec) for constant repeating timestep eg: (3-hour == 3*60*60)
+#tstep = 24*60*60 #daily average emissions
+#tstep = 'single'
+# tstep = 'month'
+hr = 60*60 #seconds in an hr.
+tstep = [ 48*hr, 12*hr, 12*hr, 24*hr ] #test case for variable-timestep code
 
 # data for emission uncertainty
 # allowed values:
 # string: filename for netCDF file already correctly formatted.
-emis_unc_vector = 'tmp_unc_vector.pickle.zip'
-emis_corr_matrix = 'tmp_corr_matrix.pickle.zip'
+emis_unc_vector = 'tmp_unc_vector.pic.gz'
+emis_corr_matrix = 'tmp_corr_matrix.pic.gz'
 
 # data for ICON scaling
 # list of values, one for each species
@@ -88,49 +93,50 @@ else:
     if emis_nlay > enlay:
         raise AssertionError('emis_nlay must be <= {:}'.format( enlay ))
 
-# convert tstep into valid time-step
+# convert tstep into valid time-step (seconds)
+daysec = 24*60*60
 if str( tstep ).lower() == 'emis':
     efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
-    estep = int( ncf.get_attr( efile, 'TSTEP' ) )
-    day = 0
-    hms = estep
+    hms = int( ncf.get_attr( efile, 'TSTEP' ) )
+    tstep = 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
 elif str( tstep ).lower() == 'single':
-    nday = len( dt.get_datelist() )
-    day = nday
-    hms = 0
+    tstep = len(dt.get_datelist()) * daysec
+elif str( tstep ).lower() == 'month':
+    tstep = []
+    for m in range(max(dt.month_index())):
+        nday = len([ 1 for i in dt.month_index() if i==m ])
+        tstep.append( nday * daysec )
+#validate tstep: cleanly fits into days.
+if type( tstep ) == int:
+    nstep = (daysec*len(dt.get_datelist())) // tstep
+    tstep = [ tstep ] * nstep
 else:
-    try:
-        assert len( tstep ) == 2
-        day,hms = tstep
-        assert int(day) == day
-        day = int(day)
-        assert int(hms) == hms
-        hms = int(hms)
-    except:
-        print 'invalid tstep'
-        raise
-tstep = [ day, hms ]
-
-daysec = 24*60*60
-tsec = daysec*day + 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
+    assert type( tstep ) == list, 'invalid tstep'
+    assert all( [ type(i) == int for i in tstep ] ), 'invalid tstep'
+tsec_list = np.cumsum( [0] + tstep )
+msg = 'timestep does not fit entire model run.'
+assert tsec_list[-1] == daysec*len(dt.get_datelist()), msg
+ind_list = [ i for i,t in enumerate(tsec_list) if t%daysec != 0 ]
+for i in ind_list:
+    t = tsec_list[i]
+    day_start = daysec * (t // daysec )
+    day_end = day_start + daysec
+    msg = 'sub-day timestep cannot span multiple days.'
+    assert tsec_list[i-1] >= day_start, msg
+    assert tsec_list[i+1] <= day_end, msg
 
 # emis-file timestep must fit into PhysicalData tstep
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 estep = int( ncf.get_attr( efile, 'TSTEP' ) )
 esec = 3600*(estep//10000) + 60*((estep//100)%100) + (estep%100)
 msg = 'emission file TSTEP & tstep incompatible'
-assert (tsec >= esec) and (tsec%esec == 0), msg
-
-# PhysicalData tstep must fit into model days
-assert max(tsec,daysec) % min(tsec,daysec) == 0, 'tstep must fit into days'
-assert len(dt.get_datelist())*daysec % tsec == 0, 'tstep must fit into model length'
-
+assert all([ (t >= esec) and (t%esec == 0) for t in tstep ]), msg
 
 
 #emis_nlay
 nrow = int( ncf.get_attr( efile, 'NROWS' ) )
 ncol = int( ncf.get_attr( efile, 'NCOLS' ) )
-nstep = len(dt.get_datelist())*daysec // tsec
+nstep = len( tstep )
 emis_shape = ( nstep, emis_nlay, nrow, ncol, )
 
 emis_dict = { spc: np.zeros(emis_shape) for spc in spc_list }
@@ -156,17 +162,18 @@ assert all_cells == len(spc_list) * np.prod( emis_shape ), msg
 assert len( emis_unc_vector.shape ) == 1, 'emis_unc_vector must be 1-dimensional'
 msg = 'emis_corr_matrix short dimension does not match emis_unc_vector.'
 assert unknowns == emis_unc_vector.shape[0], msg
-    
+
 
 # build data into new netCDF file
+if all([ t==tstep[0] for t in tstep ]):
+    tstep_out = tstep[0]
+else:
+    tstep_out = [ t for t in tstep ]
 root_dim = { 'ROW': nrow, 'COL': ncol }
 root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) ),
               'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
-              'TSTEP': [ np.int32( tstep[0] ), np.int32( tstep[1] ) ],
+              'TSTEP': tstep_out,
               'VAR-LIST': ''.join( [ '{:<16}'.format(s) for s in spc_list ] ) }
-#if input_defn.inc_icon is True:
-#    root_attr['ICON-SCALE'] = icon_scale
-#    root_attr['ICON-UNC'] = icon_unc
 
 root = ncf.create( path=save_path, attr=root_attr, dim=root_dim, is_root=True )
 

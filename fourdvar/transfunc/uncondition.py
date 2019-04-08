@@ -46,4 +46,3 @@ def uncondition( unknown ):
     if inc_icon is False:
         icon_dict = None
     return PhysicalData( icon_dict, emis_dict )
-

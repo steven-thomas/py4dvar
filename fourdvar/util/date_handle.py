@@ -39,6 +39,23 @@ def get_datelist():
     datelist = [ add_days( start_date, i ) for i in range(days) ]
     return datelist
 
+def month_index():
+    """
+    extension: get an index of which month each day belongs to,
+               start from 0, count up across years
+    input: None
+    output: list of ints
+    """
+    ind = 0
+    label = start_date.strftime( '%Y%m' )
+    month_list = []
+    for date in get_datelist():
+        if label != date.strftime( '%Y%m' ):
+            label = date.strftime( '%Y%m' )
+            ind += 1
+        month_list.append( ind )
+    return month_list
+
 def replace_date( src, date ):
     """
     extension: replace date tags with date data
