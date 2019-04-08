@@ -65,7 +65,7 @@ def phys_to_unk( physical, is_adjoint ):
     for ns,spc in enumerate( PhysicalAbstractData.spcs ):
         emis = physical.emis[ spc ].flatten()
         emis_vector[ ns*emis.size : (ns+1)*emis.size ] = emis
-    emis_vector = np.matmul( emis_vector, PhysicalAbstractData.emis_corr_matrix )
+    emis_vector = np.dot( emis_vector, PhysicalAbstractData.emis_corr_matrix )
     emis_vector = weight( emis_vector, PhysicalAbstractData.emis_unc_vector )
     arg[ i: ] = emis_vector
     

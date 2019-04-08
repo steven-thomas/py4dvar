@@ -68,7 +68,6 @@ class PhysicalAbstractData( FourDVarData ):
         for spcs_name in self.spcs:
             if inc_icon is True:
                 icon_data = icon_dict[ spcs_name ]
-                assert icon_data >= 0., 'icon scaling cannot be negative.'
                 self.icon[ spcs_name ] = icon_data
             
             emis_data = np.array( emis_dict[ spcs_name ] )
