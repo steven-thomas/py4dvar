@@ -12,7 +12,7 @@ use_jobfs = False
 
 #No. of processors per column
 #npcol = 1
-npcol = 4
+npcol = 3
 #No. of processors per row
 #nprow = 1
 nprow = 4
@@ -96,10 +96,10 @@ if use_jobfs is True:
         raise ValueError(msg)
 else:
     chk_path = output_path
-mcip_path = os.path.join( cmaq_base, 'mcip/<YYYY-MM-DD>' )
-grid_path = os.path.join( cmaq_base, 'grid/<YYYY-MM-DD>' )
-jproc_path = os.path.join( cmaq_base, 'jproc' )
-bcon_path = os.path.join( cmaq_base, 'bcon' )
+mcip_path = os.path.join( cmaq_base, 'mcip/<YYYY-MM-DD>', 'd01' )
+grid_path = os.path.join( cmaq_base, 'grid/<YYYY-MM-DD>' , 'd01')
+jproc_path = os.path.join( cmaq_base, 'jproc/<YYYY-MM-DD>' )
+bcon_path = os.path.join( cmaq_base, 'bcon/<YYYY-MM-DD>', 'd01' )
 icon_path = os.path.join( cmaq_base, 'icon' )
 emis_path = os.path.join( cmaq_base, 'emis' )
 
@@ -132,17 +132,17 @@ bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
 icon_file = os.path.join( icon_path, 'icon_CO2only.ncf' )
-bcon_file = os.path.join( bcon_path, 'bcon_CO2only.<YYYYMMDD>.ncf' )
+bcon_file = os.path.join( bcon_path, 'BCON.d01.AUS_d01.CO2only.nc' )
 emis_file = os.path.join( emis_path, 'emis.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.ncf' )
-grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_<YYYYMMDD>.ncf' )
-grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_<YYYYMMDD>.ncf' )
-met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.ncf' )
-met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.ncf' )
-met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.ncf' )
-met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_<YYYYMMDD>.ncf' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_test4' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_test4' )
+met_cro_2d = os.path.join( mcip_path, 'METCRO2D_test4' )
+met_cro_3d = os.path.join( mcip_path, 'METCRO3D_test4' )
+met_dot_3d = os.path.join( mcip_path, 'METDOT3D_test4' )
+met_bdy_3d = os.path.join( mcip_path, 'METBDY3D_test4' )
 layerfile = met_cro_3d
 depv_trac = met_cro_2d
 xj_data = os.path.join( jproc_path, 'JTABLE_<YYYYDDD>' )
