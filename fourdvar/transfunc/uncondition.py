@@ -20,29 +20,41 @@ def uncondition( unknown ):
     """
     PhysicalData.assert_params()
     p = PhysicalData
-    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    ncells = p.nall_cells
+    nstep = p.nstep
+    spcs_list = p.spcs
+    nunknowns = p.nunknowns
+    eigen_vectors = p.eigen_vectors
+    eigen_values = p.eigen_values
+    e_slice_shape = ( p.nlays_emis, p.nrows, p.ncols )
     emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols )
     del p
     
     vals = unknown.get_vector()
     if inc_icon is True:
         icon_dict = {}
-    emis_dict = {}
     i = 0
-    for spc in PhysicalData.spcs:
+    for spc in spcs_list:
         if inc_icon is True:
             icon = vals[ i ]
             i += 1
             icon = icon * PhysicalData.icon_unc[ spc ]
             icon_dict[ spc ] = icon
-    
-    emis_vector = vals[i:] * PhysicalData.emis_unc_vector
-    emis_vector = np.dot( PhysicalData.emis_corr_matrix, emis_vector )
-    for ns,spc in enumerate( PhysicalData.spcs ):
-        emis = emis_vector[ ns*emis_len : (ns+1)*emis_len ]
-        emis = emis.reshape( emis_shape )
-        emis_dict[ spc ] = emis
+
+    emis_dict = { spc: np.zeros( emis_shape ) for spc in spcs_list }    
+    for t in range( nstep ):
+        emis_vector = vals[ i : i+nunknowns[t] ]
+        i += nunknowns[t]
         
+        emis_vector = emis_vector * eigen_values[t]
+        emis_vector = np.dot( eigen_vectors[t], emis_vector )
+        for ns,spc in enumerate( spcs_list ):
+            e_len = np.prod( e_slice_shape )
+            e_slice = emis_vector[ ns*e_len : (ns+1)*e_len ]
+            emis = e_slice.reshape( e_slice_shape )
+            emis_dict[ spc ][t,...] = emis[:]
+    
     if inc_icon is False:
         icon_dict = None
+    assert i == vals.size, 'did not map expected number of unknowns.'
     return PhysicalData( icon_dict, emis_dict )

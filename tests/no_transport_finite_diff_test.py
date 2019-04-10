@@ -34,7 +34,8 @@ def make_perturbation( init_vector, scale ):
     #edit physical (p)
     r, c = int(p.nrows/3), int(p.ncols/3)
     for spc in p.spcs:
-        p.emis[spc][:,0,r:2*r,c:2*c] += scale*p.emis_unc_vector.max()
+        eigen_max = max([ arr.max() for arr in p.eigen_values ] )
+        p.emis[spc][:,0,r:2*r,c:2*c] += scale * eigen_max
     #convert perturbed phys back into vector
     pert_unknown = transform( p, d.UnknownData )
     return pert_unknown.get_vector()

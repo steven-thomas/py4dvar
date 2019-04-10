@@ -24,14 +24,14 @@ class PhysicalAbstractData( FourDVarData ):
     """
     
     #Parameters
-    tstep = None               #No. seconds per timestep
+    tstep = None              #No. seconds per timestep
     nstep = None              #No. timesteps for emis data
     nlays_emis = None         #No. layers for emis_data
     nrows = None              #No. rows for all data
     ncols = None              #No. columns for all data
     spcs = None               #list of species for all data
-    emis_unc_vector = None    #vector of emis uncertainty eigen values
-    emis_corr_matrix = None   #2D array to convert emis uncertainty
+    eigen_values = None       #list of vectors of emis uncertainty eigen values
+    eigen_vectors = None      #list of matrices of emis uncertainty eigen vectors
     nall_cells = None         #No. emis cells
     nunknowns = None          #No. unknowns
     
@@ -110,7 +110,7 @@ class PhysicalAbstractData( FourDVarData ):
         attr_dict[ 'TSTEP' ] = tstep_out
         var_list =''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
         attr_dict[ 'VAR-LIST' ] = var_list
-        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
+        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols, 'TSTEP': None }
         
         root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
                            is_root=True )
@@ -124,21 +124,33 @@ class PhysicalAbstractData( FourDVarData ):
             ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
                         is_root=False )
         
-        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
+        emis_dim = { 'LAY': self.nlays_emis }
         emis_var = {}
         
         for spc in self.spcs:
             emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ] )
         
-        corr_unc_dim = { 'ALL_CELLS': self.nall_cells, 'UNKNOWNS': self.nunknowns }
-        corr_unc_var = { 'corr_matrix': ('f4',('ALL_CELLS','UNKNOWNS'),self.emis_corr_matrix),
-                         'unc_vector': ('f4',('UNKNOWNS',),self.emis_unc_vector) }
+        #convert uncertainty data into format for netCDF storage.
+        max_unk = self.nunknowns.max()
+        vec_storage = np.zeros(( self.nstep, self.nall_cells, max_unk ))
+        val_storage = np.zeros(( self.nstep, max_unk ))
+        for i in range( self.nstep ):
+            unk_len = self.nunknowns[i]
+            vec_storage[ i, :, :unk_len ] = self.eigen_vectors[i][:]
+            val_storage[ i, :unk_len ] = self.eigen_values[i][:]
+
+        corr_unc_dim = { 'ALL_CELLS': self.nall_cells, 'UNKNOWNS': max_unk }
+        corr_unc_var = { 'EIGEN_VECTORS': ('f4',('TSTEP','ALL_CELLS','UNKNOWNS'),
+                                           vec_storage),
+                         'EIGEN_VALUES': ('f4',('TSTEP','UNKNOWNS',),
+                                          val_storage) }
+        corr_unc_attr = { 'UNKNOWNS': [np.int32(unk) for unk in self.nunknowns] }
         
         ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
                     is_root=False )
-        ncf.create( parent=root, name='corr_unc', dim=corr_unc_dim,
-                    var=corr_unc_var, is_root=False )
+        ncf.create( parent=root, name='corr_unc', attr=corr_unc_attr,
+                    dim=corr_unc_dim, var=corr_unc_var, is_root=False )
         root.close()
         return None
     
@@ -175,10 +187,19 @@ class PhysicalAbstractData( FourDVarData ):
             icon_unc_val = ncf.get_variable( filename, 'ICON-UNC', group='icon' )
             icon_unc = { s:v for s,v in zip(spcs_list,icon_unc_val) }
         emis_dict = ncf.get_variable( filename, spcs_list, group='emis' )
-        emis_unc_vector = ncf.get_variable(filename,'unc_vector',group='corr_unc')
-        emis_corr_matrix = ncf.get_variable(filename,'corr_matrix',group='corr_unc')
-        nall_cells, nunknowns = emis_corr_matrix.shape
-                
+        e_vectors = ncf.get_variable( filename, 'EIGEN_VECTORS', group='corr_unc')
+        e_values = ncf.get_variable( filename, 'EIGEN_VALUES', group='corr_unc')
+        nunknowns = ncf.get_attr( filename, 'UNKNOWNS', group='corr_unc' )
+        nall_cells = e_vectors.shape[1]
+
+        eigen_vectors = []
+        eigen_values = []
+        for i,n in enumerate( nunknowns ):
+            e_vec = e_vectors[i,:,:n]
+            eigen_vectors.append( e_vec )
+            e_val = e_values[i,:n]
+            eigen_values.append( e_val )
+                        
         #ensure parameters from file are valid
         msg = 'invalid start date'
         assert sdate == dt.replace_date( '<YYYYDDD>', dt.start_date ), msg
@@ -209,15 +230,15 @@ class PhysicalAbstractData( FourDVarData ):
         assert len(tstep) == estep, 'tstep and emis nstep do not match'
 
         msg = 'Uncertainty values are invalid for this data.'
-        assert emis_unc_vector.shape == (nunknowns,), msg
-        assert nall_cells == len(spcs_list)*estep*elays*erows*ecols, msg
+        assert all([ v.shape==(l,) for v,l in zip(eigen_values,nunknowns) ]), msg
+        assert nall_cells == len(spcs_list)*elays*erows*ecols, msg
         
         #assign new param values.
         par_name = ['tstep','nstep','nlays_emis','nrows','ncols','spcs',
-                    'emis_unc_vector', 'emis_corr_matrix', 'nall_cells', 'nunknowns']
-        par_val = [tstep, estep, elays, erows, ecols, spcs_list, emis_unc_vector,
-                   emis_corr_matrix, nall_cells, nunknowns]
-        par_mutable = ['emis_unc_vector, emis_corr_matrix']
+                    'eigen_vectors', 'eigen_values', 'nall_cells', 'nunknowns']
+        par_val = [tstep, estep, elays, erows, ecols, spcs_list, eigen_vectors,
+                   eigen_values, nall_cells, nunknowns]
+        par_mutable = ['eigen_vectors, eigen_values']
         if inc_icon is True:
             par_name += [ 'icon_unc' ]
             par_val += [ icon_unc ]
@@ -279,7 +300,7 @@ class PhysicalAbstractData( FourDVarData ):
         notes: method raises assertion error if None valued parameter is found.
         """
         par_name = ['tstep','nstep','nlays_emis','nrows','ncols','spcs',
-                    'emis_unc_vector','emis_corr_matrix','nall_cells','nunknowns']
+                    'eigen_vectors','eigen_values','nall_cells','nunknowns']
         if inc_icon is True:
             par_name += [ 'icon_unc' ]
         for param in par_name:

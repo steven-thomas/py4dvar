@@ -40,12 +40,18 @@ def phys_to_unk( physical, is_adjoint ):
     notes: this function must apply the inverse prior error covariance
     """
     p = PhysicalAbstractData
-    emis_len = p.nall_cells
-    if inc_icon is True:
-        total_len = len( p.spcs ) + p.nunknowns
-    else:
-        total_len = p.nunknowns
+    ncells = p.nall_cells
+    nstep = p.nstep
+    spcs_list = p.spcs
+    nunknowns = p.nunknowns
+    eigen_vectors = p.eigen_vectors
+    eigen_values = p.eigen_values
     del p
+
+    if inc_icon is True:
+        total_len = len( spcs_list ) + sum( nunknowns )
+    else:
+        total_len = sum( nunknowns )
     
     #weighting function changes if is_adjoint
     if is_adjoint is True:
@@ -55,18 +61,21 @@ def phys_to_unk( physical, is_adjoint ):
     
     arg = np.zeros( total_len )
     i = 0
-    for spc in PhysicalAbstractData.spcs:
+    for spc in spcs_list:
         if inc_icon is True:
             icon = weight( physical.icon[ spc ], physical.icon_unc[ spc ] )
             arg[ i ] = icon
             i += 1
 
-    emis_vector = np.zeros( emis_len )
-    for ns,spc in enumerate( PhysicalAbstractData.spcs ):
-        emis = physical.emis[ spc ].flatten()
-        emis_vector[ ns*emis.size : (ns+1)*emis.size ] = emis
-    emis_vector = np.dot( emis_vector, PhysicalAbstractData.emis_corr_matrix )
-    emis_vector = weight( emis_vector, PhysicalAbstractData.emis_unc_vector )
-    arg[ i: ] = emis_vector
-    
+    for t in range( nstep ):
+        emis_vector = np.zeros( ncells )
+        for ns,spc in enumerate( spcs_list ):
+            emis = physical.emis[ spc ][t,...].flatten()
+            emis_vector[ ns*emis.size : (ns+1)*emis.size ] = emis[:]
+        emis_vector = np.dot( emis_vector, eigen_vectors[t] )
+        emis_vector = weight( emis_vector, eigen_values[t] )
+        arg[ i : i+nunknowns[t] ] = emis_vector[:]
+        i += nunknowns[t]
+
+    assert i == total_len, 'did not map expected number of unknowns.'
     return UnknownData( arg )

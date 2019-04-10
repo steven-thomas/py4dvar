@@ -39,13 +39,13 @@ emis_nlay = 'all'
 #tstep = 'single'
 # tstep = 'month'
 hr = 60*60 #seconds in an hr.
-tstep = [ 48*hr, 12*hr, 12*hr, 24*hr ] #test case for variable-timestep code
+tstep = [ 6*hr, 18*hr ] #test case for variable-timestep code
 
 # data for emission uncertainty
 # allowed values:
-# string: filename for netCDF file already correctly formatted.
-emis_unc_vector = 'tmp_unc_vector.pic.gz'
-emis_corr_matrix = 'tmp_corr_matrix.pic.gz'
+# list of strings: filenames for netCDF file already correctly formatted.
+emis_eigen_vectors_files = ['eigen_vectors_01.pic.gz','eigen_vectors_02.pic.gz']
+emis_eigen_values_files = ['eigen_values_01.pic.gz','eigen_values_02.pic.gz']
 
 # data for ICON scaling
 # list of values, one for each species
@@ -146,30 +146,48 @@ def load_obj( fname ):
         obj = pickle.load( f )
     return obj
 
-emis_unc_vector = load_obj( emis_unc_vector )
-emis_corr_matrix = load_obj( emis_corr_matrix )
+emis_eigen_values = [ load_obj( f ) for f in emis_eigen_values_files ]
+emis_eigen_vectors = [ load_obj( f ) for f in emis_eigen_vectors_files ]
 
-assert len( emis_corr_matrix.shape ) == 2, 'emis_corr_matrix must be 2-dimensional'
-d1,d2 = emis_corr_matrix.shape
-if d2 > d1:
-    emis_corr_matrix = np.transpose( emis_corr_matrix )
+msg = 'need one set of emis_eigen_vectors for each timestep.'
+assert len( emis_eigen_vectors ) == nstep, msg
+for i,arr in enumerate(emis_eigen_vectors):
+    msg = '{:} must be 2 dimensional'.format(emis_eigen_vectors_files[i])
+    assert len(arr.shape) == 2, msg
+    d1,d2 = arr.shape
+    if d2 > d1:
+        print '{:} transposed!'.format(emis_eigen_vectors_files[i])
+        emis_eigen_vectors[i] = np.transpose( arr )
 
-all_cells, unknowns = emis_corr_matrix.shape
+cell_list, unk_list = zip( *[arr.shape for arr in emis_eigen_vectors] )
 
-msg = 'emis_corr_matrix long dimension is invalid.'
-assert all_cells == len(spc_list) * np.prod( emis_shape ), msg
+msg = 'emis_eigen_vector length is invalid.'
+ncells = len( spc_list ) * np.prod( emis_shape ) / nstep
+assert all([ c == ncells for c in cell_list ]), msg
 
-assert len( emis_unc_vector.shape ) == 1, 'emis_unc_vector must be 1-dimensional'
-msg = 'emis_corr_matrix short dimension does not match emis_unc_vector.'
-assert unknowns == emis_unc_vector.shape[0], msg
+msg = 'need one set of emis_eigen_values for each timestep.'
+assert len( emis_eigen_values ) == nstep, msg
+for i,arr in enumerate( emis_eigen_values ):
+    msg = '{:} must be 1 dimensional'.format(emis_eigen_values_files[i])
+    assert len(arr.shape) == 1, msg
+    msg = 'emis_eigen_vectors do not match emis_eigen_values.'
+    assert unk_list[i] == arr.size, msg
 
+#convert uncertainty data into format for netCDF storage.
+max_unk = max( unk_list )
+vec_storage = np.zeros(( nstep, ncells, max_unk ))
+val_storage = np.zeros(( nstep, max_unk ))
+for i in range( nstep ):
+    unk_len = unk_list[i]
+    vec_storage[ i, :, :unk_len ] = emis_eigen_vectors[i][:]
+    val_storage[ i, :unk_len ] = emis_eigen_values[i][:]
 
 # build data into new netCDF file
 if all([ t==tstep[0] for t in tstep ]):
     tstep_out = tstep[0]
 else:
     tstep_out = [ t for t in tstep ]
-root_dim = { 'ROW': nrow, 'COL': ncol }
+root_dim = { 'ROW': nrow, 'COL': ncol, 'TSTEP': None }
 root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) ),
               'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
               'TSTEP': tstep_out,
@@ -183,15 +201,16 @@ if input_defn.inc_icon is True:
                  'ICON-UNC': ('f4', ('SPC',), np.array(icon_unc) ) }
     ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
 
-emis_dim = { 'TSTEP': None, 'LAY': emis_nlay }
+emis_dim = { 'LAY': emis_nlay }
 emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }
 ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var, is_root=False )
 
-corr_unc_dim = { 'ALL_CELLS': all_cells, 'UNKNOWNS':unknowns }
-corr_unc_var = { 'corr_matrix': ('f4', ('ALL_CELLS','UNKNOWNS',), emis_corr_matrix),
-                 'unc_vector': ('f4', ('UNKNOWNS',), emis_unc_vector) }
-ncf.create( parent=root, name='corr_unc', dim=corr_unc_dim, var=corr_unc_var, is_root=False )
+corr_unc_dim = { 'ALL_CELLS': ncells, 'UNKNOWNS':max_unk }
+corr_unc_var = { 'EIGEN_VECTORS': ('f4', ('TSTEP','ALL_CELLS','UNKNOWNS',), vec_storage),
+                 'EIGEN_VALUES': ('f4', ('TSTEP','UNKNOWNS',), val_storage) }
+corr_unc_attr = { 'UNKNOWNS': [ np.int32( unk ) for unk in unk_list ] }
+ncf.create( parent=root, name='corr_unc', attr=corr_unc_attr,
+            dim=corr_unc_dim, var=corr_unc_var, is_root=False )
 
 root.close()
-ncf.copy_compress( save_path, save_path )
 print 'Prior created and save to:\n  {:}'.format( save_path )
