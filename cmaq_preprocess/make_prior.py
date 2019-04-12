@@ -5,6 +5,7 @@ import cPickle as pickle
 import gzip
 import numpy as np
 import os
+import glob
 
 import context
 from cmaq_preprocess.uncertainty import convert_unc
@@ -13,12 +14,14 @@ import fourdvar.params.input_defn as input_defn
 from fourdvar.params.root_path_defn import store_path
 import fourdvar.util.date_handle as dt
 import fourdvar.util.netcdf_handle as ncf
-
+import pandas as pd
+import datetime
+import sys 
 #parameters
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( store_path, 'input/prior_timevar.nc' )
+save_path = os.path.join( store_path, 'input/monthly_prior_2015.nc' )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
@@ -37,15 +40,40 @@ emis_nlay = 'all'
 # int(sec) for constant repeating timestep eg: (3-hour == 3*60*60)
 #tstep = 24*60*60 #daily average emissions
 #tstep = 'single'
-# tstep = 'month'
+tstep = 'month'
 hr = 60*60 #seconds in an hr.
-tstep = [ 6*hr, 18*hr ] #test case for variable-timestep code
+#tstep = [ 6*hr, 18*hr ] #test case for variable-timestep code
 
 # data for emission uncertainty
 # allowed values:
 # list of strings: filenames for netCDF file already correctly formatted.
-emis_eigen_vectors_files = ['eigen_vectors_01.pic.gz','eigen_vectors_02.pic.gz']
-emis_eigen_values_files = ['eigen_values_01.pic.gz','eigen_values_02.pic.gz']
+#Directory where we find eigen values and its associated eigen vectors
+ctmDir =  '/data/cephfs/punim0762/yvillalobos/data/CTM/AUS4/uncertainties'
+daterange = pd.date_range(start = datetime.datetime(2015, 01, 01), end = datetime.datetime(2016, 01, 01), freq='M')
+stringdates = [d.strftime("%Y-%m-%d")for d in daterange]
+dates = [datetime.datetime.strptime(d, '%Y-%m-%d') for d in stringdates]
+doms = ['d01']
+
+
+emis_eigen_vectors_files = []
+emis_eigen_values_files = []
+for date in dates:
+    yyyymmdd_dashed = date.strftime('%Y-%m-%d')
+
+    for idom, dom in enumerate(doms):
+        uncdir = '{}/{}/{}'.format(ctmDir, yyyymmdd_dashed, dom)
+        eigen_vectors_files = '{}/principal_components_eig_vecs_{}.pickle.zip'.format(uncdir, yyyymmdd_dashed) 
+        eigen_values_files = '{}/principal_eig_vals_{}.pickle.zip'.format(uncdir, yyyymmdd_dashed )
+        emis_eigen_vectors_files.append(eigen_vectors_files)
+        emis_eigen_values_files.append(eigen_values_files)
+
+
+#print emis_eigen_vectors_files 
+#print emis_eigen_values_files
+
+#Example of list of eigen_vectors and eigen_values
+#emis_eigen_vectors_files = ['eigen_vectors_01.pic.gz','eigen_vectors_02.pic.gz']
+#emis_eigen_values_files = ['eigen_values_01.pic.gz','eigen_values_02.pic.gz']
 
 # data for ICON scaling
 # list of values, one for each species
@@ -103,7 +131,7 @@ elif str( tstep ).lower() == 'single':
     tstep = len(dt.get_datelist()) * daysec
 elif str( tstep ).lower() == 'month':
     tstep = []
-    for m in range(max(dt.month_index())):
+    for m in range(max(dt.month_index())+1):
         nday = len([ 1 for i in dt.month_index() if i==m ])
         tstep.append( nday * daysec )
 #validate tstep: cleanly fits into days.
@@ -115,6 +143,8 @@ else:
     assert all( [ type(i) == int for i in tstep ] ), 'invalid tstep'
 tsec_list = np.cumsum( [0] + tstep )
 msg = 'timestep does not fit entire model run.'
+#print [ t//daysec for t in tstep ]
+#print len(dt.get_datelist())
 assert tsec_list[-1] == daysec*len(dt.get_datelist()), msg
 ind_list = [ i for i,t in enumerate(tsec_list) if t%daysec != 0 ]
 for i in ind_list:
