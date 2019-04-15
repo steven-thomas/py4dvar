@@ -15,7 +15,7 @@ from cmaq_preprocess.uncertainty import convert_unc
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( store_path, 'input/new_prior.ncf' )
+save_path = os.path.join( store_path, 'input/prior_6day.nc' )
 
 # spcs used in PhysicalData diurnal output
 # list of spcs (eg: ['CO2','CH4','CO'])
