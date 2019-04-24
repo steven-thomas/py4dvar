@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -N py4dvar_test
+#PBS -N test_pert
 #PBS -l walltime=12:00:00
 #PBS -l mem=2GB
 #PBS -l ncpus=1
@@ -11,4 +11,4 @@
 module use /g/data3/hh5/public/modules
 module load conda/analysis27
 
-python test_grad_verbose.py >& output_grad_verbose.txt
+python pert_pert_test.py >& output_pert_pert.txt
