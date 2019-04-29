@@ -222,7 +222,7 @@ class PhysicalAbstractData( FourDVarData ):
                     logger.warn( msg )
                 else:
                     msg = 'cannot change PhysicalAbstractData.{}'.format( name )
-                    assert np.all( old_val == val ), msg
+                    assert np.array_equal( old_val, val ), msg
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
