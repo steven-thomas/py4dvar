@@ -46,6 +46,16 @@ obs_pert.archive( obs_pert_archive )
 
 cmaq.wipeout()
 
+# Output the target cost value for this test
+bg_path = os.path.join( archive.get_archive_path(), prior_true_archive )
+user.background = d.PhysicalData.from_file( bg_path )
+obs_path = os.path.join( archive.get_archive_path(), obs_pert_archive )
+user.observed = d.ObservationData.from_file( obs_path )
+init_vec = transform( user.background, d.UnknownData ).get_vector()
+cost = main.cost_func( init_vec )
+print '\nThe cost function value should converge to:'
+print 'cost = {:}\n'.format( cost )
+
 #replace current background/prior and observations with perturbed versions.
 bg_path = os.path.join( archive.get_archive_path(), prior_pert_archive )
 user.background = d.PhysicalData.from_file( bg_path )
