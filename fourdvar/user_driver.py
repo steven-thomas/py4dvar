@@ -3,8 +3,6 @@ application: driver functions that require user definition
 handles driver IO and the minimizer function
 """
 
-from __future__ import print_function
-
 import numpy as np
 import sys
 import os
@@ -12,7 +10,6 @@ import shutil
 import cPickle as pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
-import _get_root
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq

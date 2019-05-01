@@ -3,16 +3,14 @@ import os
 import glob
 import subprocess
 
-import _get_root
 import fourdvar.util.date_handle as dt
 import fourdvar.params.cmaq_config as cfg
 import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.file_handle as fh
 
-
-import setup_logging
-logger = setup_logging.get_logger( __file__ )
+import setup_logging as logging
+logger = logging.get_logger( __file__ )
 
 def parse_env_dict( env_dict, date ):
     """
@@ -40,7 +38,7 @@ def load_env( env_dict ):
     notes: all names and values must be strings
     """
     for name, value in env_dict.items():
-        if cfg.is_large_sim is False:
+        if logging.verbose_logfile is True:
             logger.debug( 'setenv {} = {}'.format( name, value ) )
         os.environ[ name ] = value
     return None

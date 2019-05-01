@@ -1,6 +1,4 @@
 
-import _get_root
-
 # start date in int(YYYYMMDD) format
 start_date = 20070610
 

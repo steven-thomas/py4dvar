@@ -1,5 +1,4 @@
 
-import _get_root
 import fourdvar.util.date_handle as dt
 import fourdvar.params.template_defn as template
 import fourdvar.params.archive_defn as archive

@@ -6,7 +6,6 @@ eg: transform( observation_instance, datadef.AdjointForcingData ) == calc_forcin
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
 
 def calc_forcing( w_residual ):

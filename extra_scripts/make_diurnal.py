@@ -3,7 +3,7 @@ import numpy as np
 import pyproj
 from bisect import bisect
 
-import _get_root
+import context
 import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.date_handle as dt
