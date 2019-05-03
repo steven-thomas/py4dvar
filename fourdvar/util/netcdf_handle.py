@@ -139,13 +139,13 @@ def copy_compress( source, dest ):
             logger.warn( msg )
         else:
             if logging.verbose_logfile is True:
-                logger.debug( msg )
+                logger.debug( copy_msg )
             return None
 
     #if code reaches here ncks-copy failed or wasn't tried.
     shutil.copyfile( source, dest )
     if logging.verbose_logfile is True:
-        logger.debug( msg )
+        logger.debug( copy_msg )
     return None
 
 def set_date( fileobj, start_date ):
