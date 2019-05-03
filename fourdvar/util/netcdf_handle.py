@@ -114,6 +114,7 @@ def get_all_attr( filepath ):
         attr_dict = { name : f.getncattr( name ) for name in f.ncattrs() }
     return attr_dict
 
+try_ncks = True
 def copy_compress( source, dest ):
     """
     extension: create a compressed copy of a netCDF file
@@ -122,16 +123,26 @@ def copy_compress( source, dest ):
     
     notes: if dst already exists it is overwritten.
     """
-    #Current version does not compress.
-    #msg = 'copy {} to {}.'.format( source, dest )
-    #copy_cmd = [ 'ncks', '-4', '-L4', '-O', source, dest ]
-    #with open( os.devnull, 'w' ) as DEVNULL:
-    #    statcode = subprocess.call( copy_cmd, stdout=DEVNULL, stderr=DEVNULL )
-    #if statcode != 0:
-    #    msg = 'Failed to ' + msg
-    #    logger.error( msg )
-    #    raise AssertionError( msg )
-    #elif logging.verbose_logfile is True:
+    global try_ncks
+    copy_msg = 'copy {} to {}.'.format( source, dest )
+    if try_ncks is True:
+        copy_cmd = [ 'ncks', '-4', '-L4', '-O', source, dest ]
+        try:
+            with open( os.devnull, 'w' ) as DEVNULL:
+                statcode = subprocess.check_call( copy_cmd, stdout=DEVNULL, stderr=DEVNULL )
+        except (OSError, subprocess.CalledProcessError,):
+            statcode = 1
+        if statcode != 0:
+            try_ncks = False
+            msg = "failed to copy_compress netCDF file with ncks, "
+            msg += "switching to uncompressed copying."
+            logger.warn( msg )
+        else:
+            if logging.verbose_logfile is True:
+                logger.debug( msg )
+            return None
+
+    #if code reaches here ncks-copy failed or wasn't tried.
     shutil.copyfile( source, dest )
     if logging.verbose_logfile is True:
         logger.debug( msg )
