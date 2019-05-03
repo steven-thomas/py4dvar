@@ -1,7 +1,6 @@
 
 import numpy as np
 
-import _get_root
 import fourdvar.util.netcdf_handle as ncf
 
 def convert_unc( unc, val ):

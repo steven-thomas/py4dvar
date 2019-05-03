@@ -6,7 +6,6 @@ eg: transform( model_input_instance, datadef.ModelOutputData ) == run_model( mod
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ModelInputData, ModelOutputData
 import fourdvar.util.cmaq_handle as cmaq
 import setup_logging

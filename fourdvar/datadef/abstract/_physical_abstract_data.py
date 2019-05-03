@@ -8,9 +8,7 @@ therefore most of their code is here.
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
 import fourdvar.util.netcdf_handle as ncf
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.date_handle as dt

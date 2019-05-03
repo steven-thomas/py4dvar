@@ -1,7 +1,7 @@
 """
 Copies current cmaq input files into archive.
 """
-import _get_root
+import context
 import fourdvar.util.archive_handle as archive_handle
 import fourdvar.params.archive_defn as archive_defn
 import fourdvar.datadef as d

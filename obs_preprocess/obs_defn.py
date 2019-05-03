@@ -1,12 +1,16 @@
 
 import numpy as np
-from ray_trace import Point, Ray
 from copy import deepcopy
+
+from fourdvar.obs_preprocess.ray_trace import Point, Ray
 
 class ObsGeneral( object ):
     """base class for observations."""
     count = 0
+    #required attributes must be defined in out_dict
     required = ['value','uncertainty','weight_grid']
+    #default attributes will be added to out_dict if not already present
+    default = {'offset_term': 0.}
     
     def __init__( self, obstype='Unknown' ):
         self.id = ObsGeneral.count
@@ -25,6 +29,10 @@ class ObsGeneral( object ):
         for attr in self.required:
             if attr not in keys:
                 raise AttributeError('obs No. {} is missing {}'.format(self.id,attr))
+        for attr,val in self.default.items():
+            if attr not in keys:
+                print '{:} not defined, setting to {:}'.format(attr,val)
+                self.out_dict[ attr ] = val
         return deepcopy( self.out_dict )
     
     def model_process( self, model_space ):
@@ -94,14 +102,11 @@ class ObsStationary( ObsSimple ):
                 coord = time_k + loc_k + (self.spcs,)
                 proportion[ coord ] = time_v * loc_v
         
-        visibility = self.get_visibility( proportion.keys(), model_space )
+        weight_grid = self.add_visibility( proportion, model_space )
         if self.valid is False: return None
         
         #dicts must have identical keys
-        assert set( visibility ) == set( proportion )
-        weight_grid = {}
-        for key in visibility.keys():
-            weight_grid[ key ] = visibility[ key ] * proportion[ key ]
+        assert set( weight_grid ) == set( proportion )
         self.out_dict['weight_grid'] = weight_grid
         self.ready = True
         return None
@@ -171,9 +176,9 @@ class ObsStationary( ObsSimple ):
         #stationary obs only has one location
         return { (lay,row,col,) : 1.0 }
     
-    def get_visibility( self, coord_list, model_space ):
+    def add_visibility( self, proportion, model_space ):
         assert model_space.gridmeta['VGTYP'] == 7, 'invalid VGTYP'
-        return { c:1.0 for c in coord_list }
+        return { k:v for k,v in proportion.items() }
     
 
 class ObsInstantRay( ObsSimple ):
@@ -211,13 +216,12 @@ class ObsInstantRay( ObsSimple ):
                 coord = time_k + loc_k + (self.spcs,)
                 proportion[ coord ] = time_v * loc_v
         
-        visibility = self.get_visibility( proportion.keys(), model_space )
+        weight_grid = self.add_visibility( proportion, model_space )
         if self.valid is False: return None
         
         #dicts must have identical keys
-        assert set( visibility ) == set( proportion )
-        weight_grid = {}
-        for key in visibility.keys():
+        assert set( weight_grid ) == set( proportion )
+        for key in weight_grid.keys():
             if model_space.valid_coord( key ) is False:
                 self.coord_fail()
                 return None
@@ -232,14 +236,21 @@ class ObsInstantRay( ObsSimple ):
         value = proportion of observation."""
         #assume self.time = [ int(YYYYMMDD), int(HHMMSS) ]
         #interpolate time between 2 closest timesteps
+        # unless interp_time attr exists and is False
         start = model_space.get_step( self.time )
         end = model_space.next_step( start )
         end_val = model_space.get_step_pos( self.time[1] )
         start_val = 1 - end_val
-        result = { start : start_val }
-        if end_val > 0.:
-            result[ end ] = end_val
-        
+        if hasattr( self, 'interp_time' ) and self.interp_time is False:
+            # assign obs to closest timestep
+            if start_val >= end_val:
+                result = { start : 1. }
+            else:
+                result = { end : 1. }
+        else:
+            result = { start : start_val }
+            if end_val > 0.:
+                result[ end ] = end_val        
         #check obs falls within date range
         date_set = set( k[0] for k in result.keys() )
         sdate = model_space.sdate
@@ -271,14 +282,14 @@ class ObsInstantRay( ObsSimple ):
                    if val > 0.0}
         return result
     
-    def get_visibility( self, coord_list, model_space ):
+    def add_visibility( self, proportion, model_space ):
         assert model_space.gridmeta['VGTYP'] == 7, 'invalid VGTYP'
-        return { c:1.0 for c in coord_list }
+        return { k:v for k,v in proportion.items() }
 
 class ObsMultiRay( ObsInstantRay ):
     """Simple example for instant piecewise-straight path observations
     eg: Satelite measurement.
-    Uses model_process, map_time & get_visibility from obsInstantRay
+    Uses model_process, map_time & add_visibility from obsInstantRay
     only works for 1 species
     """
     @classmethod

@@ -6,7 +6,6 @@ eg: transform( adjoint_forcing_instance, datadef.SensitivityData ) == run_adjoin
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import AdjointForcingData, SensitivityData
 import fourdvar.util.cmaq_handle as cmaq
 

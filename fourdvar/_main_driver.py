@@ -4,8 +4,8 @@ framework: driver of 4dvar system
 
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as minimize
+import time
 
-import _get_root
 from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
@@ -19,6 +19,7 @@ def cost_func( vector ):
     input: numpy.ndarray
     output: scalar
     """
+    start_time = time.time()
     #set up prior/background and observed data
     bg_physical = user_driver.get_background()
     bg_unknown = transform( bg_physical, d.UnknownData )
@@ -51,8 +52,9 @@ def cost_func( vector ):
     simulated.cleanup()
     residual.cleanup()
     w_residual.cleanup()
-    
-    logger.info( 'cost = {}'.format( cost ) )
+
+    end_time = time.time()
+    logger.info( 'cost = {:} in {:}s'.format( cost, int(end_time-start_time) ) )
     
     return cost
 
@@ -62,6 +64,7 @@ def gradient_func( vector ):
     input: numpy.ndarray
     output: numpy.ndarray
     """
+    start_time = time.time()
     #set up prior/background and observed data
     bg_physical = user_driver.get_background()
     bg_unknown = transform( bg_physical, d.UnknownData )
@@ -98,8 +101,10 @@ def gradient_func( vector ):
     sensitivity.cleanup()
     phys_sense.cleanup()
     un_gradient.cleanup()
-    
-    logger.info( 'gradient norm = {}'.format( np.linalg.norm(gradient) ) )
+
+    end_time = time.time()
+    logger.info( 'gradient norm = {:} in {:}s'.format( np.linalg.norm(gradient),
+                                                       int(end_time-start_time) ) )
     
     return np.array( gradient )
 

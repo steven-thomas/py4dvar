@@ -6,7 +6,6 @@ eg: transform( unknown_instance, datadef.PhysicalData ) == uncondition( unknown_
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import UnknownData, PhysicalData
 from fourdvar.params.input_defn import inc_icon
 
