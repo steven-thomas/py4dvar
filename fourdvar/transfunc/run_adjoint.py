@@ -17,6 +17,7 @@ def run_adjoint( adjoint_forcing ):
     """
     assert isinstance( adjoint_forcing, AdjointForcingData )
     #should ensure that checkpoints exist first.
+    cmaq.wipeout_bwd()
     cmaq.run_bwd()
     return SensitivityData()
 

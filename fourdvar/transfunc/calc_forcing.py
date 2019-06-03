@@ -7,6 +7,7 @@ eg: transform( observation_instance, datadef.AdjointForcingData ) == calc_forcin
 import numpy as np
 
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
+import fourdvar.util.cmaq_handle as cmaq
 
 def calc_forcing( w_residual ):
     """
@@ -24,5 +25,7 @@ def calc_forcing( w_residual ):
                     step,lay,row,col,spc = coord[1:]
                     w_val = w_residual.value[i] * weight
                     spc_dict[spc][step,lay,row,col] += w_val
+    
+    cmaq.wipeout_bwd()
     
     return AdjointForcingData.create_new( **kwargs )

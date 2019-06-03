@@ -44,7 +44,7 @@ phys_pert.archive( prior_pert_archive )
 obs_true.archive( obs_true_archive )
 obs_pert.archive( obs_pert_archive )
 
-cmaq.wipeout()
+cmaq.wipeout_fwd()
 
 # Output the target cost value for this test
 bg_path = os.path.join( archive.get_archive_path(), prior_true_archive )
