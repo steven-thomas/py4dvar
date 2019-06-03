@@ -181,19 +181,15 @@ cwd_logs = [ os.path.join( curdir, 'CTM_LOG_*' ),
              os.path.join( curdir, 'N_SPC_EMIS.dat' ) ]
 
 #list of all files above created by CMAQ (fwd & bwd) to be delete by wipeout()
-wipeout_list = [ fwd_logfile, bwd_logfile, floor_file,
-                 chem_chk, vdiff_chk, aero_chk,
-                 ha_rhoj_chk, va_rhoj_chk, hadv_chk,
-                 vadv_chk, emis_chk, emist_chk,
-                 fwd_xfirst_file, bwd_xfirst_file,
-                 conc_file, avg_conc_file, last_grid_file,
-                 drydep_file, wetdep1_file, wetdep2_file,
-                 ssemis_file, aerovis_file, aerodiam_file,
-                 ipr1_file, ipr2_file, ipr3_file,
-                 irr1_file, irr2_file, irr3_file,
-                 rj1_file, rj2_file, conc_sense_file,
-                 emis_sense_file, emis_scale_sense_file,
-                 fwd_stdout_log, bwd_stdout_log ]
+wipeout_fwd_list = [ fwd_logfile, floor_file, chem_chk, vdiff_chk, aero_chk,
+                     ha_rhoj_chk, va_rhoj_chk, hadv_chk, vadv_chk, emis_chk,
+                     emist_chk, fwd_xfirst_file, conc_file, avg_conc_file,
+                     last_grid_file, drydep_file, wetdep1_file, wetdep2_file,
+                     ssemis_file, aerovis_file, aerodiam_file, ipr1_file,
+                     ipr2_file, ipr3_file, irr1_file, irr2_file, irr3_file,
+                     rj1_file, rj2_file, fwd_stdout_log ]
+wipeout_bwd_list = [ bwd_logfile, bwd_xfirst_file, conc_sense_file,
+                     emis_sense_file, emis_scale_sense_file, bwd_stdout_log ]
 
 #drivers
 fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )

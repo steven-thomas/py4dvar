@@ -3,7 +3,6 @@ application: run the forward model, save result to ModelOutputData
 like all transform in transfunc this is referenced from the transform function
 eg: transform( model_input_instance, datadef.ModelOutputData ) == run_model( model_input_instance )
 """
-from __future__ import absolute_import
 
 import numpy as np
 
@@ -21,7 +20,7 @@ def run_model( model_input ):
     """
     #run the forward model
     assert isinstance( model_input, ModelInputData )
-    cmaq.wipeout()
+    cmaq.wipeout_fwd()
     cmaq.run_fwd()
     try:
         output = ModelOutputData()

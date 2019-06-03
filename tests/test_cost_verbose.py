@@ -1,17 +1,14 @@
-
-from __future__ import absolute_import
-
-import cPickle as pickle
-import numpy as np
 import os
 import time
+import numpy as np
+import cPickle as pickle
 
 import context
-from fourdvar._transform import transform
-import fourdvar.datadef as d
-import fourdvar.params.archive_defn as archive_defn
 import fourdvar.user_driver as user
+import fourdvar.datadef as d
+from fourdvar._transform import transform
 import fourdvar.util.archive_handle as archive
+import fourdvar.params.archive_defn as archive_defn
 import fourdvar.util.cmaq_handle as cmaq
 
 archive_defn.experiment = 'tmp_cost_verbose'
@@ -105,6 +102,6 @@ cost += 0.5*np.sum( residual.get_vector() * weighted.get_vector() )
 print 'success in {}s. cost = {}'.format( int(time.time()-st), cost )
 
 print 'cleanup files produced by CMAQ'
-cmaq.wipeout()
+cmaq.wipeout_fwd()
 
 print 'FINISHED!'
