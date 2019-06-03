@@ -20,7 +20,7 @@ def run_model( model_input ):
     """
     #run the forward model
     assert isinstance( model_input, ModelInputData )
-    cmaq.wipeout()
+    cmaq.wipeout_fwd()
     cmaq.run_fwd()
     try:
         output = ModelOutputData()

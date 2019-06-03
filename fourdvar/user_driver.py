@@ -14,6 +14,7 @@ import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq
 import fourdvar.params.input_defn as input_defn
+import fourdvar.params.data_access as data_access
 from fourdvar._transform import transform
 
 import setup_logging
@@ -44,7 +45,7 @@ def cleanup():
     input: None
     output: None
     """
-    cmaq.wipeout()
+    cmaq.wipeout_fwd()
     return None
 
 def get_background():
@@ -93,6 +94,9 @@ def minim( cost_func, grad_func, init_guess ):
     input: cost function, gradient function, prior estimate / background
     output: list (1st element is numpy.ndarray of solution, the rest are user-defined)
     """
+    #turn on skipping unneeded fwd calls
+    data_access.allow_fwd_skip = True
+
     start_cost = cost_func( init_guess )
     start_grad = grad_func( init_guess )
     start_dict = {'start_cost': start_cost, 'start_grad': start_grad }

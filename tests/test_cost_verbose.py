@@ -102,6 +102,6 @@ cost += 0.5*np.sum( residual.get_vector() * weighted.get_vector() )
 print 'success in {}s. cost = {}'.format( int(time.time()-st), cost )
 
 print 'cleanup files produced by CMAQ'
-cmaq.wipeout()
+cmaq.wipeout_fwd()
 
 print 'FINISHED!'
