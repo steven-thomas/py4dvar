@@ -9,6 +9,7 @@ import time
 from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
+import fourdvar.params.data_access as data_access
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -25,11 +26,23 @@ def cost_func( vector ):
     bg_unknown = transform( bg_physical, d.UnknownData )
     observed = user_driver.get_observed()
     
-    unknown = d.UnknownData( vector )
-    
+    unknown = d.UnknownData( vector )    
     physical = transform( unknown, d.PhysicalData )
-    model_in = transform( physical, d.ModelInputData )
-    model_out = transform( model_in, d.ModelOutputData )
+    
+    has_skipped = False
+    if ( data_access.allow_fwd_skip is True and
+         np.array_equal( vector, data_access.prev_vector ) ):
+        try:
+            model_out = d.ModelOutputData()
+            logger.debug( 'Skipping repeated fwd run.' )
+            has_skipped = True
+        except AssertionError:
+            logger.debug( 'Tried and failed to skip fwd run.' )
+    if has_skipped is False:
+        model_in = transform( physical, d.ModelInputData )
+        model_out = transform( model_in, d.ModelOutputData )
+        data_access.prev_vector = vector.copy()
+    
     simulated = transform( model_out, d.ObservationData )
     
     residual = d.ObservationData.get_residual( observed, simulated )
@@ -47,15 +60,16 @@ def cost_func( vector ):
     
     unknown.cleanup()
     physical.cleanup()
-    model_in.cleanup()
-    model_out.cleanup()
+    if data_access.allow_fwd_skip is False:
+        #don't cleanup CMAQ files if we want to reuse them
+        model_in.cleanup()
+        model_out.cleanup()
     simulated.cleanup()
     residual.cleanup()
     w_residual.cleanup()
 
     end_time = time.time()
     logger.info( 'cost = {:} in {:}s'.format( cost, int(end_time-start_time) ) )
-    
     return cost
 
 def gradient_func( vector ):
@@ -71,10 +85,22 @@ def gradient_func( vector ):
     observed = user_driver.get_observed()
     
     unknown = d.UnknownData( vector )
-    
     physical = transform( unknown, d.PhysicalData )
-    model_in = transform( physical, d.ModelInputData )
-    model_out = transform( model_in, d.ModelOutputData )
+    
+    has_skipped = False
+    if ( data_access.allow_fwd_skip is True and
+         np.array_equal( vector, data_access.prev_vector ) ):
+        try:
+            model_out = d.ModelOutputData()
+            logger.debug( 'Skipping repeated fwd run.' )
+            has_skipped = True
+        except AssertionError:
+            logger.debug( 'Tried and failed to skip fwd run.' )
+    if has_skipped is False:
+        model_in = transform( physical, d.ModelInputData )
+        model_out = transform( model_in, d.ModelOutputData )
+        data_access.prev_vector = vector.copy()
+    
     simulated = transform( model_out, d.ObservationData )
     
     residual = d.ObservationData.get_residual( observed, simulated )
@@ -92,8 +118,9 @@ def gradient_func( vector ):
     
     unknown.cleanup()
     physical.cleanup()
-    model_in.cleanup()
-    model_out.cleanup()
+    if data_access.allow_fwd_skip is False:
+        model_in.cleanup()
+        model_out.cleanup()
     simulated.cleanup()
     residual.cleanup()
     w_residual.cleanup()
@@ -105,7 +132,6 @@ def gradient_func( vector ):
     end_time = time.time()
     logger.info( 'gradient norm = {:} in {:}s'.format( np.linalg.norm(gradient),
                                                        int(end_time-start_time) ) )
-    
     return np.array( gradient )
 
 def get_answer():
@@ -129,4 +155,3 @@ def get_answer():
     out_physical.cleanup()
     user_driver.cleanup()
     return None
-

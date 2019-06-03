@@ -130,6 +130,6 @@ with open( fname, 'w' ) as f:
 print 'success in {}s. gradient saved in {}'.format( int(time.time()-st), fname )
 
 print 'cleanup files produced by CMAQ'
-cmaq.wipeout()
+cmaq.wipeout_fwd()
 
 print 'FINISHED!'

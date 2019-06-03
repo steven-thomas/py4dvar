@@ -47,7 +47,7 @@ if str( cmaq_config.sense_emis_lays ).lower() == 'template':
     cmaq_config.sense_emis_lays = str( sense_lay )
 
 # generate sample files by running 1 day of cmaq (fwd & bwd)
-cmaq_handle.wipeout()
+cmaq_handle.wipeout_fwd()
 cmaq_handle.run_fwd_single( dt.start_date, is_first=True )
 # make force file with same attr as conc and all data zeroed
 conc_spcs = ncf.get_attr( conc_file, 'VAR-LIST' ).split()
@@ -74,4 +74,4 @@ ncf.copy_compress( sense_emis_file, template.sense_emis )
 ncf.copy_compress( sense_conc_file, template.sense_conc )
 
 # clean up files created by cmaq
-cmaq_handle.wipeout()
+cmaq_handle.wipeout_fwd()
