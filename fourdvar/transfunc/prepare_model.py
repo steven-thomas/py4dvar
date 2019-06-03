@@ -94,6 +94,6 @@ def prepare_model( physical_data ):
         model_input_args[ emis_argname ] = spcs_dict
     
     #may want to remove this line in future.
-    cmaq.wipeout()
+    cmaq.wipeout_fwd()
     
     return ModelInputData.create_new( **model_input_args )

@@ -9,7 +9,6 @@ import fourdvar.params.template_defn as template
 import fourdvar.util.netcdf_handle as ncf
 import fourdvar.util.file_handle as fh
 
-
 import setup_logging as logging
 logger = logging.get_logger( __file__ )
 
@@ -327,17 +326,36 @@ def run_bwd():
         isfirst = False
         clear_local_logs()
     return None
-    
-def wipeout():
+
+def wipeout_bwd():
+    """
+    extension: delete all files created by a bwd run of cmaq
+    input: None
+    output: None
+    """
+    clear_local_logs()
+    #delete every file in wipeout_bwd_list
+    all_tags = dt.tag_map.keys()
+    for pat_name in cfg.wipeout_bwd_list:
+        for t in all_tags:
+            pat_name = pat_name.replace( t, '*' )
+        for fname in glob.glob( pat_name ):
+            if os.path.isfile( fname ):
+                os.remove( fname )
+    return None
+
+def wipeout_fwd():
     """
     extension: delete all files created by a run of cmaq
     input: None
     output: None
     """
     clear_local_logs()
-    #delete every file in wipeout_list
+    #cleanup bwd as well
+    wipeout_bwd()
+    #delete every file in wipeout_fwd_list
     all_tags = dt.tag_map.keys()
-    for pat_name in cfg.wipeout_list:
+    for pat_name in cfg.wipeout_fwd_list:
         for t in all_tags:
             pat_name = pat_name.replace( t, '*' )
         for fname in glob.glob( pat_name ):
