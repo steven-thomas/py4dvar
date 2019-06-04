@@ -23,7 +23,7 @@ profile_src = os.path.join( store_path, 'obs_src_data', 'prior_profiles',
                             'prior_profiles_mexico_city_{:}_{:}.txt' )
 
 #output_file = './oco2_observed.pickle.zip'
-output_file = './GEOCARB_CO2only_observed.pickle.zip'
+output_file = './GEOCARB_CO2only_observed.pic.gz'
 
 nframe = 51
 npixel = 51
@@ -37,7 +37,11 @@ for fid in file_id_list:
     ret_fname = retrieval_src.format( *fid )
     geo_fname = geometry_src.format( *fid )
     #pro_fname not currently implemented
-    print 'reading {:}, {:}'.format( *fid )
+    if fid = [20060326,224138]:
+        print 'omitting {:}, {:} due to bad values'.format( *fid )
+        continue
+    else:
+        print 'reading {:}, {:}'.format( *fid )
     
     with Dataset( ret_fname, 'r' ) as f:
         if len( f.groups.keys() ) == 0:

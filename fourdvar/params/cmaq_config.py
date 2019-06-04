@@ -31,7 +31,8 @@ pt3demis = False
 
 #number of emission layers to use.
 #'template' means value calculated from template files.
-emis_lays = 'template'
+#emis_lays = 'template'
+emis_lays = 1
 
 #number of forcing layers to use.
 #'template' means value calculated from template files.
@@ -40,7 +41,8 @@ force_lays = 'template'
 #number of emission sensitivity layers to use.
 #'template' means value calculated from template files.
 #note: should always be >= emis_lays
-sense_emis_lays = 'template'
+#sense_emis_lays = 'template'
+sense_emis_lays = 1
 
 #kzmin, use unknown
 kzmin = False
@@ -130,7 +132,7 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'ICON_CO_CO2.ncf' )
+icon_file = os.path.join( icon_path, 'ICON_WRF_clone.ncf' )
 bcon_file = os.path.join( bcon_path, 'BCON_CO_CO2.<YYYYMMDD>.ncf' )
 emis_file = os.path.join( emis_path, 'EMIS_CO_CO2.<YYYYMMDD>.ncf' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.ncf' )

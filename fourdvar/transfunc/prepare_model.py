@@ -57,6 +57,7 @@ def prepare_model( physical_data ):
     dlist = dt.get_datelist()
     p_daysize = float(physical_data.nstep_prop) / len( dlist )
     assert (p_daysize < 1) or (m_daysize % p_daysize == 0), 'physical & model input emis TSTEP incompatible.'
+    nlay = physical_data.nlays_emis
     
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( dlist ):
@@ -67,7 +68,8 @@ def prepare_model( physical_data ):
             for c,_ in enumerate( physical_data.cat_emis ):
                 phys_arr = physical_data.emis[ spcs_name ][ c, estep, ... ]
                 phys_arr[ np.isnan( phys_arr ) ] = 0.
-                model_arr += phys_arr * (diurnal[ spcs_name ] == c)
+                di_filter = (diurnal[ spcs_name ][:,:nlay,:,:] == c)
+                model_arr[:,:nlay,:,:] += phys_arr * di_filter
             spcs_dict[ spcs_name ] = model_arr * unit_convert
 
         start = int(i * p_daysize)

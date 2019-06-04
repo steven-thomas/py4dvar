@@ -41,21 +41,20 @@ prop_val = [ 0.05 ]
 
 # number of layers for PhysicalData emissions (fluxes)
 # int for custom layers or 'all' to use all possible layers
-emis_nlay = 'all'
+emis_nlay = 1
 
 # length of proportial emission timestep for PhysicalData (in seconds)
 # allowed values:
 # 'emis' to use timestep from emissions file
 # 'single' for using a single average across the entire model run
 # integer to use custom number of seconds
-tsec = 24*60*60
+tsec = 'single'
 
 # No. days per PhysicalData diurnal timestep
 # possible values:
 # 'single' for using a single average across the entire model run
 # integer to use custom number of days
-#tday = 'single'
-tday = 1
+tday = 'single'
 
 # data for proportial emission uncertainty
 # allowed values:
@@ -69,7 +68,8 @@ prop_unc = 1e-3 # unitless proportion
 # single number: apply value to every uncertainty
 # dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-emis_unc = 1e-6 # mol/(s*m**2)
+#emis_unc = 1e-6 # mol/(s*m**2)
+emis_unc = 'CO2_unc.nc'
 
 # data for inital condition uncertainty
 # allowed values:
