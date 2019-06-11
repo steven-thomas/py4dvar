@@ -37,7 +37,7 @@ for fid in file_id_list:
     ret_fname = retrieval_src.format( *fid )
     geo_fname = geometry_src.format( *fid )
     #pro_fname not currently implemented
-    if fid = [20060326,224138]:
+    if fid == [20060326,224138]:
         print 'omitting {:}, {:} due to bad values'.format( *fid )
         continue
     else:
