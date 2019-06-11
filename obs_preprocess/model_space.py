@@ -142,39 +142,57 @@ class ModelSpace( object ):
         self.psurf_date = date_int
         return None
     
-    def pressure_convert( self, obs_pressure, obs_value, target_coord ):
-        #convert obs_value array into model layers using pressure values (in Pa)
-        obs_p = np.array( obs_pressure )
-        obs_v = np.array( obs_value )
-        
+    def get_pressure_bounds( self, target_coord ):
         date = target_coord[0]
         time = target_coord[1]
         row = target_coord[3]
         col = target_coord[4]
-        
         if date != self.psurf_date:
             self.update_psurf( date )
         vgbot = self.psurf_arr[time,row,col]
         vglvl = np.array( self.gridmeta[ 'VGLVLS' ] )
         vgtop = float( self.gridmeta[ 'VGTOP' ] )
-        
-        cbound = ( vglvl[::-1]*(vgbot-vgtop) + vgtop ).reshape((1,-1))
-        obound = np.concatenate(( obs_p[:1],
-                                  0.5*(obs_p[:-1] + obs_p[1:]),
-                                  obs_p[-1:] )).reshape((-1,1))
-        cbound[0,0] = min( cbound[0,0], obound[0,0] )
-        obound[0,0] = min( cbound[0,0], obound[0,0] )
-        cbound[0,-1] = max( cbound[0,-1], obound[-1,0] )
-        obound[-1,0] = max( cbound[0,-1], obound[-1,0] )
-        
-        osize = np.diff( obound, axis=0 )
+        return ( vglvl[:]*(vgbot-vgtop) + vgtop )
     
-        mask = np.zeros(( obound.size-1, cbound.size-1, ))
-        lower = np.maximum( mask+cbound[:,:-1], mask+obound[:-1,:] )
-        upper = np.minimum( mask+cbound[:,1:], mask+obound[1:,:] )
+    def get_pressure_weight( self, target_coord ):
+        pbound = self.get_pressure_bounds( target_coord )
+        #assign everything above the top layer to the top layer
+        pbound[-1] = 0.
+        #calculate pressure weight per layer
+        pdiff = pbound[:-1] - pbound[1:]
+        pweight = pdiff / pbound[0]
+        return pweight
     
-        convert_matrix = np.clip( ((upper-lower) / osize), 0, None )[:,::-1]
-        return np.matmul( obs_v, convert_matrix )
+    def pressure_interp( self, obs_pressure, obs_value, target_coord ):
+        obs_pressure = np.array( obs_pressure )
+        obs_value = np.array( obs_value )
+        if np.all( np.diff( obs_pressure ) > 0. ):
+            pass
+        elif np.all( np.diff( obs_pressure ) < 0. ):
+            obs_pressure = obs_pressure[::-1]
+            obs_value = obs_value[::-1]
+        else:
+            raise ValueError('obs pressure levels not in sorted order!')
+        cmaq_pbound = self.get_pressure_bounds( target_coord )
+        #interpolate from low pressure to high then flip back afterwards
+        cmaq_plvl = 0.5 * (cmaq_pbound[:-1]+cmaq_pbound[1:])[::-1]
+        assert np.all( np.diff(cmaq_plvl) > 0. )
+        cmaq_val = np.zeros( cmaq_plvl.size )
+        for cmaq_i,p in enumerate( cmaq_plvl ):
+            if p <= obs_pressure[0]:
+                cmaq_val[cmaq_i] = obs_value[0]
+            elif p >= obs_pressure[-1]:
+                cmaq_val[cmaq_i] = obs_value[-1]
+            else:
+                i = np.searchsorted( obs_pressure, p )
+                obs_p_low = obs_pressure[i-1]
+                obs_p_high = obs_pressure[i]
+                obs_v_low = obs_value[i-1]
+                obs_v_high = obs_value[i]
+                pos = (p-obs_p_low) / (obs_p_high-obs_p_low)
+                cmaq_val[cmaq_i] = obs_v_low + pos * (obs_v_high-obs_v_low)
+        #flip cmaq_val back so values are surface-to-top
+        return cmaq_val[::-1]
     
     def get_xy( self, lat, lon ):
         return self.proj( lon, lat )
