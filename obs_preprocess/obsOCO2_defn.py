@@ -37,11 +37,7 @@ class ObsOCO2( ObsMultiRay ):
         newobs = cls( obstype='OCO2_sounding' )
         newobs.out_dict['value'] = kwargs['xco2']
         newobs.out_dict['uncertainty'] = kwargs['xco2_uncertainty']
-
-        #column_xco2 = ( kwargs['pressure_weight'] *
-        #                kwargs['xco2_averaging_kernel'] *
-        #                kwargs['co2_profile_apriori'] )
-        #newobs.out_dict['offset_term'] = kwargs['xco2_apriori'] - column_xco2.sum()
+        
         # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
         newobs.out_dict['surface_type'] = kwargs['surface_type']
         newobs.out_dict['operation_mode'] = kwargs['operation_mode']
