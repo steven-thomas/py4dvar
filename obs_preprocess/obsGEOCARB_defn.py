@@ -31,10 +31,6 @@ class ObsGEOCARB( ObsInstantRay ):
         newobs.out_dict['value'] = kwargs['xco2']
         newobs.out_dict['uncertainty'] = kwargs['xco2_uncertainty']
 
-        column_xco2 = ( kwargs['pressure_weight'] *
-                        kwargs['xco2_averaging_kernel'] *
-                        kwargs['co2_profile_apriori'] )
-        newobs.out_dict['offset_term'] = kwargs['xco2_apriori'] - column_xco2.sum()
         newobs.out_dict['sounding_id'] = kwargs['sounding_id']
         #Current version only record CO2 values, TODO: CO
         newobs.spcs = 'CO2'
@@ -49,13 +45,18 @@ class ObsGEOCARB( ObsInstantRay ):
     def add_visibility( self, proportion, model_space ):
         obs_pressure = np.array( self.src_data[ 'pressure_levels' ] )
         obs_kernel = np.array( self.src_data[ 'xco2_averaging_kernel' ] )
-        obs_pweight = np.array( self.src_data[ 'pressure_weight' ] )
-        obs_vis = obs_kernel * obs_pweight
+        obs_apriori = np.array( self.src_data[ 'co2_profile_apriori' ] )
         
         #get sample model coordinate at surface
         coord = [ c for c in proportion.keys() if c[2] == 0 ][0]
         
-        model_vis = model_space.pressure_convert( obs_pressure, obs_vis, coord )
+        model_pweight = model_space.get_pressure_weight( coord )
+        model_kernel = model_space.pressure_interp( obs_pressure, obs_kernel, coord )
+        model_apriori = model_space.pressure_interp( obs_pressure, obs_apriori, coord )
+        
+        model_vis = model_pweight * model_kernel
+        column_xco2 = ( model_pweight * model_kernel * model_apriori )
+        self.out_dict['offset_term'] = self.src_data['xco2_apriori'] - column_xco2.sum()
         
         weight_grid = {}
         for l, weight in enumerate( model_vis ):
