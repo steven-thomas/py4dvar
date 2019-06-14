@@ -1,11 +1,12 @@
 
 import os
 import glob
+import numpy as np
 from netCDF4 import Dataset
 import datetime as dt
 
 import context
-from obs_preprocess.obsGEOCARB_defn import ObsGEOCARB
+from obs_preprocess.obsGEOCARB_defn import ObsGEOCARB_XCO2, ObsGEOCARB_XCO
 from obs_preprocess.model_space import ModelSpace
 import fourdvar.util.file_handle as fh
 from fourdvar.params.root_path_defn import store_path
@@ -23,10 +24,11 @@ profile_src = os.path.join( store_path, 'obs_src_data', 'prior_profiles',
                             'prior_profiles_mexico_city_{:}_{:}.txt' )
 
 #output_file = './oco2_observed.pickle.zip'
-output_file = './GEOCARB_CO2only_observed.pic.gz'
+output_file = './GEOCARB_CO_CO2_observed.pic.gz'
 
 nframe = 51
 npixel = 51
+nlvl = 20
 
 #--------------------------------------------------------------------------
 
@@ -36,7 +38,7 @@ file_id_list = [ [d,t] for d in date_list for t in time_list ]
 for fid in file_id_list:
     ret_fname = retrieval_src.format( *fid )
     geo_fname = geometry_src.format( *fid )
-    #pro_fname not currently implemented
+    pro_fname = profile_src.format( *fid )
     if fid == [20060326,224138]:
         print 'omitting {:}, {:} due to bad values'.format( *fid )
         continue
@@ -55,11 +57,22 @@ for fid in file_id_list:
         co2_profile = f.groups['RetrievalResults'].variables['co2_profile_apriori'][:]
         avg_kernel = f.groups['RetrievalResults'].variables['xco2_avg_kernel_norm'][:]
         pressure = f.groups['RetrievalResults'].variables['vector_pressure_levels'][:]
-        p_weight = f.groups['RetrievalResults'].variables['xco2_pressure_weighting_function'][:]
+        #p_weight = f.groups['RetrievalResults'].variables['xco2_pressure_weighting_function'][:]
+        co_scale = f.groups['RetrievalResults'].variables['co_scale_factor'][:]
+        co_unc = f.groups['RetrievalResults'].variables['co_scale_factor_uncert'][:]
 
     with Dataset( geo_fname, 'r' ) as f:
         latitude = f.groups['Geometry'].variables['latitude_centre'][:]
         longitude = f.groups['Geometry'].variables['longitude_centre'][:]
+    
+    with open( pro_fname, 'r' ) as f:
+        profile_txt = f.readlines()
+    profile_vals = profile_txt[-nlvl:]
+    profile_units = profile_txt[-nlvl-1]
+    profile_names = profile_txt[-nlvl-2]
+    profile_labels = profile_names.strip().split()[1:]
+    profile_lays = [ [ float(x) for x in l.strip().split()] for l in profile_vals ]
+    profile_data = { l:np.array(v) for l,v in zip( profile_labels, zip(*profile_lays) ) }
     
     nobs = len( frame_index )
     print 'found {} soundings'.format( nobs )
@@ -67,27 +80,36 @@ for fid in file_id_list:
         frame_i = (frame_index[i]-1) // npixel
         pixel_i = (frame_index[i]-1) % npixel
 
-        src_dict = {}
-        src_dict['sounding_id'] = sounding_id[i]
-        src_dict['latitude'] = latitude[ pixel_i, frame_i ]
-        src_dict['longitude'] = longitude[ pixel_i, frame_i ]
+        meta_dict = {}
+        meta_dict['sounding_id'] = sounding_id[i]
+        meta_dict['latitude'] = latitude[ pixel_i, frame_i ]
+        meta_dict['longitude'] = longitude[ pixel_i, frame_i ]
+        meta_dict['pressure_levels'] = pressure[i,:].copy()
         # Time extracted from sounding id
-        src_dict['time'] = dt.datetime.strptime( str(sounding_id[i]//10**4),
-                                                 '%Y%m%d%H%M%S' )
-        src_dict['xco2_averaging_kernel'] = avg_kernel[i,:].copy()
-        src_dict['pressure_levels'] = pressure[i,:].copy()
-        src_dict['pressure_weight'] = p_weight[i,:].copy()
-        # convert to ppm
-        src_dict['xco2'] = xco2[i] * 10**6
-        src_dict['xco2_uncertainty'] = xco2_uncertainty[i] * 10**6
-        src_dict['xco2_apriori'] = xco2_apriori[i] * 10**6
-        src_dict['co2_profile_apriori'] = co2_profile[i,:].copy() * 10**6
+        meta_dict['time'] = dt.datetime.strptime( str(sounding_id[i]//10**4), '%Y%m%d%H%M%S' )
 
-        obs = ObsGEOCARB.create( **src_dict )
-        obs.interp_time = False
-        obs.model_process( model_grid )
-        if obs.valid is True:
-            obslist.append( obs.get_obsdict() )
+        xco2_dict = meta_dict.copy()
+        xco2_dict['xco2_averaging_kernel'] = avg_kernel[i,:].copy()
+        # convert to ppm
+        xco2_dict['xco2'] = xco2[i] * 10**6
+        xco2_dict['xco2_uncertainty'] = xco2_uncertainty[i] * 10**6
+        xco2_dict['xco2_apriori'] = xco2_apriori[i] * 10**6
+        xco2_dict['co2_profile_apriori'] = co2_profile[i,:].copy() * 10**6
+        
+        xco_dict = meta_dict.copy()
+        xco_dict['co_scale_factor'] = co_scale[i]
+        xco_dict['co_scale_factor_uncert'] = co_unc[i]
+        # convert to ppm
+        xco_dict['co_profile_apriori'] = profile_data['CO'].copy() * 10**6
+
+        obs_pair = ( ObsGEOCARB_XCO2.create( **xco2_dict ),
+                     ObsGEOCARB_XCO.create( **xco_dict ) )
+        for obs in obs_pair:
+            obs.interp_time = False
+            obs.model_process( model_grid )
+            if obs.valid is True:
+                obslist.append( obs.get_obsdict() )
+        
 
 if len( obslist ) > 0:
     domain = model_grid.get_domain()
