@@ -82,8 +82,8 @@ for fid in file_id_list:
 
         meta_dict = {}
         meta_dict['sounding_id'] = sounding_id[i]
-        meta_dict['latitude'] = latitude[ pixel_i, frame_i ]
-        meta_dict['longitude'] = longitude[ pixel_i, frame_i ]
+        meta_dict['latitude'] = latitude[ frame_i, pixel_i ]
+        meta_dict['longitude'] = longitude[ frame_i, pixel_i ]
         meta_dict['pressure_levels'] = pressure[i,:].copy()
         # Time extracted from sounding id
         meta_dict['time'] = dt.datetime.strptime( str(sounding_id[i]//10**4), '%Y%m%d%H%M%S' )
