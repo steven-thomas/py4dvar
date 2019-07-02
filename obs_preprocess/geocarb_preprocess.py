@@ -26,6 +26,10 @@ profile_src = os.path.join( store_path, 'obs_src_data', 'prior_profiles',
 #output_file = './oco2_observed.pickle.zip'
 output_file = './GEOCARB_CO_CO2_observed.pic.gz'
 
+#skip CO/CO2 obs if xco2_uncert is too large (dud obs)
+skip_large_unc = True
+large_unc_value = 10.
+
 nframe = 51
 npixel = 51
 nlvl = 20
@@ -101,6 +105,10 @@ for fid in file_id_list:
         xco_dict['co_scale_factor_uncert'] = co_unc[i]
         # convert to ppm
         xco_dict['co_profile_apriori'] = profile_data['CO'].copy() * 10**6
+
+        #skip over obs if xco2 uncertainty is too large
+        if skip_large_unc is True and xco2_dict['xco2_uncertainty'] > large_unc_value:
+            continue
 
         obs_pair = ( ObsGEOCARB_XCO2.create( **xco2_dict ),
                      ObsGEOCARB_XCO.create( **xco_dict ) )
