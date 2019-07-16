@@ -20,7 +20,7 @@ fh.ensure_path( os.path.dirname( save_path ) )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
-spc_list = 'all'
+spc_list = ['CH4']
 
 # number of layers for PhysicalData initial condition
 # int for custom layers or 'all' to use all possible layers
@@ -28,15 +28,15 @@ icon_nlay = 'all'
 
 # number of layers for PhysicalData emissions (fluxes)
 # int for custom layers or 'all' to use all possible layers
-emis_nlay = 'all'
+emis_nlay = 1
 
 # length of emission timestep for PhysicalData
 # allowed values:
 # 'emis' to use timestep from emissions file
 # 'single' for using a single average across the entire model run
 # [ days, HoursMinutesSeconds ] for custom length eg: (half-hour = [0,3000])
-tstep = [1,0] #daily average emissions
-#tstep = 'single'
+#tstep = [1,0] #daily average emissions
+tstep = 'emis'
 
 # data for emission uncertainty
 # allowed values:
@@ -124,6 +124,7 @@ else:
         print 'invalid tstep'
         raise
 
+day,hms = tstep
 daysec = 24*60*60
 tsec = daysec*day + 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
 
