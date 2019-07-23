@@ -58,7 +58,7 @@ efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 var_list = ncf.get_attr( efile, 'VAR-LIST' ).split()
 if input_defn.inc_icon is True:
     ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    i_var_list = ncf.get_attr( efile, 'VAR-LIST' ).split()
+    i_var_list = ncf.get_attr( ifile, 'VAR-LIST' ).split()
     var_list = list( set(var_list).intersection( set( i_var_list ) ) )
 if str(spc_list).lower() == 'all':
     spc_list = [ v for v in var_list ]
@@ -124,6 +124,7 @@ else:
         print 'invalid tstep'
         raise
 
+day,hms = tstep
 daysec = 24*60*60
 tsec = daysec*day + 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
 
