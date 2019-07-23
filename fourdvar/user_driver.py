@@ -24,6 +24,8 @@ observed = None
 background = None
 iter_num = 0
 
+allow_neg_values = True
+
 def setup():
     """
     application: setup any requirements for minimizer to run (eg: check resources, etc.)
@@ -94,14 +96,19 @@ def minim( cost_func, grad_func, init_guess ):
     input: cost function, gradient function, prior estimate / background
     output: list (1st element is numpy.ndarray of solution, the rest are user-defined)
     """
-    #turn on skipping unneeded fwd calls
+    #turn on skipping of unneeded fwd calls
     data_access.allow_fwd_skip = True
-
+    
     start_cost = cost_func( init_guess )
     start_grad = grad_func( init_guess )
     start_dict = {'start_cost': start_cost, 'start_grad': start_grad }
     
-    answer = minimize( cost_func, init_guess,
+    if allow_neg_values is True:
+        bounds = None
+    else:
+        bounds = len(init_guess) * [ (0,None) ]
+    
+    answer = minimize( cost_func, init_guess, bounds=bounds,
                        fprime=grad_func, callback=callback_func )
     #check answer warnflag, etc for success
     answer = list( answer ) + [ start_dict ]
