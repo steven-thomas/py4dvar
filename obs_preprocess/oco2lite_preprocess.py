@@ -2,11 +2,10 @@
 import os
 import glob
 
+import context
 from obsOCO2_defn import ObsOCO2
 from model_space import ModelSpace
 from netCDF4 import Dataset
-
-import context
 import fourdvar.util.file_handle as fh
 from fourdvar.params.root_path_defn import store_path
 
@@ -19,7 +18,7 @@ source_type = 'directory'
 
 source = os.path.join( store_path, 'obs_oco2_data' )
 
-output_file = './oco2_observed.pickle.zip'
+output_file = os.path.join( store_path, 'oco2_observed.pic.gz' )
 
 #--------------------------------------------------------------------------
 
