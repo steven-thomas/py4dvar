@@ -20,9 +20,9 @@ def uncondition( unknown ):
     PhysicalData.assert_params()
     p = PhysicalData
     emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    emis_shape = (p.nstep, p.nlays_emis, p.nrows, p.ncols,)
     if inc_icon is True:
-        icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
+        total_len = len( p.spcs ) * ( 1 + emis_len )
     else:
         total_len = len( p.spcs ) * emis_len
     del p
@@ -34,20 +34,16 @@ def uncondition( unknown ):
     i = 0
     for spc in PhysicalData.spcs:
         if inc_icon is True:
-            icon = vals[ i:i+icon_len ]
-            i += icon_len
+            icon = vals[ i ]
+            i += 1
+            icon = icon * PhysicalData.icon_unc[ spc ]
+            icon_dict[ spc ] = icon
+        
         emis = vals[ i:i+emis_len ]
         i += emis_len
-        
-        p = PhysicalData
-        if inc_icon is True:
-            icon = icon.reshape(( p.nlays_icon, p.nrows, p.ncols, ))
-            icon = icon * p.icon_unc[ spc ]
-            icon_dict[ spc ] = icon
-        emis = emis.reshape(( p.nstep, p.nlays_emis, p.nrows, p.ncols, ))
-        emis = emis * p.emis_unc[ spc ]
+        emis = emis.reshape( emis_shape)
+        emis = emis * PhysicalData.emis_unc[ spc ]
         emis_dict[ spc ] = emis
-        del p
     
     assert i == total_len, 'Some physical data left unassigned!'
     

@@ -14,17 +14,13 @@ from cmaq_preprocess.uncertainty import convert_unc
 #parameters
 
 # filepath to save new prior file to
-save_path = input_defn.prior_file
-#save_path = os.path.join( store_path, 'input/new_prior.ncf' )
+#save_path = input_defn.prior_file
+save_path = os.path.join( store_path, 'input/new_prior.ncf' )
 fh.ensure_path( os.path.dirname( save_path ) )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
 spc_list = ['CH4']
-
-# number of layers for PhysicalData initial condition
-# int for custom layers or 'all' to use all possible layers
-icon_nlay = 'all'
 
 # number of layers for PhysicalData emissions (fluxes)
 # int for custom layers or 'all' to use all possible layers
@@ -36,21 +32,22 @@ emis_nlay = 1
 # 'single' for using a single average across the entire model run
 # [ days, HoursMinutesSeconds ] for custom length eg: (half-hour = [0,3000])
 #tstep = [1,0] #daily average emissions
-tstep = 'emis'
+#tstep = 'emis'
+tstep = 'single'
 
 # data for emission uncertainty
 # allowed values:
 # single number: apply value to every uncertainty
 # dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-emis_unc = 1e-6 # mol/(s*m**2)
+#emis_unc = 1e-6 # mol/(s*m**2)
+emis_unc = 'CH4_unc.nc'
 
-# data for inital condition uncertainty
+# data for inital condition scaling factor
 # allowed values:
-# single number: apply value to every uncertainty
-# dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
-# string: filename for netCDF file already correctly formatted.
-icon_unc = 1.0 # ppm
+# list of values, one for each species
+icon_scale = [1.0] # [CH4]
+icon_unc = [0.01] # [CH4]
 
 
 # convert spc_list into valid list
@@ -58,7 +55,7 @@ efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 var_list = ncf.get_attr( efile, 'VAR-LIST' ).split()
 if input_defn.inc_icon is True:
     ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    i_var_list = ncf.get_attr( efile, 'VAR-LIST' ).split()
+    i_var_list = ncf.get_attr( ifile, 'VAR-LIST' ).split()
     var_list = list( set(var_list).intersection( set( i_var_list ) ) )
 if str(spc_list).lower() == 'all':
     spc_list = [ v for v in var_list ]
@@ -73,21 +70,10 @@ else:
         print 'invalid spc_list'
         raise
 
-# convert icon_nlay into valid number (only if we need icon)
+# check that icon_scale & icon_unc are valid
 if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    inlay = int( ncf.get_attr( ifile, 'NLAYS' ) )
-    if str(icon_nlay).lower() == 'all':
-        icon_nlay = inlay
-    else:
-        try:
-            assert int( icon_nlay ) == icon_nlay
-            icon_nlay = int( icon_nlay )
-        except:
-            print 'invalid icon_nlay'
-            raise
-        if icon_nlay > inlay:
-            raise AssertionError('icon_nlay must be <= {:}'.format( inlay ))
+    assert len(spc_list) == len(icon_scale), 'Invalid icon_scale length'
+    assert len(spc_list) == len(icon_unc), 'Invalid icon_unc length'
 
 # convert emis_nlay into valid number
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
@@ -162,17 +148,9 @@ for spc in spc_list:
     emis_dict[ spc ] = data
 
 emis_unc = convert_unc( emis_unc, emis_dict )
-emis_dict.update( emis_unc )
-
-# create icon data if needed
-if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    idict = ncf.get_variable( ifile, spc_list )
-    icon_dict = { k:v[0, :icon_nlay, :, :] for k,v in idict.items() }
-    
-    icon_unc = convert_unc( icon_unc, icon_dict )
-    icon_dict.update( icon_unc )
-    
+#convert emis_unc units
+emis_unc = { k:v/(xcell*ycell) for k,v in emis_unc.items() }
+emis_dict.update( emis_unc )    
 
 # build data into new netCDF file
 root_dim = { 'ROW': nrow, 'COL': ncol }
@@ -188,8 +166,9 @@ emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.item
 ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var, is_root=False )
 
 if input_defn.inc_icon is True:
-    icon_dim = { 'LAY': icon_nlay }
-    icon_var = { k: ('f4', ('LAY','ROW','COL'), v) for k,v in icon_dict.items() }
+    icon_dim = { 'SPC': len(spc_list) }
+    icon_var = { 'ICON-SCALE': ('f4', ('SPC',), np.array(icon_scale) ),
+                 'ICON-UNC': ('f4', ('SPC',), np.array(icon_unc) ) }
     ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
 
 root.close()

@@ -19,7 +19,7 @@ source_type = 'pattern'
 
 source = os.path.join( store_path, 'obs_src_data', 'obs_sample.nc' )
 
-output_file = './test_methane_obs.pic.gz'
+output_file = './methane_month_obs.pic.gz'
 
 #--------------------------------------------------------------------------
 
@@ -54,6 +54,7 @@ root_var = [ 'orbit',
              'pressure_interval',
              'averaging_kernel',
              'surface_pressure' ]
+methane_uncertainty_floor = 10. #ppb
 obslist = []
 for fname in filelist:
     print 'read {}'.format( fname )
@@ -64,12 +65,14 @@ for fname in filelist:
             var_dict[ var ] = f.variables[ var ][:]
     print 'found {} soundings'.format( size )
     
-    test_start = 104520
-    test_end = test_start + 200
-    print 'using soundings {} to {} for testing'.format( test_start, test_end )
-    for i in range( test_start, test_end ):
-    #for i in range( size ):
+    #test_start = 104520
+    #test_end = test_start + 200
+    #print 'using soundings {} to {} for testing'.format( test_start, test_end )
+    #for i in range( test_start, test_end ):
+    for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
+        if src_dict['methane_uncertainty'] < methane_uncertainty_floor:
+            src_dict['methane_uncertainty'] = methane_uncertainty_floor
         obs = ObsTropomi.create( **src_dict )
         obs.interp_time = False
         obs.model_process( model_grid )

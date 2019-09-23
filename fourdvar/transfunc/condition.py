@@ -41,8 +41,7 @@ def phys_to_unk( physical, is_adjoint ):
     p = PhysicalAbstractData
     emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
     if inc_icon is True:
-        icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
+        total_len = len( p.spcs ) * ( 1 + emis_len )
     else:
         total_len = len( p.spcs ) * emis_len
     del p
@@ -58,8 +57,8 @@ def phys_to_unk( physical, is_adjoint ):
     for spc in PhysicalAbstractData.spcs:
         if inc_icon is True:
             icon = weight( physical.icon[ spc ], physical.icon_unc[ spc ] )
-            arg[ i:i+icon_len ] = icon.flatten()
-            i += icon_len
+            arg[ i ] = icon
+            i += 1
         emis = weight( physical.emis[ spc ], physical.emis_unc[ spc ] )
         arg[ i:i+emis_len ] = emis.flatten()
         i += emis_len

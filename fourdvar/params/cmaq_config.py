@@ -9,11 +9,11 @@ from fourdvar.params.root_path_defn import store_path
 use_jobfs = False
 
 #No. of processors per column
-npcol = 1
-#npcol = 4
+#npcol = 1
+npcol = 4
 #No. of processors per row
-nprow = 1
-#nprow = 4
+#nprow = 1
+nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -103,7 +103,7 @@ emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
 griddesc = os.path.join( grid_path, 'GRIDDESC' )
-gridname = 'AUS_d01'
+gridname = 'AUS_d03'
 
 #logfile
 fwd_logfile = os.path.join( output_path, 'fwd_methane.<YYYYMMDD>.log' )
@@ -128,12 +128,13 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'icon_methane.<YYYYMMDD>.nc' )
+#icon_file = os.path.join( icon_path, 'icon_methane.<YYYYMMDD>.nc' )
+icon_file = os.path.join( icon_path, 'icon_methane.nc' )
 bcon_file = os.path.join( bcon_path, 'bcon_methane.<YYYYMMDD>.nc' )
 emis_file = os.path.join( emis_path, 'emis_methane.<YYYYMMDD>.nc' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.nc' )
 #required met data, use unknown
-ocean_file = os.path.join( grid_path, 'surfzone_d01.nc' )
+ocean_file = os.path.join( grid_path, 'surfzone_d03.nc' )
 grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_NWQLD' )
 grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_NWQLD' )
 met_cro_2d = os.path.join( mcip_path, 'METCRO2D_NWQLD' )
