@@ -1,6 +1,7 @@
 
 import os
 import glob
+import numpy as np
 from netCDF4 import Dataset
 
 import context
@@ -19,7 +20,8 @@ source_type = 'pattern'
 
 source = os.path.join( store_path, 'obs_src_data', 'obs_sample.nc' )
 
-output_file = './methane_month_obs.pic.gz'
+#output_file = './methane_month_obs.pic.gz'
+output_file = './methane_day_obs.pic.gz'
 
 #--------------------------------------------------------------------------
 
@@ -60,15 +62,18 @@ for fname in filelist:
     print 'read {}'.format( fname )
     var_dict = {}
     with Dataset( fname, 'r' ) as f:
+#        #only grab obs for 2018-06-01
+#        d1_start = 265500000
+#        d1_end = 265600000
+#        time_arr = f.variables[ 'time' ][:]
+#        day_filter = np.logical_and( time_arr>=d1_start, time_arr<=d1_end )
+#        size = day_filter.sum()
         size = f.dimensions[ 'time' ].size
         for var in root_var:
             var_dict[ var ] = f.variables[ var ][:]
+#            var_dict[ var ] = f.variables[ var ][day_filter]
     print 'found {} soundings'.format( size )
     
-    #test_start = 104520
-    #test_end = test_start + 200
-    #print 'using soundings {} to {} for testing'.format( test_start, test_end )
-    #for i in range( test_start, test_end ):
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
         if src_dict['methane_uncertainty'] < methane_uncertainty_floor:
