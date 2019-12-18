@@ -225,7 +225,7 @@ def run_bwd_single( date, is_first ):
     env_dict['CTM_XFIRST_IN'] = cfg.fwd_xfirst_file
     env_dict['LOGFILE'] = cfg.bwd_logfile
     env_dict['CTM_PROGNAME'] = cfg.bwd_prog
-    env_dict['CHK_PATH'] = cfg.output_path
+    env_dict['CHK_PATH'] = cfg.chk_path
     env_dict['INIT_GASC_1'] = cfg.last_grid_file + ' -v'
     env_dict['INIT_AERO_1'] = cfg.last_grid_file + ' -v'
     env_dict['INIT_NONR_1'] = cfg.last_grid_file + ' -v'

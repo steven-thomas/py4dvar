@@ -7,7 +7,8 @@ from obsOCO2_defn import ObsOCO2
 from model_space import ModelSpace
 from netCDF4 import Dataset
 import fourdvar.util.file_handle as fh
-from fourdvar.params.root_path_defn import store_path
+from fourdvar.params.root_path_defn import share_path
+import fourdvar.params.input_defn as input_defn
 
 #-CONFIG-SETTINGS---------------------------------------------------------
 
@@ -16,9 +17,9 @@ from fourdvar.params.root_path_defn import store_path
 #'pattern': source = file_pattern_string, use all files that match pattern
 source_type = 'directory'
 
-source = os.path.join( store_path, 'obs_oco2_data' )
+source = os.path.join( share_path, 'obs_oco2_data' )
 
-output_file = os.path.join( store_path, 'oco2_observed.pic.gz' )
+output_file = input_defn.obs_file
 
 #--------------------------------------------------------------------------
 
