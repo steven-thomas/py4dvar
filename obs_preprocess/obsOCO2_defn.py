@@ -45,7 +45,11 @@ class ObsOCO2( ObsMultiRay ):
     
     def model_process( self, model_space ):
         ObsMultiRay.model_process( self, model_space )
-        #now created self.out_dict[ 'weight_grid' ]
+        #set lite_coord to surface cell with largest weight
+        if 'weight_grid' in self.out_dict.keys():
+            surf = [ (v,k) for k,v in self.out_dict['weight_grid'].items()
+                     if k[2]==0 ]
+            self.out_dict[ 'lite_coord' ] = max(surf)[1]
         return None
     
     def add_visibility( self, proportion, model_space ):

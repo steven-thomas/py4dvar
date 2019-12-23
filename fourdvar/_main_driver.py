@@ -10,6 +10,7 @@ from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
 import fourdvar.params.data_access as data_access
+import fourdvar.params.archive_defn as archive_defn
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -63,7 +64,9 @@ def cost_func( vector ):
     if data_access.allow_fwd_skip is False:
         #don't cleanup CMAQ files if we want to reuse them
         model_in.cleanup()
-        model_out.cleanup()
+        if ( archive_defn.iter_model_output is False
+             and archive_defn.iter_obs_lite is False ):
+            model_out.cleanup()
     simulated.cleanup()
     residual.cleanup()
     w_residual.cleanup()
@@ -122,7 +125,9 @@ def gradient_func( vector ):
     if data_access.allow_fwd_skip is False:
         #don't cleanup CMAQ files if we want to reuse them
         model_in.cleanup()
-        model_out.cleanup()
+        if ( archive_defn.iter_model_output is False
+             and archive_defn.iter_obs_lite is False ):
+            model_out.cleanup()
     simulated.cleanup()
     residual.cleanup()
     w_residual.cleanup()
