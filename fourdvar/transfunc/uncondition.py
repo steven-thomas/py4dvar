@@ -40,7 +40,7 @@ def uncondition( unknown ):
         if inc_icon is True:
             icon = vals[ i:i+icon_len ]
             icon = icon.reshape( icon_shape )
-            icon_dict[ spc ] = icon
+            icon_dict[ spc ] = icon * PhysicalData.icon_unc[ spc ]
             i += icon_len
         
         emis_arr = np.zeros( emis_shape )
@@ -53,7 +53,7 @@ def uncondition( unknown ):
         emis_len = np.count_nonzero( ~np.isnan(emis_arr) )
         emis_vector = vals[ i:i+emis_len ]
         emis_arr[ ~np.isnan(emis_arr) ] = emis_vector
-        emis_dict[ spc ] = emis_arr
+        emis_dict[ spc ] = emis_arr * PhysicalData.emis_unc[ spc ]
         i += emis_len
         
     if inc_icon is False:
