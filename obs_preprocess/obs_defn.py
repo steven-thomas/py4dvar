@@ -1,8 +1,7 @@
 
 import numpy as np
+from obs_preprocess.ray_trace import Point, Ray
 from copy import deepcopy
-
-from fourdvar.obs_preprocess.ray_trace import Point, Ray
 
 class ObsGeneral( object ):
     """base class for observations."""
@@ -225,7 +224,6 @@ class ObsInstantRay( ObsSimple ):
             if model_space.valid_coord( key ) is False:
                 self.coord_fail()
                 return None
-            weight_grid[ key ] = visibility[ key ] * proportion[ key ]
         self.out_dict['weight_grid'] = weight_grid
         self.ready = True
         return None
@@ -241,6 +239,7 @@ class ObsInstantRay( ObsSimple ):
         end = model_space.next_step( start )
         end_val = model_space.get_step_pos( self.time[1] )
         start_val = 1 - end_val
+        
         if hasattr( self, 'interp_time' ) and self.interp_time is False:
             # assign obs to closest timestep
             if start_val >= end_val:
@@ -250,7 +249,8 @@ class ObsInstantRay( ObsSimple ):
         else:
             result = { start : start_val }
             if end_val > 0.:
-                result[ end ] = end_val        
+                result[ end ] = end_val
+        
         #check obs falls within date range
         date_set = set( k[0] for k in result.keys() )
         sdate = model_space.sdate

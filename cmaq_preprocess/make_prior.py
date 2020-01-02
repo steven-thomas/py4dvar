@@ -14,8 +14,8 @@ from cmaq_preprocess.uncertainty import convert_unc
 #parameters
 
 # filepath to save new prior file to
-#save_path = input_defn.prior_file
-save_path = os.path.join( store_path, 'input/new_prior.ncf' )
+save_path = input_defn.prior_file
+#save_path = os.path.join( store_path, 'input/new_prior.nc' )
 fh.ensure_path( os.path.dirname( save_path ) )
 
 # spcs used in PhysicalData proportional output
