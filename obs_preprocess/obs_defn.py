@@ -9,7 +9,7 @@ class ObsGeneral( object ):
     #required attributes must be defined in out_dict
     required = ['value','uncertainty','weight_grid']
     #default attributes will be added to out_dict if not already present
-    default = {'offset_term': 0.}
+    default = {'offset_term': 0., 'lite_coord':None}
     
     def __init__( self, obstype='Unknown' ):
         self.id = ObsGeneral.count

@@ -10,6 +10,8 @@ import fourdvar._main_driver as main
 import fourdvar.util.archive_handle as archive
 import fourdvar.params.archive_defn as archive_defn
 import fourdvar.util.cmaq_handle as cmaq
+import setup_logging
+logger = setup_logging.get_logger( __file__ )
 
 # replace archive directory name and desciption file
 archive_defn.experiment = 'pert_pert_test'
@@ -53,8 +55,8 @@ obs_path = os.path.join( archive.get_archive_path(), obs_pert_archive )
 user.observed = d.ObservationData.from_file( obs_path )
 init_vec = transform( user.background, d.UnknownData ).get_vector()
 cost = main.cost_func( init_vec )
-print '\nThe cost function value should converge to:'
-print 'cost = {:}\n'.format( cost )
+logger.info( 'No. obs = {:}'.format( o_val.size ) )
+logger.info( 'Target cost = {:}'.format( cost ) )
 
 #replace current background/prior and observations with perturbed versions.
 bg_path = os.path.join( archive.get_archive_path(), prior_pert_archive )
