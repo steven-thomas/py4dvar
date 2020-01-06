@@ -17,7 +17,10 @@ import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
 class ObservationData( FourDVarData ):
-    """application: vector of observations, observed or simulated"""
+    """application: vector of observations, observed or simulated
+    Can be either 'full' or 'lite' file.
+    'lite' file has no weight_grid attribute and cannot be used in transforms
+        (for achiving and analysis only)"""
     
     #Parameters
     length = None
@@ -28,10 +31,11 @@ class ObservationData( FourDVarData ):
     grid_attr = None
     ind_by_date = None
     spcs = None
+    lite_coord = None
     
     archive_name = 'obsset.pickle.zip'
     
-    def __init__( self, val_list ):
+    def __init__( self, val_list, is_lite=False ):
         """
         application: create an instance of ObservationData
         input: user-defined.
@@ -43,7 +47,8 @@ class ObservationData( FourDVarData ):
                Metadata created by from_file()
         """
         #params must all be set and not None
-        self.assert_params()
+        self.is_lite = is_lite
+        self.assert_params( need_weight=False )
         assert len( val_list ) == self.length, 'invalid list of values'
         self.value = [ float( v ) for v in val_list ]
         return None
@@ -56,15 +61,16 @@ class ObservationData( FourDVarData ):
         """
         return np.array( self.value )
         
-    def archive( self, name=None ):
+    def archive( self, name=None, force_lite=False ):
         """
         extension: save a copy of data to archive/experiment directory
-        input: string or None
+        input: string or None, boolean
         output: None
 
         notes: this will overwrite any clash in namespace.
         if input is None file will use default name.
         output file is in acceptable format for from_file method.
+        force_lite will archive obs-lite file (no weight_grid).
         """
         save_path = get_archive_path()
         if name is None:
@@ -74,17 +80,20 @@ class ObservationData( FourDVarData ):
         domain = deepcopy( self.grid_attr )
         domain['SDATE'] = np.int32(dt.replace_date('<YYYYMMDD>',dt.start_date))
         domain['EDATE'] = np.int32(dt.replace_date('<YYYYMMDD>',dt.end_date))
+        if force_lite is True:
+            domain['is_lite'] = True
+        else:
+            domain['is_lite'] = self.is_lite
         
         obs_list = []
-        iter_obj = zip( self.value, self.uncertainty,
-                        self.weight_grid, self.offset_term,
-                        self.misc_meta )
-        for val,unc,weight,off,misc in iter_obj:
-            odict = deepcopy( misc )
-            odict[ 'value' ] = val
-            odict[ 'uncertainty' ] = unc
-            odict[ 'weight_grid' ] = weight
-            odict[ 'offset_term' ] = off
+        for i in range( self.length ):
+            odict = deepcopy( self.misc_meta[i] )
+            odict[ 'value' ] = self.value[i]
+            odict[ 'uncertainty' ] = self.uncertainty[i]
+            odict[ 'offset_term' ] = self.offset_term[i]
+            odict[ 'lite_coord' ] = self.lite_coord[i]
+            if domain['is_lite'] is False:
+                odict[ 'weight_grid' ] = self.weight_grid[i]
             obs_list.append( odict )
         
         archive_list = [ domain ] + obs_list
@@ -139,6 +148,10 @@ class ObservationData( FourDVarData ):
         domain = datalist[0]
         sdate = domain.pop('SDATE')
         edate = domain.pop('EDATE')
+        if 'is_lite' in domain.keys():
+            is_lite = domain.pop('is_lite')
+        else:
+            is_lite = False
         if cls.grid_attr is not None:
             logger.warn( 'Overwriting ObservationData.grid_attr' )
         cls.grid_attr = domain
@@ -149,9 +162,19 @@ class ObservationData( FourDVarData ):
         
         obs_list = datalist[1:]
         unc = [ odict.pop('uncertainty') for odict in obs_list ]
-        weight = [ odict.pop('weight_grid') for odict in obs_list ]
         val = [ odict.pop('value') for odict in obs_list ]
         off = [ odict.pop('offset_term') for odict in obs_list ]
+        if is_lite is False:
+            weight = [ odict.pop('weight_grid') for odict in obs_list ]
+        #create default 'lite_coord' if not available
+        coord = [ odict.pop('lite_coord',None) for odict in obs_list ]
+        if None in coord:
+            assert is_lite is False, 'Missing coordinate data.'
+            logger.warn( "Missing lite_coord data. Setting to coord with largest weight in weight_grid" )
+            for i,_ in enumerate( obs_list ):
+                if coord[i] is None:
+                    max_weight = max( [ (v,k,) for k,v in weight[i].items() ] )
+                    coord[i] = max_weight[1]
         
         if cls.length is not None:
             logger.warn( 'Overwriting ObservationData.length' )
@@ -159,35 +182,43 @@ class ObservationData( FourDVarData ):
         if cls.uncertainty is not None:
             logger.warn( 'Overwriting ObservationData.uncertainty' )
         cls.uncertainty = unc
-        if cls.weight_grid is not None:
-            logger.warn( 'Overwriting ObservationData.weight_grid' )
-        cls.weight_grid = weight
         if cls.offset_term is not None:
             logger.warn( 'Overwriting ObservationData.offset_term' )
         cls.offset_term = off
+        if cls.lite_coord is not None:
+            logger.warn( 'Overwriting ObservationData.lite_coord' )
+        cls.lite_coord = coord
         if cls.misc_meta is not None:
             logger.warn( 'Overwriting ObservationData.misc_meta' )
         cls.misc_meta = obs_list
+        if is_lite is False:
+            if cls.weight_grid is not None:
+                logger.warn( 'Overwriting ObservationData.weight_grid' )
+            cls.weight_grid = weight
         
-        all_spcs = set()
-        for w in cls.weight_grid:
-            spcs = set( str( coord[-1] ) for coord in w.keys() )
-            all_spcs = all_spcs.union( spcs )
+        if is_lite is True:
+            all_spcs = set( str( coord[-1] ) for coord in cls.lite_coord )
+        else:
+            all_spcs = set()
+            for w in cls.weight_grid:
+                spcs = set( str( coord[-1] ) for coord in w.keys() )
+                all_spcs = all_spcs.union( spcs )
         if cls.spcs is not None:
             logger.warn( 'Overwriting ObservationData.spcs' )
         cls.spcs = sorted( list( all_spcs ) )
         
-        dlist = [ dt.replace_date( '<YYYYMMDD>', d ) for d in dt.get_datelist() ]
-        ind_by_date = { d: [] for d in dlist }
-        for i, weight in enumerate( cls.weight_grid ):
-            dates = set( str( coord[0] ) for coord in weight.keys() )
-            for d in dates:
-                ind_by_date[ d ].append( i )
-        if cls.ind_by_date is not None:
-            logger.warn( 'Overwriting ObservationData.ind_by_date' )
-        cls.ind_by_date = ind_by_date
+        if is_lite is False:
+            dlist = [ dt.replace_date('<YYYYMMDD>',d) for d in dt.get_datelist() ]
+            ind_by_date = { d: [] for d in dlist }
+            for i, weight in enumerate( cls.weight_grid ):
+                dates = set( str( coord[0] ) for coord in weight.keys() )
+                for d in dates:
+                    ind_by_date[ d ].append( i )
+            if cls.ind_by_date is not None:
+                logger.warn( 'Overwriting ObservationData.ind_by_date' )
+            cls.ind_by_date = ind_by_date
         
-        return cls( val )
+        return cls( val, is_lite=is_lite )
     
     @classmethod
     def example( cls ):
@@ -203,23 +234,26 @@ class ObservationData( FourDVarData ):
         return cls( obsval )
     
     @classmethod
-    def assert_params( cls ):
+    def assert_params( cls, need_weight=True ):
         """
         extension: assert that all needed observation parameters are valid
-        input: None
+        input: boolean (True == must have weight_grid (eg: not a obs-lite file))
         output: None
         """
         assert cls.length is not None, 'length is not set'
         assert cls.uncertainty is not None, 'uncertainty is not set'
-        assert cls.weight_grid is not None, 'weight_grid is not set'
         assert cls.offset_term is not None, 'offset_term is not set'
+        assert cls.lite_coord is not None, 'lite_coord is not set'
         assert cls.misc_meta is not None, 'misc_meta is not set'
         assert cls.grid_attr is not None, 'grid_attr is not set'
-        assert cls.ind_by_date is not None, 'ind_by_date is not set'
         assert cls.spcs is not None, 'spcs is not set'
         assert len(cls.uncertainty) == cls.length, 'invalid uncertainty length'
-        assert len(cls.weight_grid) == cls.length, 'invalid weight_grid length'
+        assert len(cls.lite_coord) == cls.length, 'invalid lite_coord length'
         assert len(cls.misc_meta) == cls.length, 'invalid misc_meta length'
+        if need_weight is True:
+            assert cls.weight_grid is not None, 'weight_grid is not set'
+            assert cls.ind_by_date is not None, 'ind_by_date is not set'
+            assert len(cls.weight_grid)==cls.length, 'invalid weight_grid length'
         return None
     
     @classmethod
@@ -235,4 +269,4 @@ class ObservationData( FourDVarData ):
         """
         msg = 'cannot clone {0}'.format( src.__class__.__name__ )
         assert isinstance( src, cls ), msg
-        return cls( src.value )
+        return cls( src.value, is_lite=src.is_lite )

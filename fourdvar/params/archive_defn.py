@@ -8,6 +8,12 @@ from fourdvar.params.root_path_defn import store_path
 #location of archive directory
 archive_path = os.path.join( store_path, 'archive' )
 
+#archive model output of each successful iteration
+iter_model_output = False
+
+#archive observation-lite of each successful iteration
+iter_obs_lite = True
+
 #experiment name & name of directory to save results in
 experiment = 'mexico_experiment'
 

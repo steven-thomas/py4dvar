@@ -15,6 +15,7 @@ import fourdvar.util.archive_handle as archive
 import fourdvar.util.cmaq_handle as cmaq
 import fourdvar.params.input_defn as input_defn
 import fourdvar.params.data_access as data_access
+import fourdvar.params.archive_defn as archive_defn
 from fourdvar._transform import transform
 
 import setup_logging
@@ -70,6 +71,7 @@ def get_observed():
     
     if observed is None:
         observed = d.ObservationData.from_file( input_defn.obs_file )
+        observed.assert_params()
     return observed
 
 def callback_func( current_vector ):
@@ -83,6 +85,14 @@ def callback_func( current_vector ):
     current_unknown = d.UnknownData( current_vector )
     current_physical = transform( current_unknown, d.PhysicalData )
     current_physical.archive( 'iter{:04}.ncf'.format( iter_num ) )
+    if archive_defn.iter_model_output is True:
+        current_model_output = d.ModelOutputData()
+        current_model_output.archive( 'conc_iter{:04}.ncf'.format(iter_num) )
+    if archive_defn.iter_obs_lite is True:
+        current_model_output = d.ModelOutputData()
+        current_obs = transform( current_model_output, d.ObservationData )
+        current_obs.archive( 'obs_lite_iter{:04}.pic.gz'.format( iter_num ),
+                             force_lite=True )
     
     logger.info( 'iter_num = {}'.format( iter_num ) )
     

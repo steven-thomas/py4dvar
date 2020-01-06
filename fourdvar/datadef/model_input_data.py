@@ -108,6 +108,20 @@ class ModelInputData( FourDVarData ):
             ncf.copy_compress( source, dest )
         return cls()
     
+    @classmethod
+    def load_from_template( cls ):
+        """
+        extension: create a ModelInputData from the template files
+        input: None
+        output: ModelInputData
+        """
+        filedict = get_filedict( cls.__name__ )
+        for record in filedict.values():
+            source = record['template']
+            dest = record['actual']
+            ncf.copy_compress( source, dest )
+        return cls()
+    
     def cleanup( self ):
         """
         application: called when model input is no longer required
