@@ -132,7 +132,7 @@ class PhysicalAbstractData( FourDVarData ):
                                 self.emis[ spc ] )
         
         #convert uncertainty data into format for netCDF storage.
-        max_unk = self.nunknowns.max()
+        max_unk = max(self.nunknowns)
         vec_storage = np.zeros(( self.nstep, self.nall_cells, max_unk ))
         val_storage = np.zeros(( self.nstep, max_unk ))
         for i in range( self.nstep ):
@@ -190,10 +190,16 @@ class PhysicalAbstractData( FourDVarData ):
         e_vectors = ncf.get_variable( filename, 'EIGEN_VECTORS', group='corr_unc')
         e_values = ncf.get_variable( filename, 'EIGEN_VALUES', group='corr_unc')
         nunknowns = ncf.get_attr( filename, 'UNKNOWNS', group='corr_unc' )
+        nunknowns =  nunknowns 
+        try:
+            len(unknowns)
+        except TypeError:
+            nunknowns = [ nunknowns ]
         nall_cells = e_vectors.shape[1]
 
         eigen_vectors = []
         eigen_values = []
+        #print eigen_values
         for i,n in enumerate( nunknowns ):
             e_vec = e_vectors[i,:,:n]
             eigen_vectors.append( e_vec )

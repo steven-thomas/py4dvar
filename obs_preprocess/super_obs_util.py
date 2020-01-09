@@ -6,8 +6,8 @@ import numpy as np
 #-CONFIG-SETTINGS-
 
 max_quality_only = True
-surface_type = 0         # 0=land,  1=ocean, -1=both
-operation_mode = 1       # 0=glint, 1=nadir, -1=both
+surface_type = 1         # 1=land,  0=ocean, -1=both
+operation_mode = -1       # 1=glint, 0=nadir, -1=both
 group_by_second = True
 group_by_column = True
 

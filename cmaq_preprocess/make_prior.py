@@ -11,6 +11,7 @@ import context
 from cmaq_preprocess.uncertainty import convert_unc
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
+import fourdvar.params.date_defn as date_defn
 from fourdvar.params.root_path_defn import store_path
 import fourdvar.util.date_handle as dt
 import fourdvar.util.netcdf_handle as ncf
@@ -49,7 +50,9 @@ hr = 60*60 #seconds in an hr.
 # list of strings: filenames for netCDF file already correctly formatted.
 #Directory where we find eigen values and its associated eigen vectors
 ctmDir =  '/data/cephfs/punim0762/yvillalobos/data/CTM/AUS4/uncertainties'
-daterange = pd.date_range(start = datetime.datetime(2015, 01, 01), end = datetime.datetime(2016, 01, 01), freq='M')
+sdate = datetime.datetime.strptime( str( date_defn.start_date ), '%Y%m%d' )
+edate = datetime.datetime.strptime( str( date_defn.end_date ), '%Y%m%d' ) + datetime.timedelta( days=1 )
+daterange = pd.date_range(start = sdate, end = edate, freq='M')
 stringdates = [d.strftime("%Y-%m-%d")for d in daterange]
 dates = [datetime.datetime.strptime(d, '%Y-%m-%d') for d in stringdates]
 doms = ['d01']
