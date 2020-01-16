@@ -41,12 +41,15 @@ def phys_to_unk( physical, is_adjoint ):
     p = PhysicalAbstractData
     emis_len = len(p.cat_emis) * p.nstep_emis * p.nlays_emis * p.nrows * p.ncols
     prop_len = p.nstep_prop * p.nlays_emis * p.nrows * p.ncols
+    bcon_len = p.nstep_bcon * p.bcon_region
     if inc_icon is True:
         raise ValueError('Setup does not support ICON solving')
         #icon_len = p.nlays_icon * p.nrows * p.ncols
         #total_len = len( p.spcs_icon )*icon_len + len( p.spcs_out )*emis_len
     else:
-        total_len = len(p.spcs_out_emis)*emis_len + len(p.spcs_out_prop)*prop_len
+        total_len = ( len(p.spcs_out_emis) * emis_len 
+                      + len(p.spcs_out_prop) * prop_len
+                      + len(p.bcon_spcs) * bcon_len )
     del p
     
     #weighting function changes if is_adjoint
@@ -71,6 +74,10 @@ def phys_to_unk( physical, is_adjoint ):
         prop = weight( physical.prop[ spc ], physical.prop_unc[ spc ] )
         arg[ i:i+prop_len ] = prop.flatten()
         i += prop_len
+    for spc in PhysicalAbstractData.bcon_spcs:
+        bcon = weight( physical.bcon[ spc ], physical.bcon_unc[ spc ] )
+        arg[ i:i+bcon_len ] = bcon.flatten()
+        i += bcon_len
     assert i == total_len, 'Some unknowns left unassigned!'
     #remove nan's
     arg = arg[ ~np.isnan( arg ) ]

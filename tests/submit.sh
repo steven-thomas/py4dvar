@@ -1,10 +1,9 @@
 #!/bin/bash
 
 #SBATCH --partition=physical
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --time=1:00:00
+#SBATCH --ntasks=12
+#SBATCH --time=6:00:00
 #SBATCH --job-name=fourdvar_test
 
 module purge
@@ -16,4 +15,5 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/easybuild/software/netCDF/
 
 cd /home/stevenpt/fourdvar/py4dvar/tests
 
-python test_grad_verbose.py >& output_grad_verbose.txt
+#python test_grad_verbose.py >& output_grad_verbose.txt
+python pert_pert_test.py >& output_pert_pert.txt

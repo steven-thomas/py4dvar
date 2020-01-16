@@ -9,11 +9,11 @@ from fourdvar.params.root_path_defn import store_path
 use_jobfs = False
 
 #No. of processors per column
-npcol = 1
-#npcol = 4
+#npcol = 1
+npcol = 3
 #No. of processors per row
-nprow = 1
-#nprow = 4
+#nprow = 1
+nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -41,8 +41,8 @@ force_lays = 'template'
 #number of emission sensitivity layers to use.
 #'template' means value calculated from template files.
 #note: should always be >= emis_lays
-#sense_emis_lays = 'template'
-sense_emis_lays = 1
+sense_emis_lays = 'template'
+#sense_emis_lays = 1
 
 #kzmin, use unknown
 kzmin = False

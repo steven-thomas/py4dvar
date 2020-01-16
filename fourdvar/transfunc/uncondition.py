@@ -26,6 +26,8 @@ def uncondition( unknown ):
     emis_len = np.prod( emis_shape )
     prop_shape = ( p.nstep_prop, p.nlays_emis, p.nrows, p.ncols, )
     prop_len = np.prod( prop_shape )
+    bcon_shape = ( p.nstep_bcon, p.bcon_region, )
+    bcon_len = np.prod( bcon_shape )
     if inc_icon is True:
         raise ValueError('setup not configured to handle ICON')
         #icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
@@ -40,6 +42,7 @@ def uncondition( unknown ):
         #icon_dict = {}
     emis_dict = {}
     prop_dict = {}
+    bcon_dict = {}
     i = 0
     if inc_icon is True:
         raise ValueError('setup not configured to handle ICON')
@@ -69,8 +72,14 @@ def uncondition( unknown ):
         prop_dict[ spc ] = prop * PhysicalData.prop_unc[ spc ]
         i += prop_len
     
+    for spc in PhysicalData.bcon_spcs:
+        bcon = vals[ i:i+bcon_len ]
+        bcon = bcon.reshape( bcon_shape )
+        bcon_dict[ spc ] = bcon * PhysicalData.bcon_unc[ spc ]
+        i += bcon_len
+    
     assert i == len(vals), 'Some physical data left unassigned!'
     
     #if inc_icon is False:
     #    icon_dict = None
-    return PhysicalData.create_new( emis_dict, prop_dict )
+    return PhysicalData.create_new( emis_dict, prop_dict, bcon_dict )

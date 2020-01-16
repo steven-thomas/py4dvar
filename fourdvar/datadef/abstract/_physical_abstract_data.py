@@ -36,6 +36,13 @@ class PhysicalAbstractData( FourDVarData ):
     emis_unc = None         #dict of direct emission uncertainty values
     cat_emis = None         #list of diurnal category names for emission data
     
+    bcon_region = None      #No. bcon regions
+    bcon_spcs = None        #list of species with boundary conditions
+    tsec_bcon = None        #No. seconds per boundary condition timestep
+    nstep_bcon = None       #No. timesteps for boundary condition data
+    bcon_up_lay = None      #bottom layer of upper region of boundary conditions
+    bcon_unc = None         #dict of boundary condition uncertainties
+    
     if inc_icon is True:
         raise ValueError('This build is not configured to solve for inital conditions')
 
@@ -43,7 +50,7 @@ class PhysicalAbstractData( FourDVarData ):
     archive_name = 'physical_abstract_data.ncf' #default archive filename
     emis_units = 'NA'  #unit to attach to netCDF archive
     
-    def __init__( self, emis_dict, prop_dict ):
+    def __init__( self, emis_dict, prop_dict, bcon_dict ):
         """
         application: create an instance of PhysicalData
         input: user-defined
@@ -63,8 +70,10 @@ class PhysicalAbstractData( FourDVarData ):
         
         assert set( emis_dict.keys() ) == set( self.spcs_out_emis ), 'invalid emis spcs.'
         assert set( prop_dict.keys() ) == set( self.spcs_out_prop ), 'invalid prop spcs.'
+        assert set( bcon_dict.keys() ) == set( self.bcon_spcs ), 'invalid prop spcs.'
         self.emis = {}
         self.prop = {}
+        self.bcon = {}
         
         for spcs_name in self.spcs_out_emis:
             emis_data = np.array( emis_dict[ spcs_name ] )
@@ -88,6 +97,16 @@ class PhysicalAbstractData( FourDVarData ):
             assert pnc == self.ncols, 'prop columns invalid.'
             
             self.prop[ spcs_name ] = prop_data
+
+        for spcs_name in self.bcon_spcs:
+            bcon_data = np.array( bcon_dict[ spcs_name ] )            
+            assert len( bcon_data.shape ) == 2, 'bcon dimensions invalid.'
+            bnt,bnr = bcon_data.shape
+            assert bnt == self.nstep_bcon, 'bcon timesteps invalid.'
+            assert bnr == self.bcon_region, 'bcon regions invalid.'
+            
+            self.bcon[ spcs_name ] = bcon_data
+
         return None
     
     def archive( self, path=None ):
@@ -147,6 +166,18 @@ class PhysicalAbstractData( FourDVarData ):
         
         ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var,
                     attr=emis_attr, is_root=False )
+        
+        bcon_dim = { 'TSTEP': None, 'BCON': self.bcon_region }
+        bcon_attr = { 'UP_LAY': np.int32( self.bcon_up_lay ),
+                      'TSEC': self.tsec_bcon,
+                      'OUT_SPC': ''.join( ['{:<16}'.format(s)
+                                           for s in self.bcon_spcs ] ) }
+        bcon_var = {}
+        for spc in self.bcon_spcs:
+            bcon_var[ spc ] = ( 'f4', ('TSTEP','BCON',), self.bcon[ spc ] )
+            bcon_var[ unc(spc) ] = ('f4',('TSTEP','BCON',),self.bcon_unc[ spc ])
+        ncf.create( parent=root, name='bcon', dim=bcon_dim, var=bcon_var,
+                    attr=bcon_attr, is_root=False )
         root.close()
         return None
     
@@ -177,16 +208,24 @@ class PhysicalAbstractData( FourDVarData ):
         cat_emis = ncf.get_attr( filename, 'CAT_NAME', group='emis' ).split()
         emis_unc_list = [ unc( spc ) for spc in spcs_out_emis ]
         prop_unc_list = [ unc( spc ) for spc in spcs_out_prop ]
+        bcon_up_lay = ncf.get_attr( filename, 'UP_LAY', group='bcon' )
+        tsec_bcon = ncf.get_attr( filename, 'TSEC', group='bcon' )
+        bcon_spcs = ncf.get_attr( filename, 'OUT_SPC', group='bcon' ).split()
+        bcon_unc_list = [ unc( spc ) for spc in bcon_spcs ]
         
         emis_dict = ncf.get_variable( filename, spcs_out_emis, group='emis' )
         emis_unc = ncf.get_variable( filename, emis_unc_list, group='emis' )
         prop_dict = ncf.get_variable( filename, spcs_out_prop, group='prop' )
         prop_unc = ncf.get_variable( filename, prop_unc_list, group='prop' )
+        bcon_dict = ncf.get_variable( filename, bcon_spcs, group='bcon' )
+        bcon_unc = ncf.get_variable( filename, bcon_unc_list, group='bcon' )
         
         for spc in spcs_out_emis:
             emis_unc[ spc ] = emis_unc.pop( unc( spc ) )
         for spc in spcs_out_prop:
             prop_unc[ spc ] = prop_unc.pop( unc( spc ) )
+        for spc in bcon_spcs:
+            bcon_unc[ spc ] = bcon_unc.pop( unc( spc ) )
         
         #ensure parameters from file are valid
         msg = 'invalid start date'
@@ -200,11 +239,17 @@ class PhysicalAbstractData( FourDVarData ):
         prop_shape = [ p.shape for p in prop_dict.values() ]
         for pshape in prop_shape[1:]:
             assert pshape == prop_shape[0], 'all prop spcs must have the same shape.'
+        bcon_shape = [ b.shape for b in bcon_dict.values() ]
+        for bshape in bcon_shape[1:]:
+            assert bshape == bcon_shape[0], 'all bcon spcs must have the same shape.'
         ecat, estep, elays, erows, ecols = emis_shape[0]
         pstep, plays, prows, pcols = prop_shape[0]
+        bstep, bregion = bcon_shape[0]
                 
-        assert max(daysec,tsec_prop) % min(daysec,tsec_prop) == 0, 'tsec must be a factor or multiple of No. seconds in a day.'
-        assert (tsec_prop >= daysec) or (pstep % (daysec//tsec_prop) == 0), 'nstep must cleanly divide into days.'
+        assert max(daysec,tsec_prop) % min(daysec,tsec_prop) == 0, 'tsec_prop must be a factor or multiple of No. seconds in a day.'
+        assert (tsec_prop >= daysec) or (pstep % (daysec//tsec_prop) == 0), 'nstep_prop must cleanly divide into days.'
+        assert max(daysec,tsec_bcon) % min(daysec,tsec_bcon) == 0, 'tsec_bcon must be a factor or multiple of No. seconds in a day.'
+        assert (tsec_bcon >= daysec) or (bstep % (daysec//tsec_bcon) == 0), 'nstep_bcon must cleanly divide into days.'
         assert len(dt.get_datelist()) == tday_emis*estep, 'invalid emission tstep/tday'
         valid_spcs = set(spcs_out_prop).isdisjoint(set(spcs_in_prop))
         assert valid_spcs, 'spcs_out_prop & spcs_in_prop must be disjoint.'
@@ -219,15 +264,23 @@ class PhysicalAbstractData( FourDVarData ):
             msg = 'Prop uncertainty values are invalid for this data.'
             assert prop_unc[ spc ].shape == prop_dict[ spc ].shape, msg
             assert ( prop_unc[ spc ] > 0 ).all(), msg
+        for spc in bcon_spcs:
+            msg = 'Bcon uncertainty values are invalid for this data.'
+            assert bcon_unc[ spc ].shape == bcon_dict[ spc ].shape, msg
+            assert ( bcon_unc[ spc ] > 0 ).all(), msg
         
         #assign new param values.
         par_name = ['tday_emis','nstep_emis','tsec_prop','nstep_prop',
                     'nlays_emis','nrows','ncols','spcs_out_emis','spcs_out_prop',
-                    'spcs_in_prop','cat_emis','emis_unc','prop_unc']
+                    'spcs_in_prop','cat_emis','emis_unc','prop_unc',
+                    'bcon_region','bcon_spcs','tsec_bcon','nstep_bcon',
+                    'bcon_up_lay','bcon_unc']
         par_val = [ tday_emis, estep, tsec_prop, pstep,
                     elays, erows, ecols, spcs_out_emis, spcs_out_prop,
-                    spcs_in_prop, cat_emis, emis_unc, prop_unc]
-        par_mutable = ['emis_unc','prop_unc']
+                    spcs_in_prop, cat_emis, emis_unc, prop_unc,
+                    bregion, bcon_spcs, tsec_bcon, bstep,
+                    bcon_up_lay, bcon_unc ]
+        par_mutable = ['emis_unc','prop_unc','bcon_unc']
 
         for name, val in zip( par_name, par_val ):
             old_val = getattr( cls, name )
@@ -243,7 +296,7 @@ class PhysicalAbstractData( FourDVarData ):
             #set this abstract classes attribute, not calling child!
             setattr( PhysicalAbstractData, name, val )
         
-        return cls.create_new( emis_dict, prop_dict )
+        return cls.create_new( emis_dict, prop_dict, bcon_dict )
 
     @classmethod
     def example( cls ):
@@ -259,6 +312,7 @@ class PhysicalAbstractData( FourDVarData ):
         """
         emis_val = 0
         prop_val = 0
+        bcon_val = 0
         
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
@@ -269,12 +323,14 @@ class PhysicalAbstractData( FourDVarData ):
         
         emis_val += np.zeros((len(cls.cat_emis), cls.nstep, cls.nlays_emis,
                               cls.nrows, cls.ncols,))
-        prop_val += np.zeros((cls.nstep_prop, nls.nlays_emis,
+        prop_val += np.zeros((cls.nstep_prop, cls.nlays_emis,
                               cls.nrows, cls.ncols,))
+        bcon_val += np.zeros((cls.nstep_bcon, cls.bcon_region,))
         emis_dict = { spc: emis_val.copy() for spc in cls.spcs_out_emis }
         prop_dict = { spc: prop_val.copy() for spc in cls.spcs_out_prop }
+        bcon_dict = { spc: bcon_val.copy() for spc in cls.bcon_spcs }
         
-        return cls.create_new( emis_dict, prop_dict )
+        return cls.create_new( emis_dict, prop_dict, bcon_dict )
     
     @classmethod
     def assert_params( cls ):
@@ -287,7 +343,9 @@ class PhysicalAbstractData( FourDVarData ):
         """
         par_name = ['tday_emis','nstep_emis','tsec_prop','nstep_prop',
                     'nlays_emis','nrows','ncols','spcs_out_emis','spcs_out_prop',
-                    'spcs_in_prop','cat_emis','emis_unc','prop_unc']
+                    'spcs_in_prop','cat_emis','emis_unc','prop_unc',
+                    'bcon_region','bcon_spcs','tsec_bcon','nstep_bcon',
+                    'bcon_up_lay','bcon_unc']
         if inc_icon is True:
             msg = 'This build is not configured to solve for inital conditions'
             raise ValueError( msg )

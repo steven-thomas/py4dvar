@@ -15,9 +15,10 @@ from fourdvar.params.input_defn import inc_icon
 import fourdvar.util.data_access as access
 
 unit_key = 'units.<YYYYMMDD>'
-unit_convert_dict = None
+unit_convert_emis = None
+unit_convert_bcon = None
 
-def get_unit_convert():
+def get_unit_convert_emis():
     """
     extension: get unit conversion dictionary for sensitivity to each days emissions
     input: None
@@ -66,16 +67,28 @@ def get_unit_convert():
         unit_dict[ day_label ] = unit_array
     return unit_dict
 
+def get_unit_convert_bcon():
+    """
+    SensitivityData.emis units = CF/(ppm/s)
+    PhysicalAdjointData.bcon units = CF/(ppm/s)
+    """
+    unit_dict = { dt.replace_date( unit_key, date ): 1.
+                  for date in dt.get_datelist() }
+    return unit_dict
+
 def map_sense( sensitivity ):
     """
     application: map adjoint sensitivities to physical grid of unknowns.
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    global unit_convert_dict
     global unit_key
-    if unit_convert_dict is None:
-        unit_convert_dict = get_unit_convert()
+    global unit_convert_emis
+    global unit_convert_bcon
+    if unit_convert_emis is None:
+        unit_convert_emis = get_unit_convert_emis()
+    if unit_convert_bcon is None:
+        unit_convert_bcon = get_unit_convert_bcon()
     
     #check that:
     #- date_handle dates exist
@@ -103,6 +116,8 @@ def map_sense( sensitivity ):
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs_out_emis }
     prop_shape = ( p.nstep_prop, p.nlays_emis, p.nrows, p.ncols, )
     prop_dict = { spc: np.zeros( prop_shape ) for spc in p.spcs_out_prop }
+    bcon_shape = ( p.nstep_bcon, p.bcon_region, )
+    bcon_dict = { spc: np.zeros( bcon_shape ) for spc in p.bcon_spcs }
 
     diurnal = ncf.get_variable( template.diurnal, p.spcs_out_emis )
     del p
@@ -112,7 +127,9 @@ def map_sense( sensitivity ):
     spcs_pair_dict = { spc_in:spc_out for spc_out,spc_in in spcs_pair_list }
         
     p_daysize = float(24*60*60) / PhysicalAdjointData.tsec_prop
+    b_daysize = float(24*60*60) / PhysicalAdjointData.tsec_bcon
     nlay = PhysicalAdjointData.nlays_emis
+    blay = PhysicalAdjointData.bcon_up_lay
     model_step = mod_shape[0]
     nrow = mod_shape[2]
     ncol = mod_shape[3]
@@ -124,6 +141,8 @@ def map_sense( sensitivity ):
                                             PhysicalAdjointData.spcs_out_emis )
         sense_prop_dict = ncf.get_variable( sense_fname,
                                             PhysicalAdjointData.spcs_out_prop )
+        sense_bcon_dict = ncf.get_variable( sense_fname,
+                                            PhysicalAdjointData.bcon_spcs )
         emis_fname = dt.replace_date( cmaq_config.emis_file, date )
         emis_input_dict = ncf.get_variable( emis_fname,
                                             PhysicalAdjointData.spcs_in_prop )
@@ -134,7 +153,7 @@ def map_sense( sensitivity ):
             end += 1
 
         pstep = i // PhysicalAdjointData.tday_emis
-        unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
+        unit_convert = unit_convert_emis[ dt.replace_date( unit_key, date ) ]
         for spc in PhysicalAdjointData.spcs_out_emis:
             cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
             sense_arr = (sense_emis_dict[spc] * unit_convert)[ :-1, :nlay, :, : ]
@@ -169,5 +188,28 @@ def map_sense( sensitivity ):
             prop_arr = mod_sum * edata
             prop_arr = prop_arr.reshape((end-start,-1,nlay,nrow,ncol)).sum( axis=1 )
             prop_dict[ spc_out ][ start:end, ... ] += prop_arr[:]
+
+        #get sensitivities for boundary conditions
+        start = int( i * b_daysize )
+        end = int( (i+1) * b_daysize )
+        if start == end:
+            end += 1
+        bcon_unit = unit_convert_bcon[ dt.replace_date( unit_key, date ) ]
+        for spc in PhysicalAdjointData.bcon_spcs:
+            sdata = (sense_bcon_dict[ spc ][:] * bcon_unit)[:-1,:,:,:]
+            tot_lay = sdata.shape[1]
+            mod_sum = sdata.reshape((model_step-1,-1,tot_lay,nrow,ncol)).sum( axis=1 )
+            bcon_arr = mod_sum.reshape((end-start,-1,tot_lay,nrow,ncol)).sum( axis=1 )
+            bcon_SL = bcon_arr[:,:blay,0,1:].sum( axis=(1,2,) )
+            bcon_SH = bcon_arr[:,blay:,0,1:].sum( axis=(1,2,) )
+            bcon_EL = bcon_arr[:,:blay,1:,ncol-1].sum( axis=(1,2,) )
+            bcon_EH = bcon_arr[:,blay:,1:,ncol-1].sum( axis=(1,2,) )
+            bcon_NL = bcon_arr[:,:blay,nrow-1,:-1].sum( axis=(1,2,) )
+            bcon_NH = bcon_arr[:,blay:,nrow-1,:-1].sum( axis=(1,2,) )
+            bcon_WL = bcon_arr[:,:blay,:-1,0].sum( axis=(1,2,) )
+            bcon_WH = bcon_arr[:,blay:,:-1,0].sum( axis=(1,2,) )
+            bcon_merge = np.stack( [bcon_SL,bcon_SH,bcon_EL,bcon_EH,
+                                    bcon_NL,bcon_NH,bcon_WL,bcon_WH], axis=1 )
+            bcon_dict[spc][ start:end, : ] += bcon_merge[:,:]
             
-    return PhysicalAdjointData.create_new( emis_dict, prop_dict )
+    return PhysicalAdjointData.create_new( emis_dict, prop_dict, bcon_dict )

@@ -15,7 +15,7 @@ from cmaq_preprocess.uncertainty import convert_unc
 
 # filepath to save new prior file to
 #save_path = input_defn.prior_file
-save_path = os.path.join( store_path, 'input/prior_6day.nc' )
+save_path = os.path.join( store_path, 'input/prior_6day_bcon.nc' )
 
 # spcs used in PhysicalData diurnal output
 # list of spcs (eg: ['CO2','CH4','CO'])
@@ -26,6 +26,8 @@ prop_spc_out = ['CO']
 # spcs used in PhysicalData proportional input
 # list of spcs (eg: ['CO2','CH4','CO']) (same length as spcs_out_list)
 prop_spc_in = ['CO2']
+# spcs used in PhysicalData bcon handling
+bcon_spc = ['CO2','CO']
 
 if input_defn.inc_icon is True:
     raise ValueError('setup not enabled for ICON solving.')
@@ -43,6 +45,9 @@ prop_val = [ 0.05 ]
 # int for custom layers or 'all' to use all possible layers
 emis_nlay = 1
 
+bcon_up_lay = 15
+bcon_regions = 8
+
 # length of proportial emission timestep for PhysicalData (in seconds)
 # allowed values:
 # 'emis' to use timestep from emissions file
@@ -55,6 +60,13 @@ tsec = 'single'
 # 'single' for using a single average across the entire model run
 # integer to use custom number of days
 tday = 'single'
+
+# length of bcon timestep for PhysicalData (in seconds)
+# allowed values:
+# 'emis' to use timestep from emissions file
+# 'single' for using a single average across the entire model run
+# integer to use custom number of seconds
+bcon_tsec = 'emis'
 
 # data for proportial emission uncertainty
 # allowed values:
@@ -70,6 +82,14 @@ prop_unc = 1e-3 # unitless proportion
 # string: filename for netCDF file already correctly formatted.
 #emis_unc = 1e-6 # mol/(s*m**2)
 emis_unc = 'CO2_unc.nc'
+
+# data for bcon uncertainty
+# allowed values:
+# single number: apply value to every uncertainty
+# dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
+# string: filename for netCDF file already correctly formatted.
+#for test case use 1ppm/day CO2 & 50ppb/day CO
+bcon_unc = {'CO2':1.157e-5,'CO':5.787e-7} #ppm/s
 
 # data for inital condition uncertainty
 # allowed values:
@@ -147,6 +167,22 @@ else:
     else:
         assert daysec % tsec == 0, 'invalid tsec'
 
+# convert bcon_tsec into valid time-step length
+if str( bcon_tsec ).lower() == 'emis':
+    efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
+    hms = int( ncf.get_attr( efile, 'TSTEP' ) )
+    bcon_tsec = 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
+elif str( bcon_tsec ).lower() == 'single':
+    nday = len( dt.get_datelist() )
+    bcon_tsec = nday * daysec
+else:
+    bcon_tsec = int( bcon_tsec )
+    if bcon_tsec >= daysec:
+        assert bcon_tsec % daysec == 0, 'invalid bcon_tsec'
+        assert len( dt.get_datelist() ) % (bcon_tsec // daysec) == 0, 'invalid bcon_tsec'
+    else:
+        assert daysec % bcon_tsec == 0, 'invalid bcon_tsec'
+
 # convert tday into valid number of days
 if str( tday ).lower() == 'single':
     tday = len( dt.get_datelist() )
@@ -170,6 +206,7 @@ assert (tsec >= esec) and (tsec%esec == 0), msg
 
 prop_nstep = len(dt.get_datelist())*daysec // tsec
 emis_nstep = tot_nday // tday
+bcon_nstep = len(dt.get_datelist())*daysec // bcon_tsec
 
 # convert emis-file data into needed PhysicalData format
 nrow = int( ncf.get_attr( efile, 'NROWS' ) )
@@ -213,6 +250,10 @@ for spc in emis_spc_out:
 emis_unc = convert_unc( emis_unc, emis_dict )
 emis_dict.update( emis_unc )
 
+bcon_dict = { spc: np.zeros((bcon_nstep,bcon_regions)) for spc in bcon_spc }
+bcon_unc = convert_unc( bcon_unc, bcon_dict )
+bcon_dict.update( bcon_unc )
+
 # create icon data if needed
 if input_defn.inc_icon is True:
     raise ValueError('setup not enabled for ICON solving.')
@@ -244,6 +285,13 @@ emis_attr = { 'TDAY': tday,
 emis_var = { k: ('f4', ('CAT','TSTEP','LAY','ROW','COL'), v)
              for k,v in emis_dict.items() }
 ncf.create( parent=root, name='emis', dim=emis_dim, attr=emis_attr, var=emis_var, is_root=False )
+
+bcon_dim = { 'TSTEP': None, 'BCON': bcon_regions }
+bcon_attr = { 'TSEC': bcon_tsec,
+              'OUT_SPC': ''.join( [ '{:<16}'.format(s) for s in bcon_spc ] ),
+              'UP_LAY': np.int32(bcon_up_lay) }
+bcon_var = { k: ('f4', ('TSTEP','BCON',), v) for k,v in bcon_dict.items() }
+ncf.create( parent=root, name='bcon', dim=bcon_dim, attr=bcon_attr, var=bcon_var, is_root=False )
 
 if input_defn.inc_icon is True:
     raise ValueError('setup not enabled for ICON solving.')
