@@ -34,6 +34,12 @@ class PhysicalAbstractData( FourDVarData ):
     eigen_vectors = None      #list of matrices of emis uncertainty eigen vectors
     nall_cells = None         #No. emis cells
     nunknowns = None          #No. unknowns
+
+    bcon_region = None      #No. bcon regions
+    tstep_bcon = None        #No. seconds per boundary condition timestep
+    nstep_bcon = None       #No. timesteps for boundary condition data
+    bcon_up_lay = None      #bottom layer of upper region of boundary conditions
+    bcon_unc = None         #dict of boundary condition uncertainties
     
     if inc_icon is True:
         icon_unc = None    #dict of icon uncertainty values
@@ -44,7 +50,7 @@ class PhysicalAbstractData( FourDVarData ):
     archive_name = 'physical_abstract_data.ncf' #default archive filename
     emis_units = 'NA'  #unit to attach to netCDF archive
     
-    def __init__( self, icon_dict, emis_dict ):
+    def __init__( self, icon_dict, emis_dict, bcon_dict ):
         """
         application: create an instance of PhysicalData
         input: user-defined
@@ -63,7 +69,9 @@ class PhysicalAbstractData( FourDVarData ):
             self.icon = {}
         
         assert set( emis_dict.keys() ) == set( self.spcs ), 'invalid emis spcs.'
+        assert set( bcon_dict.keys() ) == set( self.spcs ), 'invalid bcon spcs.'
         self.emis = {}
+        self.bcon = {}
         
         for spcs_name in self.spcs:
             if inc_icon is True:
@@ -80,6 +88,17 @@ class PhysicalAbstractData( FourDVarData ):
             assert enc == self.ncols, 'emis columns invalid.'
             
             self.emis[ spcs_name ] = emis_data
+            
+            bcon_data = np.array( bcon_dict[ spcs_name ] )
+            
+            assert len( bcon_data.shape ) == 2, 'bcon dimensions invalid.'
+            
+            bnt,bnr = bcon_data.shape
+            assert bnt == self.nstep_bcon, 'bcon timesteps invalid.'
+            assert bnr == self.bcon_region, 'bcon regions invalid.'
+            
+            self.bcon[ spcs_name ] = bcon_data
+
         return None
     
     def archive( self, path=None ):
@@ -103,14 +122,9 @@ class PhysicalAbstractData( FourDVarData ):
         #construct netCDF file
         attr_dict = { 'SDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.start_date) ),
                       'EDATE': np.int32( dt.replace_date('<YYYYDDD>',dt.end_date) ) }
-        if all([ t==self.tstep[0] for t in self.tstep ]):
-            tstep_out = self.tstep[0]
-        else:
-            tstep_out = [ t for t in self.tstep ]
-        attr_dict[ 'TSTEP' ] = tstep_out
         var_list =''.join( [ '{:<16}'.format( s ) for s in self.spcs ] )
         attr_dict[ 'VAR-LIST' ] = var_list
-        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols, 'TSTEP': None }
+        dim_dict = { 'ROW': self.nrows, 'COL': self.ncols }
         
         root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
                            is_root=True )
@@ -124,7 +138,12 @@ class PhysicalAbstractData( FourDVarData ):
             ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
                         is_root=False )
         
-        emis_dim = { 'LAY': self.nlays_emis }
+        if all([ t==self.tstep[0] for t in self.tstep ]):
+            tstep_out = self.tstep[0]
+        else:
+            tstep_out = [ t for t in self.tstep ]
+        emis_dim = { 'LAY': self.nlays_emis, 'TSTEP': None }
+        emis_attr = { 'TSTEP': tstep_out }
         emis_var = {}
         
         for spc in self.spcs:
@@ -151,6 +170,19 @@ class PhysicalAbstractData( FourDVarData ):
                     is_root=False )
         ncf.create( parent=root, name='corr_unc', attr=corr_unc_attr,
                     dim=corr_unc_dim, var=corr_unc_var, is_root=False )
+
+        if all([ t==self.tstep_bcon[0] for t in self.tstep_bcon ]):
+            tstep_bcon_out = self.tstep_bcon[0]
+        else:
+            tstep_bcon_out = [ t for t in self.tstep_bcon ]
+        bcon_dim = { 'BCON': self.bcon_region, 'TSTEP': None }
+        bcon_attr = { 'TSTEP': tstep_out, 'UP_LAY': np.int32(self.bcon_up_lay) }
+        bcon_var = {}
+        for spc in self.spcs:
+            bcon_var[ spc ] = ( 'f4', ('TSTEP','BCON',), self.bcon[ spc ] )
+            bcon_var[ unc(spc) ] = ('f4',('TSTEP','BCON',),self.bcon_unc[ spc ])
+        ncf.create( parent=root, name='bcon', dim=bcon_dim, var=bcon_var,
+                    attr=bcon_attr, is_root=False )
         root.close()
         return None
     
@@ -180,6 +212,14 @@ class PhysicalAbstractData( FourDVarData ):
         #tsec = daysec*day + 3600*(step//10000) + 60*((step//100)%100) + (step)%100
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
+        bcon_up_lay = ncf.get_attr( filename, 'UP_LAY', group='bcon' )
+        tstep_bcon = ncf.get_attr( filename, 'TSTEP', group='bcon' )
+        if np.isscalar( tstep_bcon ):
+            nstep_bcon = (daysec*len(dt.get_datelist())) // int(tstep_bcon)
+            tstep_bcon = [ int(tstep_bcon) ] * nstep_bcon
+        else:
+            tstep_bcon = [ int(i) for i in tstep_bcon ]
+            nstep_bcon = len( tstep_bcon )
         
         if inc_icon is True:
             icon_val = ncf.get_variable( filename, 'ICON-SCALE', group='icon' )
@@ -205,6 +245,11 @@ class PhysicalAbstractData( FourDVarData ):
             eigen_vectors.append( e_vec )
             e_val = e_values[i,:n]
             eigen_values.append( e_val )
+
+        bcon_dict = ncf.get_variable( filename, spcs_list, group='bcon' )
+        bcon_unc = ncf.get_variable( filename, unc_list, group='bcon' )
+        for spc in spcs_list:
+            bcon_unc[ spc ] = bcon_unc.pop( unc( spc ) )
                         
         #ensure parameters from file are valid
         msg = 'invalid start date'
@@ -215,7 +260,11 @@ class PhysicalAbstractData( FourDVarData ):
         emis_shape = [ e.shape for e in emis_dict.values() ]
         for eshape in emis_shape[1:]:
             assert eshape == emis_shape[0], 'all emis spcs must have the same shape.'
+        bcon_shape = [ b.shape for b in bcon_dict.values() ]
+        for bshape in bcon_shape[1:]:
+            assert bshape == bcon_shape[0], 'all bcon spcs must have the same shape.'
         estep, elays, erows, ecols = emis_shape[0]
+        bstep, bregion = bcon_shape[0]
         
         if inc_icon is True:
             icon_lay = ncf.get_attr( template.icon, 'NLAYS' )
@@ -241,10 +290,13 @@ class PhysicalAbstractData( FourDVarData ):
         
         #assign new param values.
         par_name = ['tstep','nstep','nlays_emis','nrows','ncols','spcs',
-                    'eigen_vectors', 'eigen_values', 'nall_cells', 'nunknowns']
+                    'eigen_vectors', 'eigen_values', 'nall_cells', 'nunknowns',
+                    'bcon_region','tstep_bcon','nstep_bcon','bcon_up_lay',
+                    'bcon_unc']
         par_val = [tstep, estep, elays, erows, ecols, spcs_list, eigen_vectors,
-                   eigen_values, nall_cells, nunknowns]
-        par_mutable = ['eigen_vectors, eigen_values']
+                   eigen_values, nall_cells, nunknowns, bregion, tstep_bcon,
+                   bstep, bcon_up_lay, bcon_unc ]
+        par_mutable = ['eigen_vectors', 'eigen_values', 'bcon_unc']
         if inc_icon is True:
             par_name += [ 'icon_unc' ]
             par_val += [ icon_unc ]
@@ -266,7 +318,7 @@ class PhysicalAbstractData( FourDVarData ):
         
         if inc_icon is False:
             icon_dict = None
-        return cls( icon_dict, emis_dict )
+        return cls( icon_dict, emis_dict, bcon_dict )
 
     @classmethod
     def example( cls ):
@@ -282,6 +334,7 @@ class PhysicalAbstractData( FourDVarData ):
         """
         icon_val = 1.0
         emis_val = 0.0
+        bcon_val = 0.0
         
         #params must all be set and not None (usally using cls.from_file)
         cls.assert_params()
@@ -293,8 +346,10 @@ class PhysicalAbstractData( FourDVarData ):
         
         emis_val += np.zeros((cls.nstep, cls.nlays_emis, cls.nrows, cls.ncols))
         emis_dict = { spc: emis_val.copy() for spc in cls.spcs }
+        bcon_val += np.zeros((cls.nstep_bcon, cls.bcon_region,))
+        bcon_dict = { spc: bcon_val.copy() for spc in cls.bcon_spcs }
         
-        return cls( icon_dict, emis_dict )
+        return cls( icon_dict, emis_dict, bcon_dict )
     
     @classmethod
     def assert_params( cls ):

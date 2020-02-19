@@ -32,6 +32,11 @@ spc_list = 'all'
 # int for custom layers or 'all' to use all possible layers
 emis_nlay = 'all'
 
+# layer that splits bcon upper and lower regions
+bcon_up_lay = 15
+# total number of boundary regions (upper & lower for N,S,E,W)
+bcon_regions = 8
+
 # length of emission timestep for PhysicalData
 # allowed values:
 # 'emis' to use timestep from emissions file
@@ -45,6 +50,14 @@ tstep = 'month'
 hr = 60*60 #seconds in an hr.
 #tstep = [ 6*hr, 18*hr ] #test case for variable-timestep code
 
+# length of bcon timestep for PhysicalData (in seconds)
+# allowed values:
+# 'emis' to use timestep from emissions file
+# 'single' for using a single average across the entire model run
+# 'month' to use one timestep per month
+# integer to use custom number of seconds
+bcon_tstep = 24*60*60
+
 # data for emission uncertainty
 # allowed values:
 # list of strings: filenames for netCDF file already correctly formatted.
@@ -57,6 +70,13 @@ stringdates = [d.strftime("%Y-%m-%d")for d in daterange]
 dates = [datetime.datetime.strptime(d, '%Y-%m-%d') for d in stringdates]
 doms = ['d01']
 
+# data for bcon uncertainty
+# allowed values:
+# single number: apply value to every uncertainty
+# dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
+# string: filename for netCDF file already correctly formatted.
+#for test case use 1ppm/day CO2
+bcon_unc = {'CO2':1.157e-5} #ppm/s
 
 emis_eigen_vectors_files = []
 emis_eigen_values_files = []
@@ -158,6 +178,37 @@ for i in ind_list:
     assert tsec_list[i-1] >= day_start, msg
     assert tsec_list[i+1] <= day_end, msg
 
+# convert bcon_tstep into valid time-step (seconds)
+if str( bcon_tstep ).lower() == 'emis':
+    efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
+    hms = int( ncf.get_attr( efile, 'TSTEP' ) )
+    bcon_tstep = 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
+elif str( bcon_tstep ).lower() == 'single':
+    bcon_tstep = len(dt.get_datelist()) * daysec
+elif str( bcon_tstep ).lower() == 'month':
+    bcon_tstep = []
+    for m in range(max(dt.month_index())+1):
+        nday = len([ 1 for i in dt.month_index() if i==m ])
+        bcon_tstep.append( nday * daysec )
+#validate tstep: cleanly fits into days.
+if type( bcon_tstep ) == int:
+    nstep = (daysec*len(dt.get_datelist())) // bcon_tstep
+    bcon_tstep = [ bcon_tstep ] * nstep
+else:
+    assert type( bcon_tstep ) == list, 'invalid tstep'
+    assert all( [ type(i) == int for i in bcon_tstep ] ), 'invalid tstep'
+bcon_tsec_list = np.cumsum( [0] + bcon_tstep )
+msg = 'BCON timestep does not fit entire model run.'
+assert bcon_tsec_list[-1] == daysec*len(dt.get_datelist()), msg
+ind_list = [ i for i,t in enumerate(bcon_tsec_list) if t%daysec != 0 ]
+for i in ind_list:
+    t = bcon_tsec_list[i]
+    day_start = daysec * (t // daysec )
+    day_end = day_start + daysec
+    msg = 'sub-day timestep cannot span multiple days.'
+    assert tsec_list[i-1] >= day_start, msg
+    assert tsec_list[i+1] <= day_end, msg
+
 # emis-file timestep must fit into PhysicalData tstep
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 estep = int( ncf.get_attr( efile, 'TSTEP' ) )
@@ -215,15 +266,16 @@ for i in range( nstep ):
     vec_storage[ i, :, :unk_len ] = emis_eigen_vectors[i][:]
     val_storage[ i, :unk_len ] = emis_eigen_values[i][:]
 
+#create BCON values and uncertainties
+bcon_nstep = len( bcon_tstep )
+bcon_dict = { spc: np.zeros((bcon_nstep,bcon_regions)) for spc in spc_list }
+bcon_unc = convert_unc( bcon_unc, bcon_dict )
+bcon_dict.update( bcon_unc )
+
 # build data into new netCDF file
-if all([ t==tstep[0] for t in tstep ]):
-    tstep_out = tstep[0]
-else:
-    tstep_out = [ t for t in tstep ]
-root_dim = { 'ROW': nrow, 'COL': ncol, 'TSTEP': None }
+root_dim = { 'ROW': nrow, 'COL': ncol }
 root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) ),
               'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
-              'TSTEP': tstep_out,
               'VAR-LIST': ''.join( [ '{:<16}'.format(s) for s in spc_list ] ) }
 
 root = ncf.create( path=save_path, attr=root_attr, dim=root_dim, is_root=True )
@@ -234,9 +286,15 @@ if input_defn.inc_icon is True:
                  'ICON-UNC': ('f4', ('SPC',), np.array(icon_unc) ) }
     ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
 
-emis_dim = { 'LAY': emis_nlay }
+if all([ t==tstep[0] for t in tstep ]):
+    tstep_out = tstep[0]
+else:
+    tstep_out = [ t for t in tstep ]
+emis_dim = { 'LAY': emis_nlay, 'TSTEP': None }
+emis_attr = { 'TSTEP': tstep_out }
 emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }
-ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var, is_root=False )
+ncf.create( parent=root, name='emis', dim=emis_dim, attr=emis_attr,
+            var=emis_var, is_root=False )
 
 corr_unc_dim = { 'ALL_CELLS': ncells, 'UNKNOWNS':max_unk }
 corr_unc_var = { 'EIGEN_VECTORS': ('f4', ('TSTEP','ALL_CELLS','UNKNOWNS',), vec_storage),
@@ -244,6 +302,16 @@ corr_unc_var = { 'EIGEN_VECTORS': ('f4', ('TSTEP','ALL_CELLS','UNKNOWNS',), vec_
 corr_unc_attr = { 'UNKNOWNS': [ np.int32( unk ) for unk in unk_list ] }
 ncf.create( parent=root, name='corr_unc', attr=corr_unc_attr,
             dim=corr_unc_dim, var=corr_unc_var, is_root=False )
+
+if all([ t==bcon_tstep[0] for t in bcon_tstep ]):
+    bcon_tstep_out = bcon_tstep[0]
+else:
+    bcon_tstep_out = [ t for t in bcon_tstep ]
+bcon_dim = { 'BCON': bcon_regions, 'TSTEP': None }
+bcon_attr = { 'TSTEP': bcon_tstep_out, 'UP_LAY': np.int32( bcon_up_lay ) }
+bcon_var = { k: ('f4', ('TSTEP','BCON',), v) for k,v in bcon_dict.items() }
+ncf.create( parent=root, name='bcon', dim=bcon_dim, attr=bcon_attr,
+            var=bcon_var, is_root=False )
 
 root.close()
 print 'Prior created and save to:\n  {:}'.format( save_path )

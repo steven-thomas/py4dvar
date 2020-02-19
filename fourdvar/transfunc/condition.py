@@ -46,12 +46,13 @@ def phys_to_unk( physical, is_adjoint ):
     nunknowns = p.nunknowns
     eigen_vectors = p.eigen_vectors
     eigen_values = p.eigen_values
+    bcon_len = p.nstep_bcon * p.bcon_region
     del p
 
     if inc_icon is True:
-        total_len = len( spcs_list ) + sum( nunknowns )
+        total_len = len( spcs_list )*(1+bcon_len) + sum( nunknowns )
     else:
-        total_len = sum( nunknowns )
+        total_len = len( spcs_list )*bcon_len + sum( nunknowns )
     
     #weighting function changes if is_adjoint
     if is_adjoint is True:
@@ -76,6 +77,11 @@ def phys_to_unk( physical, is_adjoint ):
         emis_vector = weight( emis_vector, eigen_values[t] )
         arg[ i : i+nunknowns[t] ] = emis_vector[:]
         i += nunknowns[t]
+    
+    for spc in spcs_list:
+        bcon = weight( physical.bcon[ spc ], physical.bcon_unc[ spc ] )
+        arg[ i:i+bcon_len ] = bcon.flatten()
+        i += bcon_len
 
     assert i == total_len, 'did not map expected number of unknowns.'
     return UnknownData( arg )

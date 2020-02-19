@@ -13,5 +13,6 @@ class PhysicalData( PhysicalAbstractData ):
     """
     archive_name = 'physical_data.ncf'
     emis_units = 'mol/(s*m^2)'
+    bcon_units = 'ppm/s'
     if inc_icon is True:
         icon_units = '<unitless>'
