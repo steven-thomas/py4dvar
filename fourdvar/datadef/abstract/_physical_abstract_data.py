@@ -232,7 +232,7 @@ class PhysicalAbstractData( FourDVarData ):
         nunknowns = ncf.get_attr( filename, 'UNKNOWNS', group='corr_unc' )
         nunknowns =  nunknowns 
         try:
-            len(unknowns)
+            len(nunknowns)
         except TypeError:
             nunknowns = [ nunknowns ]
         nall_cells = e_vectors.shape[1]
