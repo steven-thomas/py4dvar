@@ -14,9 +14,10 @@ import fourdvar.params.cmaq_config as cmaq_config
 from fourdvar.params.input_defn import inc_icon
 
 unit_key = 'units.<YYYYMMDD>'
-unit_convert_dict = None
+unit_convert_emis = None
+unit_convert_bcon = None
 
-def get_unit_convert():
+def get_unit_convert_emis():
     """
     extension: get unit conversion dictionary for sensitivity to each days emissions
     input: None
@@ -65,16 +66,28 @@ def get_unit_convert():
         unit_dict[ day_label ] = unit_array
     return unit_dict
 
+def get_unit_convert_bcon():
+    """
+    SensitivityData.emis units = CF/(ppm/s)
+    PhysicalAdjointData.bcon units = CF/(ppm/s)
+    """
+    unit_dict = { dt.replace_date( unit_key, date ): 1.
+                  for date in dt.get_datelist() }
+    return unit_dict
+
 def map_sense( sensitivity ):
     """
     application: map adjoint sensitivities to physical grid of unknowns.
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    global unit_convert_dict
     global unit_key
-    if unit_convert_dict is None:
-        unit_convert_dict = get_unit_convert()
+    global unit_convert_emis
+    global unit_convert_bcon
+    if unit_convert_emis is None:
+        unit_convert_emis = get_unit_convert_emis()
+    if unit_convert_bcon is None:
+        unit_convert_bcon = get_unit_convert_bcon()
     
     #check that:
     #- date_handle dates exist
@@ -87,71 +100,82 @@ def map_sense( sensitivity ):
     test_spc = PhysicalAdjointData.spcs[0]
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
-    
-    #phys_params = ['tsec','nstep','nlays_icon','nlays_emis','nrows','ncols','spcs']
-    #icon_dict = { spcs: np.ndarray( nlays_icon, nrows, ncols ) }
-    #emis_dict = { spcs: np.ndarray( nstep, nlays_emis, nrows, ncols ) }
-    
+        
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
     if inc_icon is True:
-        icon_shape = ( p.nlays_icon, p.nrows, p.ncols, )
-        icon_dict = { spc: np.zeros( icon_shape ) for spc in p.spcs }
-    emis_shape = ( p.nstep, p.nlays_emis, p.nrows, p.ncols, )
+        icon_dict = { spc: 1. for spc in p.spcs }
+    ncat = len( p.cat_emis )
+    emis_shape = ( ncat, p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
+    bcon_shape = ( p.nstep_bcon, p.bcon_region, )
+    bcon_dict = { spc: np.zeros( bcon_shape ) for spc in p.spcs }
+
+    diurnal = ncf.get_variable( template.diurnal, p.spcs )
     del p
     
     #construct icon_dict
     if inc_icon is True:
-        icon_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
-        icon_fname = sensitivity.file_data[ icon_label ][ 'actual' ]
-        icon_vars = ncf.get_variable( icon_fname, icon_dict.keys() )
+        i_sense_label = dt.replace_date( 'conc.<YYYYMMDD>', datelist[0] )
+        i_sense_fname = sensitivity.file_data[ i_sense_label ][ 'actual' ]
+        i_sense_vars = ncf.get_variable( i_sense_fname, icon_dict.keys() )
+        icon_vars = ncf.get_variable( template.icon, icon_dict.keys() )
         for spc in PhysicalAdjointData.spcs:
-            data = icon_vars[ spc ][ 0, :, :, : ]
-            ilays, irows, icols = data.shape
-            msg = 'conc_sense and PhysicalAdjointData.{} are incompatible'
-            assert ilays >= PhysicalAdjointData.nlays_icon, msg.format( 'nlays_icon' )
-            assert irows == PhysicalAdjointData.nrows, msg.format( 'nrows' )
-            assert icols == PhysicalAdjointData.ncols, msg.format( 'ncols' )
-            icon_dict[ spc ] = data[ 0:PhysicalAdjointData.nlays_icon, :, : ].copy()
+            sense_data = i_sense_vars[ spc ][ 0, ... ]
+            icon_data = icon_vars[ spc ] [ 0, ... ]
+            msg = 'conc_sense and template.icon are incompatible'
+            assert sense_data.shape == icon_data.shape, msg
+            icon_dict[ spc ] = (sense_data * icon_data).sum()
     
-    p_daysize = float(24*60*60) / PhysicalAdjointData.tsec
+    b_daysize = float(24*60*60) / PhysicalAdjointData.tsec_bcon
+    nlay = PhysicalAdjointData.nlays_emis
+    blay = PhysicalAdjointData.bcon_up_lay
+    model_step = mod_shape[0]
+    nrow = mod_shape[2]
+    ncol = mod_shape[3]
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( datelist ):
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
-        start = int( i * p_daysize )
-        end = int( (i+1) * p_daysize )
-        if start == end:
-            end += 1
+
+        pstep = i // PhysicalAdjointData.tday_emis
+        b_start = int( i * b_daysize )
+        b_end = int( (i+1) * b_daysize )
+        if b_start == b_end:
+            b_end += 1
+        emis_unit = unit_convert_emis[ dt.replace_date( unit_key, date ) ]
+        bcon_unit = unit_convert_bcon[ dt.replace_date( unit_key, date ) ]
         for spc in PhysicalAdjointData.spcs:
-            unit_convert = unit_convert_dict[ dt.replace_date( unit_key, date ) ]
-            sdata = sense_data_dict[ spc ][:] * unit_convert
-            sstep, slay, srow, scol = sdata.shape
-            #recast to match mod_shape
-            mstep, mlay, mrow, mcol = mod_shape
-            msg = 'emis_sense and ModelInputData {} are incompatible.'
-            assert ((sstep-1) >= (mstep-1)) and ((sstep-1) % (mstep-1) == 0), msg.format( 'TSTEP' )
-            assert slay >= mlay, msg.format( 'NLAYS' )
-            assert srow == mrow, msg.format( 'NROWS' )
-            assert scol == mcol, msg.format( 'NCOLS' )
-            sense_arr = sdata[:-1,:mlay,:,:]
-            model_arr = sense_arr.reshape((mstep-1,-1,mlay,mrow,mcol)).sum(axis=1)
-            #adjoint prepare_model
-            pstep = end-start
-            play = PhysicalAdjointData.nlays_emis
-            prow = PhysicalAdjointData.nrows
-            pcol = PhysicalAdjointData.ncols
-            msg = 'ModelInputData and PhysicalAdjointData.{} are incompatible.'
-            assert ((mstep-1) >= (pstep)) and ((mstep-1) % (pstep) == 0), msg.format('nstep')
-            assert mlay >= play, msg.format( 'nlays_emis' )
-            assert mrow == prow, msg.format( 'nrows' )
-            assert mcol == pcol, msg.format( 'ncols' )
-            model_arr = model_arr[ :, :play, :, : ]
-            phys_arr = model_arr.reshape((pstep,-1,play,prow,pcol)).sum(axis=1)
-            emis_dict[ spc ][ start:end, ... ] += phys_arr.copy()
-    
+            cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
+            sense_arr_emis = (sense_data_dict[ spc ] * emis_unit)[:-1,:nlay,:,:]
+            model_arr_emis = sense_arr_emis.reshape((model_step-1,-1,nlay,nrow,ncol,)).sum(axis=1)
+            for c in range( ncat ):
+                data = model_arr_emis.copy()
+                data[ cat_arr != c ] = np.nan
+                data = np.nansum( data, axis=0 )
+                #insert NaN's if cell never had category c
+                nan_arr = (cat_arr == c).sum( axis=0 )
+                nan_arr = np.where( (nan_arr==0), np.nan, 0. )
+                data += nan_arr
+                emis_dict[spc][c,pstep,:,:,:] += data
+
+            sense_arr_bcon = (sense_data_dict[ spc ][:] * bcon_unit)[:-1,:,:,:]
+            tot_lay = sense_arr_bcon.shape[1]
+            model_arr_bcon = sense_arr_bcon.reshape((model_step-1,-1,tot_lay,nrow,ncol)).sum( axis=1 )
+            bcon_arr = model_arr_bcon.reshape((b_end-b_start,-1,tot_lay,nrow,ncol)).sum( axis=1 )
+            bcon_SL = bcon_arr[:,:blay,0,1:].sum( axis=(1,2,) )
+            bcon_SH = bcon_arr[:,blay:,0,1:].sum( axis=(1,2,) )
+            bcon_EL = bcon_arr[:,:blay,1:,ncol-1].sum( axis=(1,2,) )
+            bcon_EH = bcon_arr[:,blay:,1:,ncol-1].sum( axis=(1,2,) )
+            bcon_NL = bcon_arr[:,:blay,nrow-1,:-1].sum( axis=(1,2,) )
+            bcon_NH = bcon_arr[:,blay:,nrow-1,:-1].sum( axis=(1,2,) )
+            bcon_WL = bcon_arr[:,:blay,:-1,0].sum( axis=(1,2,) )
+            bcon_WH = bcon_arr[:,blay:,:-1,0].sum( axis=(1,2,) )
+            bcon_merge = np.stack( [bcon_SL,bcon_SH,bcon_EL,bcon_EH,
+                                    bcon_NL,bcon_NH,bcon_WL,bcon_WH], axis=1 )
+            bcon_dict[spc][ b_start:b_end, : ] += bcon_merge[:,:]
+
     if inc_icon is False:
         icon_dict = None
-    return PhysicalAdjointData( icon_dict, emis_dict )
+    return PhysicalAdjointData( icon_dict, emis_dict, bcon_dict )

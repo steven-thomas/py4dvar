@@ -39,12 +39,12 @@ def phys_to_unk( physical, is_adjoint ):
     notes: this function must apply the inverse prior error covariance
     """
     p = PhysicalAbstractData
-    emis_len = p.nstep * p.nlays_emis * p.nrows * p.ncols
+    emis_len = len(p.cat_emis) * p.nstep_emis * p.nlays_emis * p.nrows * p.ncols
+    bcon_len = p.nstep_bcon * p.bcon_region
     if inc_icon is True:
-        icon_len = p.nlays_icon * p.nrows * p.ncols
-        total_len = len( p.spcs ) * ( icon_len + emis_len )
+        total_len = len(p.spcs) * (1 + emis_len + bcon_len)
     else:
-        total_len = len( p.spcs ) * emis_len
+        total_len = len(p.spcs) * (emis_len + bcon_len)
     del p
     
     #weighting function changes if is_adjoint
@@ -58,11 +58,17 @@ def phys_to_unk( physical, is_adjoint ):
     for spc in PhysicalAbstractData.spcs:
         if inc_icon is True:
             icon = weight( physical.icon[ spc ], physical.icon_unc[ spc ] )
-            arg[ i:i+icon_len ] = icon.flatten()
-            i += icon_len
+            arg[ i ] = icon
+            i += 1
+
         emis = weight( physical.emis[ spc ], physical.emis_unc[ spc ] )
         arg[ i:i+emis_len ] = emis.flatten()
         i += emis_len
+
+        bcon = weight( physical.bcon[ spc ], physical.bcon_unc[ spc ] )
+        arg[ i:i+bcon_len ] = bcon.flatten()
+        i += bcon_len
     assert i == total_len, 'Some unknowns left unassigned!'
-    
+    #remove nan's
+    arg = arg[ ~np.isnan( arg ) ]    
     return UnknownData( arg )

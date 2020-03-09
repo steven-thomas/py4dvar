@@ -1,7 +1,7 @@
 
 import os
 
-from fourdvar.params.root_path_defn import store_path, share_path
+from fourdvar.params.root_path_defn import store_path
 
 #notes: the patterns <YYYYMMDD>, <YYYYDDD> & <YYYY-MM-DD> will be replaced
 #with the year, month and day of the current model run
@@ -51,8 +51,10 @@ promptflag = False
 
 #output species
 #'template' means value calculated from template files
-conc_spcs = 'template'
-avg_conc_spcs = 'template'
+#conc_spcs = 'template'
+conc_spcs = 'CO'
+#avg_conc_spcs = 'template'
+avg_conc_spcs = 'CO'
 
 #output layers
 #'template' means value calculated from template files
@@ -68,8 +70,8 @@ pertspcs = '2'
 pertdelt = '1.00'
 
 #application name
-fwd_appl = 'fwd_CO2only.<YYYYMMDD>'
-bwd_appl = 'bwd_CO2only.<YYYYMMDD>'
+fwd_appl = 'fwd_CO_only.<YYYYMMDD>'
+bwd_appl = 'bwd_CO_only.<YYYYMMDD>'
 
 #emis_date, use unknown
 emisdate = '<YYYYMMDD>'
@@ -93,20 +95,20 @@ if use_jobfs is True:
         raise ValueError(msg)
 else:
     chk_path = os.path.join( cmaq_base, 'chkpnt' )
-mcip_path = os.path.join( share_path, 'mcip' )
-grid_path = os.path.join( share_path, 'grid' )
-jproc_path = os.path.join( share_path, 'jproc' )
+mcip_path = os.path.join( cmaq_base, 'mcip' )
+grid_path = os.path.join( cmaq_base, 'grid' )
+jproc_path = os.path.join( cmaq_base, 'jproc' )
 bcon_path = os.path.join( cmaq_base, 'bcon' )
 icon_path = os.path.join( cmaq_base, 'icon' )
 emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
 griddesc = os.path.join( grid_path, 'GRIDDESC' )
-gridname = 'CMAQ-BENCHMARK'
+gridname = 'W'
 
 #logfile
-fwd_logfile = os.path.join( output_path, 'fwd_CO2only.<YYYYMMDD>.log' )
-bwd_logfile = os.path.join( output_path, 'bwd_CO2only.<YYYYMMDD>.log' )
+fwd_logfile = os.path.join( output_path, 'fwd_CO_only.<YYYYMMDD>.log' )
+bwd_logfile = os.path.join( output_path, 'bwd_CO_only.<YYYYMMDD>.log' )
 
 #floor file
 floor_file = os.path.join( output_path, 'FLOOR_bnmk' )
@@ -127,14 +129,14 @@ fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
 bwd_xfirst_file = os.path.join( output_path, 'XFIRST.bwd.<YYYYMMDD>' )
 
 #input files
-icon_file = os.path.join( icon_path, 'icon_CO2only.nc' )
-bcon_file = os.path.join( bcon_path, 'bcon_CO2only.<YYYYMMDD>.nc' )
-emis_file = os.path.join( emis_path, 'emis_CO2only.<YYYYMMDD>.nc' )
-force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.nc' )
+icon_file = os.path.join( icon_path, 'icon_CO_only.nc' )
+bcon_file = os.path.join( bcon_path, 'bcon_CO_only.<YYYYMMDD>.nc' )
+emis_file = os.path.join( emis_path, 'emis_CO_only.<YYYYMMDD>.nc' )
+force_file = os.path.join( cmaq_base, 'force', 'ADJ_FORCE.<YYYYMMDD>.nc' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.nc' )
-grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.nc' )
-grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.nc' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.20180801.nc' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.20180801.nc' )
 met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.nc' )
 met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.nc' )
 met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.nc' )
@@ -188,8 +190,8 @@ wipeout_bwd_list = [ bwd_logfile, bwd_xfirst_file, conc_sense_file,
                      emis_sense_file, emis_scale_sense_file, bwd_stdout_log ]
 
 #drivers
-fwd_prog = os.path.join( share_path, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( share_path, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO_only', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO_only', 'ADJOINT_BWD' )
 
 #shell used to call drivers
 cmd_shell = '/bin/csh'

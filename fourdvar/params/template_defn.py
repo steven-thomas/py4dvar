@@ -13,3 +13,5 @@ sense_conc = os.path.join( template_path, 'sense_conc_template.nc' )
 #fwd model inputs are "records" instead of templates.
 emis = os.path.join( template_path, 'record', 'emis_record_<YYYYMMDD>.nc' )
 icon = os.path.join( template_path, 'record', 'icon_record.nc' )
+
+diurnal = os.path.join( template_path, 'diurnal.nc' )

@@ -8,6 +8,7 @@ import fourdvar.util.date_handle as dt
 import fourdvar.util.file_handle as fh
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
+import fourdvar.params.template_defn as template
 from fourdvar.params.root_path_defn import store_path
 from cmaq_preprocess.uncertainty import convert_unc
 
@@ -20,37 +21,49 @@ fh.ensure_path( os.path.dirname( save_path ) )
 
 # spcs used in PhysicalData
 # list of spcs (eg: ['CO2','CH4','CO']) OR 'all' to use all possible spcs
-spc_list = 'all'
-
-# number of layers for PhysicalData initial condition
-# int for custom layers or 'all' to use all possible layers
-icon_nlay = 'all'
+spc_list = ['CO']
 
 # number of layers for PhysicalData emissions (fluxes)
 # int for custom layers or 'all' to use all possible layers
-emis_nlay = 'all'
+emis_nlay = 1
 
-# length of emission timestep for PhysicalData
+# layer that splits upper and lower boundary regions
+bcon_up_lay = 15
+# total number of boundary regions
+bcon_regions = 8
+
+# No. days per PhysicalData diurnal timestep
+# possible values:
+# 'single' for using a single average across the entire model run
+# integer to use custom number of days
+tday = 'single'
+
+# length of bcon timestep for PhysicalData (in seconds)
 # allowed values:
 # 'emis' to use timestep from emissions file
 # 'single' for using a single average across the entire model run
-# [ days, HoursMinutesSeconds ] for custom length eg: (half-hour = [0,3000])
-tstep = [1,0] #daily average emissions
-#tstep = 'single'
+# integer to use custom number of seconds
+bcon_tsec = 'single'
 
 # data for emission uncertainty
 # allowed values:
 # single number: apply value to every uncertainty
 # dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-emis_unc = 1e-6 # mol/(s*m**2)
+emis_unc = 1e-8 # mol/(s*m**2)
 
-# data for inital condition uncertainty
+# data for ICON scaling
+# list of values, one for each species
+icon_scale = [1.0]
+icon_unc = [0.01]
+
+# data for bcon uncertainty
 # allowed values:
 # single number: apply value to every uncertainty
 # dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-icon_unc = 1.0 # ppm
+#for test case using 50ppb/day CO
+bcon_unc = {'CO':5.787e-7} #ppm/s
 
 
 # convert spc_list into valid list
@@ -73,21 +86,10 @@ else:
         print 'invalid spc_list'
         raise
 
-# convert icon_nlay into valid number (only if we need icon)
+# check that icon_scale & icon_unc are valid
 if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    inlay = int( ncf.get_attr( ifile, 'NLAYS' ) )
-    if str(icon_nlay).lower() == 'all':
-        icon_nlay = inlay
-    else:
-        try:
-            assert int( icon_nlay ) == icon_nlay
-            icon_nlay = int( icon_nlay )
-        except:
-            print 'invalid icon_nlay'
-            raise
-        if icon_nlay > inlay:
-            raise AssertionError('icon_nlay must be <= {:}'.format( inlay ))
+    assert len(spc_list)==len(icon_scale), 'Invalid icon_scale size'
+    assert len(spc_list)==len(icon_unc), 'Invalid icon_unc size'
 
 # convert emis_nlay into valid number
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
@@ -104,93 +106,115 @@ else:
     if emis_nlay > enlay:
         raise AssertionError('emis_nlay must be <= {:}'.format( enlay ))
 
-# convert tstep into valid time-step
-if str( tstep ).lower() == 'emis':
-    efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
-    estep = int( ncf.get_attr( efile, 'TSTEP' ) )
-    tstep = [ 0, estep ]
-elif str( tstep ).lower() == 'single':
-    nday = len( dt.get_datelist() )
-    tstep = [ nday, 0 ]
+# convert tday into valid number of days
+if str( tday ).lower() == 'single':
+    tday = len( dt.get_datelist() )
 else:
     try:
-        assert len( tstep ) == 2
-        day,hms = tstep
-        assert int(day) == day
-        day = int(day)
-        assert int(hms) == hms
-        hms = int(hms)
+        assert int( tday ) == tday
+        tday = int( tday )
     except:
-        print 'invalid tstep'
+        print 'invalid tday'
         raise
+tot_nday = len( dt.get_datelist() )
+assert tday <= tot_nday, 'tday must be <= No. days in model run'
+assert tot_nday % tday == 0, 'tday must cleanly divide No. days in model run'
 
-day,hms = tstep
+# convert bcon_tsec into valid time-step length
 daysec = 24*60*60
-tsec = daysec*day + 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
+if str( bcon_tsec ).lower() == 'emis':
+    efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
+    hms = int( ncf.get_attr( efile, 'TSTEP' ) )
+    bcon_tsec = 3600*(hms//10000) + 60*((hms//100)%100) + (hms%100)
+elif str( bcon_tsec ).lower() == 'single':
+    nday = len( dt.get_datelist() )
+    bcon_tsec = nday * daysec
+else:
+    bcon_tsec = int( bcon_tsec )
+    if bcon_tsec >= daysec:
+        assert bcon_tsec % daysec == 0, 'invalid bcon_tsec'
+        assert len( dt.get_datelist() ) % (bcon_tsec // daysec) == 0, 'invalid bcon_tsec'
+    else:
+        assert daysec % bcon_tsec == 0, 'invalid bcon_tsec'
 
 # emis-file timestep must fit into PhysicalData tstep
 efile = dt.replace_date( cmaq_config.emis_file, dt.start_date )
 estep = int( ncf.get_attr( efile, 'TSTEP' ) )
 esec = 3600*(estep//10000) + 60*((estep//100)%100) + (estep%100)
-msg = 'emission file TSTEP & tstep incompatible'
-assert (tsec >= esec) and (tsec%esec == 0), msg
+msg = 'emission file TSTEP & bcon_tstep incompatible'
+assert (bcon_tsec >= esec) and (bcon_tsec%esec == 0), msg
 
-# PhysicalData tstep must fit into model days
-assert max(tsec,daysec) % min(tsec,daysec) == 0, 'tstep must fit into days'
-assert len(dt.get_datelist())*daysec % tsec == 0, 'tstep must fit into model length'
+emis_nstep = tot_nday // tday
+bcon_nstep = len(dt.get_datelist())*daysec // bcon_tsec
 
 # convert emis-file data into needed PhysicalData format
 nrow = int( ncf.get_attr( efile, 'NROWS' ) )
 ncol = int( ncf.get_attr( efile, 'NCOLS' ) )
 xcell = float( ncf.get_attr( efile, 'XCELL' ) )
 ycell = float( ncf.get_attr( efile, 'YCELL' ) )
-emis_dict = { spc: [] for spc in spc_list }
 cell_area = xcell * ycell
-for date in dt.get_datelist():
-    efile = dt.replace_date( cmaq_config.emis_file, date )
-    edict = ncf.get_variable( efile, spc_list )
-    for spc in spc_list:
-        #get data and convert unit (mol/(s*cell) to mol/(s*m**2)
-        data = edict[ spc ][ :-1, :emis_nlay, :, : ] / cell_area
-        emis_dict[ spc ].append( data )
 
-tot_nstep = len(dt.get_datelist())*daysec // tsec
+cat_list = ncf.get_attr( template.diurnal, 'CAT-LIST' ).strip().split()
+ncat = len( cat_list )
+
+emis_dict = {}
 for spc in spc_list:
-    data = emis_dict[ spc ]
-    data = np.concatenate( data, axis=0 )
-    data = data.reshape((tot_nstep,-1,emis_nlay,nrow,ncol,)).mean(axis=1)
-    emis_dict[ spc ] = data
+    ecat_dict = { c: [] for c in range( ncat ) }
+    cat_arr = ncf.get_variable( template.diurnal, spc )[ :-1, :emis_nlay, :, : ]
+    for date in dt.get_datelist():
+        efile = dt.replace_date( cmaq_config.emis_file, date )
+        e_arr = ncf.get_variable( efile, spc )[ :-1, :emis_nlay, :, : ] / cell_area
+        for c in range( ncat ):
+            data = e_arr.copy()
+            data[ cat_arr!=c ] = np.nan
+            ecat_dict[c].append( data )
+    
+    cat_arr_list = []
+    for c in range( ncat ):
+        data = ecat_dict[ c ]
+        data = np.concatenate( data, axis=0 )
+        data = np.nanmean( data.reshape((emis_nstep,-1,emis_nlay,nrow,ncol,)), axis=1 )
+        cat_arr_list.append( data )
+    
+    emis_data = np.stack( cat_arr_list, axis=0 )
+    msg = "emis_data produced invalid shape."
+    assert emis_data.shape == (ncat,emis_nstep,emis_nlay,nrow,ncol), msg
+    emis_dict[ spc ] = emis_data
 
 emis_unc = convert_unc( emis_unc, emis_dict )
 emis_dict.update( emis_unc )
 
-# create icon data if needed
-if input_defn.inc_icon is True:
-    ifile = dt.replace_date( cmaq_config.icon_file, dt.start_date )
-    idict = ncf.get_variable( ifile, spc_list )
-    icon_dict = { k:v[0, :icon_nlay, :, :] for k,v in idict.items() }
-    
-    icon_unc = convert_unc( icon_unc, icon_dict )
-    icon_dict.update( icon_unc )
-    
+bcon_dict = { spc: np.zeros((bcon_nstep,bcon_regions)) for spc in spc_list }
+bcon_unc = convert_unc( bcon_unc, bcon_dict )
+bcon_dict.update( bcon_unc )    
 
 # build data into new netCDF file
 root_dim = { 'ROW': nrow, 'COL': ncol }
 root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) ),
               'EDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.end_date ) ),
-              'TSTEP': [ np.int32( tstep[0] ), np.int32( tstep[1] ) ],
+              #'TSTEP': [ np.int32( tstep[0] ), np.int32( tstep[1] ) ],
               'VAR-LIST': ''.join( [ '{:<16}'.format(s) for s in spc_list ] ) }
 
 root = ncf.create( path=save_path, attr=root_attr, dim=root_dim, is_root=True )
 
-emis_dim = { 'TSTEP': None, 'LAY': emis_nlay }
-emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }
-ncf.create( parent=root, name='emis', dim=emis_dim, var=emis_var, is_root=False )
+emis_dim = { 'TSTEP': None, 'LAY': emis_nlay, 'CAT': ncat }
+emis_attr = { 'TDAY': tday,
+              'CAT_NAME': ''.join( [ '{:<16}'.format(s) for s in cat_list ] ) }
+emis_var = { k: ('f4', ('CAT','TSTEP','LAY','ROW','COL'), v)
+             for k,v in emis_dict.items() }
+ncf.create( parent=root, name='emis', dim=emis_dim, attr=emis_attr, var=emis_var, is_root=False )
 
 if input_defn.inc_icon is True:
-    icon_dim = { 'LAY': icon_nlay }
-    icon_var = { k: ('f4', ('LAY','ROW','COL'), v) for k,v in icon_dict.items() }
+    icon_dim = { 'SPC': len(spc_list) }
+    icon_var = { 'ICON-SCALE': ('f4', ('SPC',), np.array(icon_scale) ),
+                 'ICON-UNC': ('f4', ('SPC',), np.array(icon_unc) ) }
     ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
+
+bcon_dim = { 'TSTEP': None, 'BCON': bcon_regions }
+bcon_attr = { 'TSEC': bcon_tsec,
+              'UP_LAY': np.int32(bcon_up_lay) }
+bcon_var = { k: ('f4', ('TSTEP','BCON',), v) for k,v in bcon_dict.items() }
+ncf.create( parent=root, name='bcon', dim=bcon_dim, attr=bcon_attr, var=bcon_var, is_root=False )
 
 root.close()
 print 'Prior created and save to:\n  {:}'.format( save_path )

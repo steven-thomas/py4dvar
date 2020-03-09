@@ -1,7 +1,7 @@
 
 
 # start date in int(YYYYMMDD) format
-start_date = 20070610
+start_date = 20180801
 
 # end date in int(YYYYMMDD) format
-end_date = 20070610
+end_date = 20180801
