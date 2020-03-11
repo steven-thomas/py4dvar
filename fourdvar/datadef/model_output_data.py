@@ -3,18 +3,18 @@ application: stores/references the output of the forward model.
 used to construct the simulated observations.
 """
 
+import cPickle as pickle
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
 from fourdvar.util.archive_handle import get_archive_path
-from fourdvar.util.file_handle import ensure_path
 
 class ModelOutputData( FourDVarData ):
     """application
     """
+    archive_name = 'model_output.pic'
+
     def __init__( self, data ):
         """
         application: create an instance of ModelOutputData

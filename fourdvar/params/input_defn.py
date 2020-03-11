@@ -1,11 +1,10 @@
 
 import os
 
-import _get_root
-from fourdvar.params.root_path_defn import root_path
+from fourdvar.params.root_path_defn import store_path
 
 #full path to the prior file used by user_driver.get_background
-prior_file = os.path.join( root_path, 'SHORT_LN/input/prior.ncf' )
+prior_file = os.path.join( store_path, 'input/prior.nc' )
 
 #full path to the obs file used by user_driver.get_observed
-obs_file = os.path.join( root_path, 'SHORT_LN/input/obs_oco2.pickle.zip' )
+obs_file = os.path.join( store_path, 'input/test_obs.pic.gz' )

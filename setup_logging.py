@@ -2,13 +2,16 @@
 import logging
 import os
 
-import _get_root
+from fourdvar.params.root_path_defn import root_path, store_path
 
 #levels in acending order: DEBUG, INFO, WARNING, ERROR, CRITICAL
 #to_screen_level = logging.INFO
 to_screen_level = logging.INFO
 #to_file_level = logging.DEBUG
 to_file_level = logging.DEBUG
+
+#send extra logging information to logfile
+verbose_logfile = False
 
 #format strings:
 to_screen_format = '%(name)s - %(levelname)s - %(message)s'
@@ -19,11 +22,9 @@ logfile_name = 'full_report.log'
 
 reset_logfile = True
 
-
-root_path = os.path.realpath( os.path.dirname( __file__ ) )
 project_name = os.path.split( root_path )[1]
 
-logfile = os.path.join( root_path, logfile_name )
+logfile = os.path.join( store_path, logfile_name )
 
 if reset_logfile is True and os.path.isfile( logfile ):
     os.remove( logfile )

@@ -10,7 +10,6 @@ imports listed are for easier naming and importing
 eg: "import transfunc.run_model" instead of "import transfunc.run_model.run_model"
 """
 
-import _get_root
 from fourdvar.transfunc.calc_forcing import calc_forcing
 from fourdvar.transfunc.condition import condition
 from fourdvar.transfunc.condition import condition_adjoint

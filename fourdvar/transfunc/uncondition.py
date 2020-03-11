@@ -6,7 +6,6 @@ eg: transform( unknown_instance, datadef.PhysicalData ) == uncondition( unknown_
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import UnknownData, PhysicalData
 
 def uncondition( unknown ):
@@ -17,4 +16,6 @@ def uncondition( unknown ):
     
     notes: this function must apply the prior error covariance
     """
-    return PhysicalData( np.array( unknown.value)* np.array( PhysicalData.unc))
+    value = unknown.get_vector()
+    weighted = value * np.array( PhysicalData.uncertainty )
+    return PhysicalData( weighted )

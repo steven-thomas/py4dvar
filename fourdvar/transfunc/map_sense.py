@@ -6,7 +6,6 @@ eg: transform( sensitivity_instance, datadef.PhysicalAdjointData ) == condition_
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import SensitivityData, PhysicalAdjointData
 
 def map_sense( sensitivity ):
@@ -15,4 +14,6 @@ def map_sense( sensitivity ):
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    return PhysicalAdjointData( sensitivity.value)
+    #only solving for 4 parameters: p1,p2,k1,k2
+    sens_p = sensitivity.p
+    return PhysicalAdjointData( sens_p[:4] )

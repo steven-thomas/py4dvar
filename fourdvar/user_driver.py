@@ -10,7 +10,6 @@ import os
 import cPickle as pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
-import _get_root
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
 import fourdvar.params.input_defn as input_defn
@@ -52,8 +51,7 @@ def get_background():
     global background
     
     if background is None:
-        background = d.PhysicalData( [-1., -1., -1.] )
-        d.PhysicalData.set_unc( np.array( [2.,2.,2.] ) )
+        background = d.PhysicalData.from_file( input_defn.prior_file )
     return background
 
 def get_observed():
@@ -65,8 +63,7 @@ def get_observed():
     global observed
     
     if observed is None:
-        observed = d.ObservationData([3.])
-        d.ObservationData.unc = np.array([1.]) # setting class variable directly
+        observed = d.ObservationData.from_file( input_defn.obs_file )
     return observed
 
 def callback_func( current_vector ):

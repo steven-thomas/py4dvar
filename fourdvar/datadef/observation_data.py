@@ -5,28 +5,34 @@ application: structure for the data from observations, both observed and simulat
 import os
 import numpy as np
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-import cPickle as pickle
 from fourdvar.util.archive_handle import get_archive_path
+import fourdvar.util.file_handle as fh
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
 class ObservationData( FourDVarData ):
     """application: vector of observations, observed or simulated"""
-    
-    archive_name = 'obsset.pickle.zip'
-    unc = None # place holder class variable
-    def __init__( self, data ):
+    # parameters
+    archive_name = 'obs_set.pic.gz'
+    length = None
+    uncertainty = None
+    weight_grid = None
+    misc_meta = None
+
+    def __init__( self, val_list ):
         """
         application: create an instance of ObservationData
         input: user-defined.
         output: None
         
         eg: new_obs =  datadef.ObservationData( [{...}, {...}, ...] )
+        notes: Input is a list of observed values (floats).
+               Metadata created by from_file() method.
         """
-        self.value = np.array( data )
+        assert len( val_list ) == self.length, 'invalid list of values'
+        self.value = np.array( val_list )
         return None
     
     def get_vector( self ):
@@ -36,22 +42,32 @@ class ObservationData( FourDVarData ):
         output: np.ndarray
         """
         return np.array(self.value)
-        
+
     def archive( self, name=None ):
         """
         extension: save a copy of data to archive/experiment directory
         input: string or None
         output: None
+
+        notes: this will overwrite any clash in namespace.
+        if input is None file will use default name.
+        output file is in acceptable format for from_file method.
         """
         save_path = get_archive_path()
         if name is None:
             name = self.archive_name
         save_path = os.path.join( save_path, name )
-        with open(save_path, 'wb') as picklefile:
-            pickle.dump(self.value, picklefile)
-            pickle.dump(self.unc, picklefile)
+
+        obs_list = []
+        for i in range( self.length ):
+            odict = { k:v for k,v in self.misc_meta[i].items() }
+            odict[ 'value' ] = self.value[i]
+            odict[ 'uncertainty' ] = self.uncertainty[i]
+            odict[ 'weight_grid' ] = self.weight_grid[i]
+            obs_list.append( odict )
+        fh.save_list( obs_list, save_path )
         return None
-        
+    
     @classmethod
     def error_weight( cls, res ):
         """
@@ -61,7 +77,8 @@ class ObservationData( FourDVarData ):
         
         eg: weighted_residual = datadef.ObservationData.weight( residual )
         """
-        return cls(res.value/ObservationData.unc)
+        weighted = res.value/((res.uncertainty)**2)
+        return cls( weighted )
     
     @classmethod
     def get_residual( cls, observed, simulated ):
@@ -72,10 +89,9 @@ class ObservationData( FourDVarData ):
         
         eg: residual = datadef.ObservationData.get_residual( observed_obs, simulated_obs )
         """
-        #eg:
-        res = [ s - o for o,s in zip( observed.value, simulated.value ) ]
-        return cls( res)
-                                                                                                                                                           
+        res = simulated.value - observed.value
+        return cls( res )
+    
     @classmethod
     def from_file( cls, filename ):
         """
@@ -85,8 +101,22 @@ class ObservationData( FourDVarData ):
         
         eg: observed = datadef.ObservationData.from_file( "saved_obs.data" )
         """
-        with open(filename, 'rb') as picklefile:
-            val = pickle.dump( picklefile )
-            unc = pickle.dump( picklefile )
-        cls.unc = unc
-        return cls(val)
+        obs_list = fh.load_list( filename )
+        unc = [ odict.pop('uncertainty') for odict in obs_list ]
+        val = [ odict.pop('value') for odict in obs_list ]
+        weight = [ odict.pop('weight_grid') for odict in obs_list ]
+
+        if cls.length is not None:
+            logger.warn( 'Overwriting ObservationData.length' )
+        cls.length = len( obs_list )
+        if cls.uncertainty is not None:
+            logger.warn( 'Overwriting ObservationData.uncertainty' )
+        cls.uncertainty = np.array( unc )
+        if cls.misc_meta is not None:
+            logger.warn( 'Overwriting ObservationData.misc_meta' )
+        cls.misc_meta = obs_list
+        if cls.weight_grid is not None:
+            logger.warn( 'Overwriting ObservationData.weight_grid' )
+        cls.weight_grid = weight
+
+        return cls( val )

@@ -5,11 +5,10 @@ framework: driver of 4dvar system
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
-import _get_root
 from fourdvar import datadef as d
 from fourdvar._transform import transform
 from fourdvar import user_driver
-# dictionary referring to current iteration
+
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 

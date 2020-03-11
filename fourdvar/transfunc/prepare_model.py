@@ -6,7 +6,6 @@ eg: transform( physical_instance, datadef.ModelInputData ) == prepare_model( phy
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import PhysicalData, ModelInputData
 
 def prepare_model( physical_data ):
@@ -14,5 +13,8 @@ def prepare_model( physical_data ):
     application: change resolution/formatting of physical data for input in forward model
     input: PhysicalData
     output: ModelInputData
-    """    
-    return ModelInputData.create_new( physical_data.value) # just pass it through
+    """
+    p_list = list(physical_data.params) + [ physical_data.s0 ]
+    p = np.array( p_list )
+    x = np.array( physical_data.x0 )
+    return ModelInputData.create_new( p, x )

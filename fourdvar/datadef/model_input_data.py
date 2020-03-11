@@ -8,25 +8,28 @@ Used to handle any resolution/format changes between the model and backgroud/pri
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
 from fourdvar.util.archive_handle import get_archive_path
-from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.file_handle as fh
+import fourdvar.params.model_data as md
+
 
 class ModelInputData( FourDVarData ):
     """application
     """
+    archive_name = 'model_input.pic.gz'
+    rainfall_driver = None
     
-    def __init__( self ):
+    def __init__( self, params, x0 ):
         """
         application: create an instance of ModelInputData
         input: user-defined
         output: None
         """
-        #Mostly handled by the 'create_new' classmethod
+        self.p = params
+        self.x = x0
         return None
-        
+    
     def archive( self, path=None ):
         """
         extension: save a copy of data to archive/experiment directory
@@ -39,19 +42,23 @@ class ModelInputData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        with open(save_path, 'wb') as picklefile:
-            pickle.dump(self.value, picklefile)
+        datalist = [ self.p, self.x, md.rd_filename ]
+        fh.save_list( datalist, save_path )
         return None
         
     @classmethod
-    def create_new( cls, data, **kwargs ):
+    def create_new( cls, params, x0 ):
         """
         application: create an instance of ModelInputData from template with modified values.
         input: user_defined
         output: ModelInputData
         """
-        cls.value = data
-        return cls()
+        assert len(params) == 5, 'invalid optic parameters'
+        assert len(x0) == 2, 'invalid optic initial conditions'
+        if cls.rainfall_driver is None:
+            rd_list = fh.load_list( md.rd_filename )
+            cls.rainfall_driver = np.array( rd_list )
+        return cls( params, x0 )
     
     #OPTIONAL
     @classmethod
@@ -62,10 +69,9 @@ class ModelInputData( FourDVarData ):
         output: ModelInputData
         """
         pathname = os.path.realpath( dirname )
-        with open( pathname, 'wb' ) as picklefile:
-            data = pickle.load( picklefile )
-        
-        return cls.create_new( data )
+        params,x0,rain_file = fh.load_list( pathname )
+        assert rain_file == md.rd_filename, 'wrong rainfall driver'
+        return cls.create_new( params, x0 )
     
     def cleanup( self ):
         """

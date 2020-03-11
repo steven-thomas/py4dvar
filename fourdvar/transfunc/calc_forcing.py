@@ -6,8 +6,8 @@ eg: transform( observation_instance, datadef.AdjointForcingData ) == calc_forcin
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
+import fourdvar.params.model_data as md
 
 def calc_forcing( w_residual ):
     """
@@ -15,5 +15,11 @@ def calc_forcing( w_residual ):
     input: ObservationData  (weighted residuals)
     output: AdjointForcingData
     """
+    force_arr = np.zeros((md.rd_sample+1,2))
+    for obs_i, w_dict in enumerate( w_residual.weight_grid ):
+        for coord, weight in w_dict.items():
+            t,x = coord
+            val = w_residual.value[obs_i] * weight
+            force_arr[t,x] += val
     
-    return AdjointForcingData.create_new( w_residual.value *np.array([1.,1.,1.]))
+    return AdjointForcingData.create_new( force_arr )

@@ -3,19 +3,18 @@ application: the adjoint forcing serves as input for the adjoint model run.
 expresses influence of weighted residual of observations on model adjoint run.
 """
 
+import cPickle as pickle
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
 from fourdvar.util.archive_handle import get_archive_path
 from fourdvar.util.file_handle import ensure_path
 
 class AdjointForcingData( FourDVarData ):
     """application
     """
-    
+    archive_name = 'adjoint_forcing.pic'
     def __init__( self, data ):
         """
         application: create an instance of AdjointForcingData
@@ -26,16 +25,18 @@ class AdjointForcingData( FourDVarData ):
         self.value = np.array( data)
         return None
     
-    def archive( self, dirname=None ):
+    def archive( self, path=None ):
         """
         extension: save copy of files to archive/experiment directory
         input: string or None
         output: None
         """
         save_path = get_archive_path()
-        if dirname is not None:
-            save_path = os.path.join( save_path, dirname )
-        ensure_path( save_path, inc_file=False )
+        if path is None:
+            path = self.archive_name
+        save_path = os.path.join( save_path, path )
+        if os.path.isfile( save_path ):
+            os.remove( save_path )
         with open(save_path, 'wb') as picklefile:
             pickle.dump(self.value, picklefile)
         return None
@@ -60,9 +61,10 @@ class AdjointForcingData( FourDVarData ):
         output: AdjointForcingData
         """
         pathname = os.path.realpath( dirname )
-        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
-        #load data from archive format
-        return cls()
+        with open( pathname, 'wb' ) as picklefile:
+            data = pickle.load( picklefile )
+        
+        return cls( data )
     
     def cleanup( self ):
         """

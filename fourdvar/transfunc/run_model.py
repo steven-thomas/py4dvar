@@ -6,9 +6,9 @@ eg: transform( model_input_instance, datadef.ModelOutputData ) == run_model( mod
 
 import numpy as np
 
-import _get_root
 from fourdvar.datadef import ModelInputData, ModelOutputData
-import fourdvar.util.model_data as model_data
+from fourdvar.util.optic_code import optic_model
+import fourdvar.params.model_data as md
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -20,5 +20,11 @@ def run_model( model_input ):
     output: ModelOutputData
     """
     # store model input for use by adjoint
-    model_data.value = model_input.value
-    return ModelOutputData(model_input.value**3)
+    md.op_cur_input = model_input
+    
+    rd_arr = model_input.rainfall_driver
+    p = model_input.p
+    x = model_input.x
+    dt = md.op_timestep
+    model_output_arr = optic_model( rd_arr, p, x, dt )
+    return ModelOutputData( model_output_arr )

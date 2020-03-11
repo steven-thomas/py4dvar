@@ -1,7 +1,6 @@
 
 import os
 
-import _get_root
 import fourdvar.util.file_handle as file_handle
 import fourdvar.params.archive_defn as defn
 

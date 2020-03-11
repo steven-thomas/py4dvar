@@ -5,7 +5,6 @@ are all unchanged from the previous run.
 """
 import os
 
-import _get_root
 import fourdvar.user_driver as user
 import fourdvar._main_driver as main
 import fourdvar.util.archive_handle as archive_handle

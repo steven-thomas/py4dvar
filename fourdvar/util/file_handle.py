@@ -9,7 +9,6 @@ import gzip
 import numpy as np
 import cPickle as pickle
 
-import _get_root
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )

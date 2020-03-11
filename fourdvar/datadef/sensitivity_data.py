@@ -6,16 +6,15 @@ should contain data with a similar shape to ModelInputData
 import numpy as np
 import os
 
-import _get_root
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
-
 from fourdvar.util.archive_handle import get_archive_path
-from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.file_handle as fh
 
 class SensitivityData( FourDVarData ):
     """application
-    """        
-    def __init__( self, sensitivity ):
+    """
+    archive_name = 'model_sensitivity.pic.gz'
+    def __init__( self, sens_p, sens_x0 ):
         """
         application: create an instance of SensitivityData
         input: user-defined
@@ -23,20 +22,24 @@ class SensitivityData( FourDVarData ):
         
         eg: new_sense =  datadef.SensitivityData( filelist )
         """
-        self.value = sensitivity
+        self.p = sens_p
+        self.x = sens_x0
         return None
     
-    def archive( self, dirname=None ):
+    def archive( self, path=None ):
         """
         extension: save copy of files to archive/experiment directory
         input: string or None
         output: None
         """
         save_path = get_archive_path()
-        if dirname is not None:
-            save_path = os.path.join( save_path, dirname )
-        ensure_path( save_path, inc_file=False )
-        # save data to save_path
+        if path is None:
+            path = self.archive_name
+        save_path = os.path.join( save_path, path )
+        if os.path.isfile( save_path ):
+            os.remove( save_path )
+        datalist = [ self.p, self.x ]
+        fh.save_list( datalist, save_path )
         return None
 
     #OPTIONAL
@@ -48,9 +51,8 @@ class SensitivityData( FourDVarData ):
         output: SensitivityData
         """
         pathname = os.path.realpath( dirname )
-        assert os.path.isdir( pathname ), 'dirname must be an existing directory'
-        # load data from archive format
-        return cls()
+        sens_p, sens_x0 = fh.load_list( pathname )
+        return cls( sens_p, sens_x0 )
     
     def cleanup( self ):
         """
