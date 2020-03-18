@@ -92,6 +92,11 @@ class ModelSpace( object ):
         ycent = float( self.gridmeta[ 'YCENT' ] )
         proj_str = '+proj=lcc +lat_1={0} +lat_2={1} +lat_0={3} +lon_0={2} +a={4} +b={4}'
         self.proj = pyproj.Proj( proj_str.format( alp, bet, gam, ycent, earth_rad ) )
+        #generate quick lat/lon limits for first pass obs filter
+        ll_lon,ll_lat = self.proj(xoffset,yoffset,inverse=True)
+        ur_lon,ur_lat = self.proj(xoffset+xspace.sum(),yoffset+yspace.sum(),inverse=True)
+        self.lat_bounds = ( min(ll_lat,ur_lat), max(ll_lat,ur_lat), )
+        self.lon_bounds = ( min(ll_lon,ur_lon), max(ll_lon,ur_lon), )
         return None
     
     def valid_coord( self, coord ):
