@@ -7,7 +7,7 @@ import os
 import sys
 import gzip
 import numpy as np
-import cPickle as pickle
+import pickle
 
 import setup_logging
 
