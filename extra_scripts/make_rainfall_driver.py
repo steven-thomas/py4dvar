@@ -16,7 +16,7 @@ def markov(nx, x0, sx, tx):
     xx = [x0]
     aa = np.exp(-1.0/tx)
     bb = np.sqrt(1.0-aa**2)
-    for i in xrange(nx):
+    for i in range(nx):
         xx.append(aa*xx[-1] + bb*sx*np.random.normal())
     rd = np.exp(np.array(xx[1:]))
     return rd

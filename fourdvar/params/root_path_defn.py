@@ -2,7 +2,7 @@
 import os
 
 #full path to the top level of the repository
-root_path = '/home/stevenpt/fourdvar/not_cmaq'
+root_path = '/home/563/spt563/fourdvar/simple_model'
 
 #full path to the branch-specific data
-store_path = '/home/stevenpt/data/p4d_not_cmaq_test'
+store_path = '/home/563/spt563/fourdvar/simple_model/DATA'

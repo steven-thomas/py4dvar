@@ -5,7 +5,6 @@ the two child classes share almost all attributes
 therefore most of their code is here.
 """
 
-#import cPickle as pickle
 import numpy as np
 import os
 
