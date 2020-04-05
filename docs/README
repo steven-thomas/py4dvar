@@ -1,1 +1,16 @@
-I need to write a README at some point.
+
+GETTING THIS TO WORK ON GADI:
+
+#load this module
+module load python3/3.7.4
+
+#first run / installation:
+#run command:
+ > pip install --user netCDF4
+
+#goto:
+<repo>/extra_scripts
+#and run scripts (in order)
+ > python3 make_rainfall_driver.py
+ > python3 make_prior.py
+ > python3 make_obs.py

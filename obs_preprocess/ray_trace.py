@@ -1,4 +1,6 @@
 
+from __future__ import print_function
+
 import numpy as np
 
 class Grid( object ):
@@ -127,5 +129,4 @@ if __name__ == "__main__":
     my_ray = Ray( start, end )
     weight = my_grid.get_weight( my_ray )
     for k,v in weight.items():
-        print '{:}: {:.3}'.format( k, v )
-
+        print( '{:}: {:.3}'.format( k, v ) )

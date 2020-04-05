@@ -3,7 +3,7 @@ application: stores/references the output of the forward model.
 used to construct the simulated observations.
 """
 
-import cPickle as pickle
+import pickle
 import numpy as np
 import os
 

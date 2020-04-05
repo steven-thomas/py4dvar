@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import numpy as np
 import os
-import cPickle as pickle
+import pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import fourdvar.datadef as d
@@ -30,8 +30,8 @@ def setup():
     archive.setup()
     bg = get_background()
     obs = get_observed()
-    bg.archive( 'prior.pickle' )
-    obs.archive( 'observed.pickle' )
+    bg.archive( 'prior.pic' )
+    obs.archive( 'observed.pic' )
     return None
 
 def cleanup():
@@ -104,7 +104,7 @@ def post_process( out_physical, metadata ):
     input: PhysicalData (solution), list (user-defined output of minim)
     output: None
     """
-    out_physical.archive( 'final_solution.pickle' )
-    with open( os.path.join( archive.get_archive_path(), 'ans_details.pickle' ), 'w' ) as f:
+    out_physical.archive( 'final_solution.pic' )
+    with open( os.path.join( archive.get_archive_path(), 'ans_details.pic' ), 'wb' ) as f:
         pickle.dump( metadata, f )
     return None

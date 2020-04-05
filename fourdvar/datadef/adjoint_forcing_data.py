@@ -3,7 +3,7 @@ application: the adjoint forcing serves as input for the adjoint model run.
 expresses influence of weighted residual of observations on model adjoint run.
 """
 
-import cPickle as pickle
+import pickle
 import numpy as np
 import os
 
