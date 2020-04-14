@@ -1,3 +1,4 @@
+#+OPTIONS: ^:{}
 #+Title: instructions for running simple model 
 * Notes on Document
 I am running this in a basic conda environment, hence the (base) > prompt.
