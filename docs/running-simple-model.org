@@ -1,0 +1,63 @@
+#+Title: instructions for running simple model 
+* Notes on Document
+I am running this in a basic conda environment, hence the (base) > prompt.
+* Requirements:
+- version of python3 with reasonable library support, probably via conda
+- git by some means or other
+
+* Getting Started
+First clone the repository as
+git clone https://your-username@github.com/steven-thomas/py4dvar simple_model
+cd simple_model
+git checkout simple_model
+You run it with
+python runscript.py
+It will fail with files not found.
+You need to edit the file
+fourdvar/params/root_path_defn.py to give your preferred locations
+You can see how I did it:
+#+BEGIN_SRC sh
+git diff
+diff --git a/fourdvar/params/root_path_defn.py b/fourdvar/params/root_path_defn.py
+index 7fb69df..708da91 100644
+--- a/fourdvar/params/root_path_defn.py
++++ b/fourdvar/params/root_path_defn.py
+@@ -2,7 +2,7 @@
+ import os
+ 
+ #full path to the top level of the repository
+-root_path = '/home/563/spt563/fourdvar/simple_model'
++root_path = '/home/unimelb.edu.au/prayner/work/ffdas/simple_model'
+ 
+ #full path to the branch-specific data
+-store_path = '/home/563/spt563/fourdvar/simple_model/DATA'
++store_path = root_path+'/../run_simple_model'
+#+END_SRC
+Your changes will look different of course since your directory
+structure is different. With the correct changes
+#+BEGIN_SRC sh
+python runscript.py
+#+END_SRC
+now produces a *different* file not found error, progress!
+It is missing the input data it needs, let's generate it.
+#+BEGIN_SRC sh
+(base) > cd extra_scripts/
+(base) > python make_rainfall_driver.py 
+(base) > python make_prior.py 
+(base) > python make_obs.py 
+#+END_SRC
+Now hopefully we've got it all
+#+BEGIN_SRC sh
+(base) > cd ..
+(base) > python runscript.py 
+simple_model.fourdvar._main_driver - INFO - cost = 3.3488568282005573e-28
+simple_model.fourdvar._main_driver - INFO - gradient norm = 2.263632263426201e-13
+simple_model.fourdvar._main_driver - INFO - cost = 3.3488568282005573e-28
+simple_model.fourdvar._main_driver - INFO - gradient norm = 2.263632263426201e-13
+#+END_SRC
+You will now see some extra files in the run_simple_model directory,
+most notably the archive directory.
+* What is in the archive directory
+TBD
+* Some Simple modifications
+TBD
