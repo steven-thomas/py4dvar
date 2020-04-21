@@ -1,0 +1,35 @@
+
+
+Setup py4dvar-cmaq:
+
+git clone https://your-username@github.com/steven-thomas/py4dvar CMAQ_nasimeh_build
+
+update files in params dir
+- root_path_defn.py : define project and storage directories
+- template_defn.py : make sure 'templates' and 'templates/record'
+- archive_defn.py : update 'experiment' whenever running a new test
+- date_defn.py : define start and end dates (inclusive)
+- input_defn.py : prior file and obs file (not yet created)
+- cmaq_config.py : parameters from cmaq runscript (including file names)
+
+*note: file paths have a date-tag system.
+py4dvar with replace <YYYY-MM-DD> with current date as needed.
+see util/date_handle.py for list of known date tags
+
+
+cmaq_preprocess
+- make_template (via submit)
+
+extra_scripts
+- make_diurnal
+
+cmaq_preprocess
+- make_prior
+
+obs_preprocess
+- check obs-src data
+- tropomi_co_preprocess (via submit)
+
+tests
+- test grad verbose (via submit)
+- pert_pert_test (via submit)
