@@ -1,0 +1,9 @@
+** A Word on Naming Conventions
+CamelCase is used where possible for multiword names. FFDAS needs to
+be able to import a module given the name of a class instantiated in
+it. (See [[file:sector/__init__.py][sector package initialisation]] for an example). We also want
+to follow the python convention of classes being capitalised but
+modules not.
+Thus, at least for sectors and observables   class MySector must be defined in module mySector.py.
+** Notes
+Uses python 3 formatting, should run under 2.7
