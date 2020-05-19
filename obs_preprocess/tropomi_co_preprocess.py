@@ -19,8 +19,9 @@ import fourdvar.params.input_defn as input_defn
 source_type = 'pattern'
 
 #source = os.path.join( store_path, 'obs_src' )
-#source = os.path.join( store_path, 'obs_src', 'S5P*.nc' 
-source = os.path.join( store_path, 'obs_src', 'tmp_test_obs.nc' )
+source = os.path.join( store_path, 'obs_src', 'S5P*.nc' )
+#source = os.path.join( store_path, 'obs_src', 'tmp_test_obs.nc' )
+#source = os.path.join( store_path, 'obs_src', 'tropomi_co_<YYYYMMDD>.tar' )
 
 output_file = input_defn.obs_file
 

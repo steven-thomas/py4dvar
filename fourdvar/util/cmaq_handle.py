@@ -118,7 +118,7 @@ def setup_run():
     env_dict['GRIDDESC'] = cfg.griddesc
     env_dict['GRID_NAME'] = cfg.gridname
     env_dict['DEPV_TRAC_1'] = cfg.depv_trac
-    env_dict['OCEAN_1'] = cfg.ocean_file
+    #env_dict['OCEAN_1'] = cfg.ocean_file
     env_dict['EMIS_1'] = cfg.emis_file
     env_dict['BNDY_GASC_1'] = cfg.bcon_file
     env_dict['BNDY_AERO_1'] = cfg.bcon_file

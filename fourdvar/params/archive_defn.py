@@ -9,7 +9,7 @@ from fourdvar.params.root_path_defn import store_path
 archive_path = os.path.join( store_path, 'archive' )
 
 #archive model output of each successful iteration
-iter_model_output = False
+iter_model_output = True
 
 #archive observation-lite of each successful iteration
 iter_obs_lite = True

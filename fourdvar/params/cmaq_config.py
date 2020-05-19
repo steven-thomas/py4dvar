@@ -20,8 +20,8 @@ nprow = 3
 ioapi_logging = False
 
 #max & min No. seconds per sync (science) step
-maxsync = 600
-minsync = 600
+maxsync = 300 #600
+minsync = 300 #600
 
 #use PT3DEMIS (option not supported)
 #DO NOT MODIFY
@@ -104,7 +104,7 @@ emis_path = os.path.join( cmaq_base, 'emis' )
 
 #horizontal grid definition file
 griddesc = os.path.join( grid_path, 'GRIDDESC' )
-gridname = 'W'
+gridname = 'F'
 
 #logfile
 fwd_logfile = os.path.join( output_path, 'fwd_CO_only.<YYYYMMDD>.log' )
@@ -134,9 +134,11 @@ bcon_file = os.path.join( bcon_path, 'bcon_CO_only.<YYYYMMDD>.nc' )
 emis_file = os.path.join( emis_path, 'emis_CO_only.<YYYYMMDD>.nc' )
 force_file = os.path.join( cmaq_base, 'force', 'ADJ_FORCE.<YYYYMMDD>.nc' )
 #required met data, use unknown
-ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.nc' )
-grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.20180801.nc' )
-grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.20180801.nc' )
+#ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.nc' )
+#grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.20180801.nc' )
+#grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.20180801.nc' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_<YYYYMMDD>.nc' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_<YYYYMMDD>.nc' )
 met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.nc' )
 met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.nc' )
 met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.nc' )
