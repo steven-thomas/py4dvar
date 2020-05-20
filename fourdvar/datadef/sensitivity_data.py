@@ -21,7 +21,7 @@ class SensitivityData( FourDVarData ):
     checklist = [ 'STIME', 'TSTEP', 'NCOLS', 'NROWS', 'NLAYS', 'NVARS',
                   'GDTYP', 'P_ALP', 'P_BET', 'P_GAM', 'XCENT', 'YCENT',
                   'XORIG', 'YORIG', 'XCELL', 'YCELL',
-                  'VGTYP', 'VGTOP', 'VGLVLS', 'VAR-LIST' ]
+                  'VGTYP', 'VGTOP', 'VAR-LIST' ]
         
     def __init__( self ):
         """
@@ -33,6 +33,7 @@ class SensitivityData( FourDVarData ):
         """        
         #check all required files exist and match attributes with templates
         self.file_data = get_filedict( self.__class__.__name__ )
+        vg_eps = 1.e-5
         for record in self.file_data.values():
             actual = record[ 'actual' ]
             template = record[ 'template' ]
@@ -40,6 +41,11 @@ class SensitivityData( FourDVarData ):
             assert os.path.isfile( actual ), msg
             msg = '{} is incompatible with template {}.'.format( actual, template )
             assert ncf.match_attr( actual, template, self.checklist ) is True, msg
+            #manually check VGLVLS for fuzzy match
+            vg_act = np.array( ncf.get_attr( actual, 'VGLVLS' ) )
+            vg_temp = np.array( ncf.get_attr( template, 'VGLVLS' ) )
+            msg = '{} and {} different VGLVLS.'.format( actual, template )
+            assert ( abs( vg_act-vg_temp ) < vg_eps ).all(), msg
         return None
     
     def get_variable( self, file_label, varname ):
