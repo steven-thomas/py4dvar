@@ -25,10 +25,16 @@ from grid import GridMap
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 #          CountryDesc
+def get_country_extent( shapeFile, inclusionList=None, exclusionList=None):
+    """ read country list from shapefile,
+       loop over all countries to find the min and max lat and lon,
+       If inclusionList is set then use it instead of all countries,
+       do not consider countries on exclusion list,
+       returns four elements, minlat,maxlat,minlon,maxlon"""
+    return None,None,None,None # fill in
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-class CountryDesc(object):
-
+class Country(object):
     def __init__(self, icode, name, iso3, region):
         self.icode = icode
         self.name = name.strip()
@@ -40,14 +46,6 @@ class CountryDesc(object):
         pstr += '['+self.iso3+','+str(self.icode)+']'
         return pstr
 
-
-    def _dump(self):
-        print '-'*10
-        for k,v in self.__dict__.iteritems():
-            print " {} ==> {}".format(k,v)
-        print '-'*10
-
-# %%%CountryDesc%%%
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

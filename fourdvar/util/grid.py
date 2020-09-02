@@ -12,4 +12,13 @@ class Grid(object):
 
     def __init__(self, minlat, maxlat, deltalat, minlon, maxlon, deltalon):
         """ contains all the dimensions of the grid for later use"""
+        self.deltaLat = deltalat
+        self.deltaLon = deltalon
+        # now define grid edges that are multiples of deltalat and deltalon
+        minLatEdge = (minlat // deltalat) * deltalat
+        # others accordingly
+        self.latEdges = np.arange( minLatEdge, maxLatEdge+0.01*deltalat, deltalat) # make sure we get in last edge
+        self.lats = 0.5*( self.latEdges[0:-1] + self.latEdges[1:])
+        # same for lons
+        
         return
