@@ -20,5 +20,5 @@ class Grid(object):
         self.latEdges = np.arange( minLatEdge, maxLatEdge+0.01*deltalat, deltalat) # make sure we get in last edge
         self.lats = 0.5*( self.latEdges[0:-1] + self.latEdges[1:])
         # same for lons
-        
+        # now define self.area with the same size as lats and the value the area of a gridbox, should import a constants module that contains radius of earth
         return
