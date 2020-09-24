@@ -26,6 +26,7 @@ import csv
 import numpy as np
 import numpy.ma as ma
 import netCDF4 as nc4
+import geopandas as gpd
 
 #-- local packages
 from pkglog import PkgLogger
@@ -43,6 +44,44 @@ def get_country_extent( shapeFile, inclusionList=None, exclusionList=None):
        If inclusionList is set then use it instead of all countries,
        do not consider countries on exclusion list,
        returns four elements, minlat,maxlat,minlon,maxlon"""
+	     # Reading shapefile
+    shp = gpd.read_file(r'C:\Users\mluqman\Documents\GitHub\py4dvar\fourdvar\data\vector\Countries_3.shp')
+    combined_geom = None
+    #if inclusionList has an arroy of country use it.
+    if inclusionList is not None:
+        for country in inclusionList:
+            country_filtered = shp[shp['ISO3'] == country] # filtering counties from shapefile
+            combined_geom = country_filtered if combined_geom is None else combined_geom.geometry.append(
+                country_filtered.geometry) # Joining the Geom of all includeList  country's geometry
+    #if excludeList has an arroy of country exclude them from countries.
+    elif exclusionList is not None:
+        for index, row in shp.iterrows(): #For  loop to get all the countries row by row
+            if row['ISO3'] not in exclusionList:  # If a country in not in excludelist
+                country_filtered = shp[shp['ISO3'] == row['ISO3']] # filtring country from shp one by one
+                combined_geom = country_filtered if combined_geom is None else combined_geom.geometry.append(
+                    country_filtered.geometry) # Combine all countries's geometries in one
+    # if includeList and excludeList both are None, Then Use all counties in Shapefile
+    else:
+        for index, row in shp.iterrows():
+            country_filtered = shp[shp['ISO3'] == row['ISO3']] # filtring country from shp one by one
+            combined_geom = country_filtered if combined_geom is None else combined_geom.geometry.append(
+                country_filtered.geometry) # Combine all countries's geometries in one
+
+    wkt = combined_geom.unary_union.envelope.wkt # getting WKT(well know text) of union of all geometries
+    print('WKT: ' + wkt) # Printing WKT to console
+    bounds = combined_geom.unary_union.bounds # getting bounds of union of all geometries.
+    # bounds[minx,miny,maxx,maxy]
+    minx = bounds[0]
+    miny = bounds[1]
+    maxx = bounds[2]
+    maxy = bounds[3]
+    #returns four elements, minlat, maxlat, minlon, maxlon
+    print('Bounds: ' + str(miny) + ',' + str(maxy) + ',' + str(minx) + ',' + str(maxx))
+    return miny,maxy,minx,maxx
+
+
+get_country_extent('Countries_3.shp')
+	   inclusionList = ['Pakistan','India']
     return None,None,None,None # fill in
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -15,6 +15,7 @@ import numpy as np
 import pickle
 
 import setup_logging
+from fourdvar.coutries_proto import get_country_extent
 
 logger = setup_logging.get_logger( __file__ )
 
@@ -97,3 +98,6 @@ def load_list( filepath ):
             except EOFError:
                 eof = True
     return obj_list
+
+
+get_country_extent('')
