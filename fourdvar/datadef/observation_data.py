@@ -33,7 +33,8 @@ class ObservationData( FourDVarData ):
     length = None
     uncertainty = None
     weight_grid = None
-    offset_term = None
+    alpha_scale = None
+    ref_profile = None
     misc_meta = None
     grid_attr = None
     ind_by_date = None
@@ -97,7 +98,8 @@ class ObservationData( FourDVarData ):
             odict = deepcopy( self.misc_meta[i] )
             odict[ 'value' ] = self.value[i]
             odict[ 'uncertainty' ] = self.uncertainty[i]
-            odict[ 'offset_term' ] = self.offset_term[i]
+            odict[ 'alpha_scale' ] = self.alpha_scale[i]
+            odict[ 'ref_profile' ] = self.ref_profile[i]
             odict[ 'lite_coord' ] = self.lite_coord[i]
             if domain['is_lite'] is False:
                 odict[ 'weight_grid' ] = self.weight_grid[i]
@@ -170,7 +172,8 @@ class ObservationData( FourDVarData ):
         obs_list = datalist[1:]
         unc = [ odict.pop('uncertainty') for odict in obs_list ]
         val = [ odict.pop('value') for odict in obs_list ]
-        off = [ odict.pop('offset_term') for odict in obs_list ]
+        alp = [ odict.pop('alpha_scale') for odict in obs_list ]
+        ref = [ odict.pop('ref_profile') for odict in obs_list ]
         if is_lite is False:
             weight = [ odict.pop('weight_grid') for odict in obs_list ]
         #create default 'lite_coord' if not available
@@ -189,9 +192,12 @@ class ObservationData( FourDVarData ):
         if cls.uncertainty is not None:
             logger.warn( 'Overwriting ObservationData.uncertainty' )
         cls.uncertainty = unc
-        if cls.offset_term is not None:
-            logger.warn( 'Overwriting ObservationData.offset_term' )
-        cls.offset_term = off
+        if cls.alpha_scale is not None:
+            logger.warn( 'Overwriting ObservationData.alpha_scale' )
+        cls.alpha_scale = alp
+        if cls.ref_profile is not None:
+            logger.warn( 'Overwriting ObservationData.ref_profile' )
+        cls.ref_profile = ref
         if cls.lite_coord is not None:
             logger.warn( 'Overwriting ObservationData.lite_coord' )
         cls.lite_coord = coord
@@ -249,7 +255,8 @@ class ObservationData( FourDVarData ):
         """
         assert cls.length is not None, 'length is not set'
         assert cls.uncertainty is not None, 'uncertainty is not set'
-        assert cls.offset_term is not None, 'offset_term is not set'
+        assert cls.alpha_scale is not None, 'alpha_scale is not set'
+        assert cls.ref_profile is not None, 'ref_profile is not set'
         assert cls.lite_coord is not None, 'lite_coord is not set'
         assert cls.misc_meta is not None, 'misc_meta is not set'
         assert cls.grid_attr is not None, 'grid_attr is not set'
