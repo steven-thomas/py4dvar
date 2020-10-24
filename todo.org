@@ -1,0 +1,21 @@
+#+TITLE: TODO list for FFDASV3
+
+* How to use this document
+We will add cascading headings for actions and more design detail as
+we think of it. Notes on actions taken or closed should be added with
+a date in the relevant section.
+
+* Infrastructure
+** ** Grids
+** Country Definitions and data
+
+* Sectors
+** Electricity sector
+** on-road sector
+** other sector
+* Observables
+** night lights
+** national emissions
+** NOx or CO
+
+** 
