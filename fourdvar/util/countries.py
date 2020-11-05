@@ -26,6 +26,7 @@ from grid import GridMap
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
+from iso2iea import iso2iea # large dictionary for mapping country codes
 #          CountryDesc
 def get_country_extent( shapeFile, inclusionList=None, exclusionList=None):
     """ read country list from shapefile,
