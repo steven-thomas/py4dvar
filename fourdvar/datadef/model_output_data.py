@@ -14,13 +14,16 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
+import fourdvar.util.fil_handle as fh
 
 class ModelOutputData( FourDVarData ):
     """application
     """
-    archive_name = 'model_output.pic'
+    archive_name = 'model_output.pic.gz'
+    coord = None
+    model_index = None
 
-    def __init__( self, data ):
+    def __init__( self, data, coord=None, model_input=None ):
         """
         application: create an instance of ModelOutputData
         input: user-defined
@@ -28,6 +31,17 @@ class ModelOutputData( FourDVarData ):
         
         eg: new_output =  datadef.ModelOutputData( filelist )
         """
+        if self.coord is None:
+            assert coord is not None, 'model_output.coord must be defined.'
+            self.coord = coord
+        elif coord is not None:
+            assert self.coord == coord, "Can't replace model_output coord"
+        if self.model_index is None:
+            assert model_index is not None, 'model_input.model_index must be defined.'
+            self.model_index = model_index
+        elif model_index is not None:
+            assert self.model_index == model_index, "Can't replace model input model_index."
+
         self.value = data
         return None
     
@@ -43,8 +57,15 @@ class ModelOutputData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        with open(save_path, 'wb') as picklefile:
-            pickle.dump(self.value, picklefile)
+
+        mod_list = []
+        for i in range( len( self.value ) ):
+            mdict = { 'value': self.value[i] }
+            mdict[ 'coord' ] = self.coord[i]
+            mdict[ 'model_index' ] = self.model_index[i]
+            mod_list.append( mdict )
+        
+        fh.save_list( mod_list, save_path )
         return None
     
     #OPTIONAL
@@ -56,10 +77,11 @@ class ModelOutputData( FourDVarData ):
         output: ModelOutputData
         """
         pathname = os.path.realpath( dirname )
-        with open( pathname, 'wb' ) as picklefile:
-            data = pickle.load( picklefile )
-        
-        return cls( data )
+        mod_list = fh.load_list( pathname )
+        val = [ np.array( md['value'] ) for md in mod_list ]
+        coord = [ md['coord'] for md in mod_list ]
+        model_index = [ md['model_index'] for md in mod_list ]
+        return cls( value, coord, model_index )
         
     def cleanup( self ):
         """

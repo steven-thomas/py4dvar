@@ -11,6 +11,8 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import PhysicalData, ModelInputData
+from fourdvar.util.emulate_input_struct import EmulationInput
+from fourdvar.param.scope_em_file_defn import em_input_struct_fname
 
 def prepare_model( physical_data ):
     """
@@ -18,7 +20,30 @@ def prepare_model( physical_data ):
     input: PhysicalData
     output: ModelInputData
     """
-    p_list = list(physical_data.params) + [ physical_data.s0 ]
-    p = np.array( p_list )
-    x = np.array( physical_data.x0 )
-    return ModelInputData.create_new( p, x )
+
+    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
+
+    coord = physical_data.coord
+    model_index = physical_data.model_index
+
+    m_in_list = []
+    for p_val, p_opt, mod_i in zip( physical_data.value, physical_data.option_input,
+                                    model_index ):
+        vi,oi,mi = 0,0,0
+        m_val = np.zeros( p_val.size + p_opt.size )
+        var_meta = em_struct[ mod_i ]
+        for var_dict in var_meta.var_param:
+            size = var_dict['size']
+            if var_dict['is_target']:
+                m_val[mi:mi+size] = p_val[vi:vi+size]
+                vi += size
+            else:
+                m_val[mi_mi+size] = p_opt[oi:oi+size]
+                oi += size
+            mi += size
+        assert m_val.size == mi, 'Missed model input'
+        assert p_val.size == vi, 'Missed target input'
+        assert p_opt.size == oi, 'Missed option input'
+        m_in_list.append( m_val )
+    
+    return ModelInputData.create_new( m_in_list, coord, model_index )

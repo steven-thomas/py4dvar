@@ -19,11 +19,10 @@ def calc_forcing( w_residual ):
     input: ObservationData  (weighted residuals)
     output: AdjointForcingData
     """
-    force_arr = np.zeros((md.rd_sample+1,2))
-    for obs_i, w_dict in enumerate( w_residual.weight_grid ):
+    force_arr = np.zeros(len(md.model_index))
+    for o_val, w_dict in zip( w_residual.value, w_residual.weight_grid ):
         for coord, weight in w_dict.items():
-            t,x = coord
-            val = w_residual.value[obs_i] * weight
-            force_arr[t,x] += val
+            i = md.coord_index[ coord ]
+            force_arr[i] += (o_val * weight)
     
     return AdjointForcingData.create_new( force_arr )

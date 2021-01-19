@@ -11,6 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import ModelOutputData, ObservationData
+import fourdvar.params.model_data as model_data
 
 def obs_operator( model_output ):
     """
@@ -18,12 +19,20 @@ def obs_operator( model_output ):
     input: ModelOutputData
     output: ObservationData
     """
-    model_arr = np.array( model_output.value )
+    if model_data.coord_index is None:
+        c_dict = {}
+        for i,c in enumerate( model_output.coord ):
+            c_dict[ c ] = i
+        model_data.coord_index = c_dict
+    else:
+        c_dict = model_data.coord_index
+    
     obs_val_arr = np.zeros( ObservationData.length )
     for obs_i, w_dict in enumerate( ObservationData.weight_grid ):
         for coord, weight in w_dict.items():
-            t,x = coord
-            val = ( weight * model_arr[t,x] )
+            m_ind = c_dict[ coord ]
+            m_val = model_output.value[ m_ind ]
+            val = ( weight * m_val )
             obs_val_arr[ obs_i ] += val
 
     return ObservationData( obs_val_arr )

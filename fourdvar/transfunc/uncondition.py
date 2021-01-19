@@ -20,6 +20,11 @@ def uncondition( unknown ):
     
     notes: this function must apply the prior error covariance
     """
-    value = unknown.get_vector()
-    weighted = value * np.array( PhysicalData.uncertainty )
+    full_vector = unknown.get_vector()
+    weighted = []
+    start = 0
+    for unc_arr in PhysicalData.uncertainty:
+        val = full_vector[start:start+size]
+        weighted.append( val*unc_arr )
+        start += size
     return PhysicalData( weighted )

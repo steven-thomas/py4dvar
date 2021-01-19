@@ -19,7 +19,10 @@ class SensitivityData( FourDVarData ):
     """application
     """
     archive_name = 'model_sensitivity.pic.gz'
-    def __init__( self, sens_p, sens_x0 ):
+    coord = None
+    model_index = None
+    
+    def __init__( self, data, coord=None, model_index=None ):
         """
         application: create an instance of SensitivityData
         input: user-defined
@@ -27,8 +30,11 @@ class SensitivityData( FourDVarData ):
         
         eg: new_sense =  datadef.SensitivityData( filelist )
         """
-        self.p = sens_p
-        self.x = sens_x0
+        self.value = data
+        if self.coord is None:
+            self.coord = coord
+        if self.model_index is None:
+            self.model_index = model_index
         return None
     
     def archive( self, path=None ):
@@ -43,7 +49,7 @@ class SensitivityData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        datalist = [ self.p, self.x ]
+        datalist = self.value
         fh.save_list( datalist, save_path )
         return None
 
@@ -56,8 +62,8 @@ class SensitivityData( FourDVarData ):
         output: SensitivityData
         """
         pathname = os.path.realpath( dirname )
-        sens_p, sens_x0 = fh.load_list( pathname )
-        return cls( sens_p, sens_x0 )
+        data = fh.load_list( pathname )
+        return cls( data )
     
     def cleanup( self ):
         """

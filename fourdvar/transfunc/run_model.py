@@ -9,10 +9,11 @@ See the License for the specific language governing permissions and limitations 
 """
 
 import numpy as np
+import gp_emulator
 
 from fourdvar.datadef import ModelInputData, ModelOutputData
-from fourdvar.util.optic_code import optic_model
-import fourdvar.params.model_data as md
+from fourdvar.params.scope_em_file_defn import emulation_fname
+import fourdvar.params.model_data as model_data
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -23,12 +24,16 @@ def run_model( model_input ):
     input: ModelInputData
     output: ModelOutputData
     """
-    # store model input for use by adjoint
-    md.op_cur_input = model_input
+    gp_list =[ gp_emulator.GaussianProcess( emulator_file=f ) for f in emulation_fname ]
     
-    rd_arr = model_input.rainfall_driver
-    p = model_input.p
-    x = model_input.x
-    dt = md.op_timestep
-    model_output_arr = optic_model( rd_arr, p, x, dt )
-    return ModelOutputData( model_output_arr )
+    output = []
+    gradient = []
+    for val, mod_i in zip( model_input.value, model_input.model_index ):
+        p_out = gp_list[mod_i].predict( val, do_deriv=True, do_unc=True )
+        output.append( p_out[0] )
+        #p_out[1] = uncertainty
+        gradient.append( p_out[2] )
+
+    model_data.gradient = gradient
+
+    return ModelOutputData( output, model_input.coord, model_input.model_index )

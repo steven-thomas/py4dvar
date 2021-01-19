@@ -8,18 +8,20 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import pickle
 import numpy as np
 import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-from fourdvar.util.file_handle import ensure_path
+import fourdvar.util.file_handle as fh
+import fourdvar.params.model_data as md
 
 class AdjointForcingData( FourDVarData ):
     """application
     """
-    archive_name = 'adjoint_forcing.pic'
+    archive_name = 'adjoint_forcing.pic.gz'
+    coord = None
+    model_index = None
     def __init__( self, data ):
         """
         application: create an instance of AdjointForcingData
@@ -27,7 +29,7 @@ class AdjointForcingData( FourDVarData ):
         output: None
         """
         # most work handled by the create_new classmethod.
-        self.value = np.array( data)
+        self.value = np.array( data )
         return None
     
     def archive( self, path=None ):
@@ -42,8 +44,15 @@ class AdjointForcingData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        with open(save_path, 'wb') as picklefile:
-            pickle.dump(self.value, picklefile)
+
+        adj_list = []
+        for i in range( len( self.value ) ):
+            adict = { 'value': self.value[i] }
+            adict[ 'coord' ] = self.coord[i]
+            adict[ 'model_index' ] = self.model_index[i]
+            adj_list.append( adict )
+        
+        fh.save_list( mod_list, save_path )
         return None
         
     @classmethod
@@ -55,7 +64,11 @@ class AdjointForcingData( FourDVarData ):
         
         eg: new_forcing =  datadef.AdjointForcingData( filelist )
         """
-        return cls( data)
+        if cls.coord is None:
+            cls.coord = [ c for c in md.coord_list ]
+        if cls.model_index is None:
+            cls.model_index = [ m for m in md.model_index ]
+        return cls( data )
 
     #OPTIONAL
     @classmethod
@@ -66,10 +79,14 @@ class AdjointForcingData( FourDVarData ):
         output: AdjointForcingData
         """
         pathname = os.path.realpath( dirname )
-        with open( pathname, 'wb' ) as picklefile:
-            data = pickle.load( picklefile )
+        adj_list = fh.load_list( pathname )
+        val = [ np.array( adj['value'] ) for adj in adj_list ]
+        coord = [ adj['coord'] for adj in adj_list ]
+        model_index = [ adj['model_index'] for adj in adj_list ]
         
-        return cls( data )
+        cls.coord = coord
+        cls.model_index = model_index
+        return cls( val )
     
     def cleanup( self ):
         """
@@ -83,4 +100,3 @@ class AdjointForcingData( FourDVarData ):
         """
         # function needed but can be left blank
         return None
-

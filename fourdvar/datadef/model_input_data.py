@@ -15,23 +15,21 @@ import os
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
 import fourdvar.util.file_handle as fh
-import fourdvar.params.model_data as md
-
 
 class ModelInputData( FourDVarData ):
     """application
     """
     archive_name = 'model_input.pic.gz'
-    rainfall_driver = None
+    coord = None
+    model_index = None
     
-    def __init__( self, params, x0 ):
+    def __init__( self, value ):
         """
         application: create an instance of ModelInputData
         input: user-defined
         output: None
         """
-        self.p = params
-        self.x = x0
+        self.value = value
         return None
     
     def archive( self, path=None ):
@@ -46,23 +44,36 @@ class ModelInputData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        datalist = [ self.p, self.x, md.rd_filename ]
-        fh.save_list( datalist, save_path )
+
+        mod_list = []
+        for i in range( len( self.value ) ):
+            mdict = { 'value': self.value[i] }
+            mdict[ 'coord' ] = self.coord[i]
+            mdict[ 'model_index' ] = self.model_index[i]
+            mod_list.append( mdict )
+        
+        fh.save_list( mod_list, save_path )
         return None
         
     @classmethod
-    def create_new( cls, params, x0 ):
+    def create_new( cls, value, coord=None, model_index=None ):
         """
         application: create an instance of ModelInputData from template with modified values.
         input: user_defined
         output: ModelInputData
         """
-        assert len(params) == 5, 'invalid optic parameters'
-        assert len(x0) == 2, 'invalid optic initial conditions'
-        if cls.rainfall_driver is None:
-            rd_list = fh.load_list( md.rd_filename )
-            cls.rainfall_driver = np.array( rd_list )
-        return cls( params, x0 )
+        if cls.coord is None:
+            assert coord is not None, 'model_input.coord must be defined.'
+            cls.coord = coord
+        elif coord is not None:
+            assert cls.coord == coord, "Can't replace model input coord"
+        if cls.model_index is None:
+            assert model_index is not None, 'model_input.model_index must be defined.'
+            cls.model_index = model_index
+        elif model_index is not None:
+            assert cls.model_index == model_index, "Can't replace model input model_index."
+        assert len(value) == len(cls.coord), 'input values invalid.'
+        return cls( value )
     
     #OPTIONAL
     @classmethod
@@ -73,9 +84,11 @@ class ModelInputData( FourDVarData ):
         output: ModelInputData
         """
         pathname = os.path.realpath( dirname )
-        params,x0,rain_file = fh.load_list( pathname )
-        assert rain_file == md.rd_filename, 'wrong rainfall driver'
-        return cls.create_new( params, x0 )
+        mod_list = fh.load_list( pathname )
+        val = [ np.array( md['value'] ) for md in mod_list ]
+        coord = [ md['coord'] for md in mod_list ]
+        model_index = [ md['model_index'] for md in mod_list ]
+        return cls.create_new( value, coord, model_index )
     
     def cleanup( self ):
         """

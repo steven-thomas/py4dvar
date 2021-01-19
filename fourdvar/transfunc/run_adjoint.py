@@ -11,7 +11,6 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import AdjointForcingData, SensitivityData
-from fourdvar.util.optic_code import optic_model_AD
 import fourdvar.params.model_data as md
 
 def run_adjoint( adjoint_forcing ):
@@ -20,11 +19,15 @@ def run_adjoint( adjoint_forcing ):
     input: AdjointForcingData
     output: SensitivityData
     """
-    rd_arr = md.op_cur_input.rainfall_driver
-    p = md.op_cur_input.p
-    x0 = md.op_cur_input.x
-    x_out_AD = adjoint_forcing.value
-    dt = md.op_timestep
+    # model_data content
+    #gradient = None
+    #coord_index = None
+    #coord_list = None
+    #model_index = None
+    
+    sens_list = []
+    for val, grad in zip( adjoint_forcing.value, md.gradient ):
+        sens = val * np.array( grad )
+        sens_list.append( sens )
 
-    sens_p, sens_x = optic_model_AD( rd_arr, p, x0, x_out_AD, dt )
-    return SensitivityData( sens_p, sens_x )
+    return SensitivityData( sens_list )

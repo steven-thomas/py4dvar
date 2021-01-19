@@ -42,8 +42,8 @@ def phys_to_unk( physical, is_adjoint ):
     
     notes: this function must apply the inverse prior error covariance
     """
-    value = physical.params
-    uncertainty = physical.uncertainty
+    value = np.concatenate( physical.value )
+    uncertainty = np.concatenate( physical.uncertainty )
     
     #weighting function changes if is_adjoint
     if is_adjoint is True:
@@ -51,5 +51,5 @@ def phys_to_unk( physical, is_adjoint ):
     else:
         weight = lambda val, sd: val / sd
     
-    unk_arr = weight( np.array( value ), np.array( uncertainty ) )
+    unk_arr = weight( value, uncertainty )
     return UnknownData( unk_arr )

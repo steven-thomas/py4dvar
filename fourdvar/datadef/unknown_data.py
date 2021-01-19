@@ -25,7 +25,7 @@ class UnknownData( FourDVarData ):
         
         eg: new_unknown =  datadef.UnknownData( [ val1, val2, ... ] )
         """
-        self.value = np.array( values, dtype='float64' )
+        self.value = np.array( values )
         return None
     
     def get_vector( self ):
