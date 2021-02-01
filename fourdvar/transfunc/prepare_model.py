@@ -12,7 +12,7 @@ import numpy as np
 
 from fourdvar.datadef import PhysicalData, ModelInputData
 from fourdvar.util.emulate_input_struct import EmulationInput
-from fourdvar.param.scope_em_file_defn import em_input_struct_fname
+from fourdvar.params.scope_em_file_defn import em_input_struct_fname
 
 def prepare_model( physical_data ):
     """
@@ -38,7 +38,7 @@ def prepare_model( physical_data ):
                 m_val[mi:mi+size] = p_val[vi:vi+size]
                 vi += size
             else:
-                m_val[mi_mi+size] = p_opt[oi:oi+size]
+                m_val[mi:mi+size] = p_opt[oi:oi+size]
                 oi += size
             mi += size
         assert m_val.size == mi, 'Missed model input'

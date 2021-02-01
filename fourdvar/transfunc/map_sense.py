@@ -10,7 +10,9 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 
-from fourdvar.datadef import SensitivityData, PhysicalAdjointData
+import fourdvar.datadef as d
+from fourdvar.util.emulate_input_struct import EmulationInput
+from fourdvar.params.scope_em_file_defn import em_input_struct_fname
 
 def map_sense( sensitivity ):
     """
@@ -18,6 +20,29 @@ def map_sense( sensitivity ):
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    #only solving for 4 parameters: p1,p2,k1,k2
-    sens_p = sensitivity.p
-    return PhysicalAdjointData( sens_p[:4] )
+    sensitivity.value #list of arrays
+
+    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
+
+    sensitivity.coord
+    sensitivity.model_index
+
+    target_vals = []
+    for s_val, mod_i, p_size in zip( sensitivity.value,
+                                     sensitivity.model_index,
+                                     d.PhysicalAdjointData.size ):
+        si,pi = 0,0
+        p_arr = np.zeros( p_size )
+        var_meta = em_struct[ mod_i ]
+        for var_dict in var_meta.var_param:
+            #only add target data to the PhysicalData input
+            size = var_dict['size']
+            if var_dict['is_target']:
+                p_arr[pi:pi+size] = s_val.flatten()[si:si+size]
+                pi += size
+            si += size
+        assert pi == p_size, 'Missed target data'
+        assert si == s_val.size, 'Missed source data'
+        target_vals.append( p_arr )
+    
+    return d.PhysicalAdjointData( target_vals )

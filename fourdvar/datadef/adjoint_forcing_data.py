@@ -30,6 +30,10 @@ class AdjointForcingData( FourDVarData ):
         """
         # most work handled by the create_new classmethod.
         self.value = np.array( data )
+        if self.coord is None:
+            self.coord = md.coord_list
+        if self.model_index is None:
+            self.model_index = md.model_index
         return None
     
     def archive( self, path=None ):
@@ -52,7 +56,7 @@ class AdjointForcingData( FourDVarData ):
             adict[ 'model_index' ] = self.model_index[i]
             adj_list.append( adict )
         
-        fh.save_list( mod_list, save_path )
+        fh.save_list( adj_list, save_path )
         return None
         
     @classmethod

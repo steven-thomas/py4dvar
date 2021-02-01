@@ -30,4 +30,4 @@ def run_adjoint( adjoint_forcing ):
         sens = val * np.array( grad )
         sens_list.append( sens )
 
-    return SensitivityData( sens_list )
+    return SensitivityData( sens_list, md.coord_list, md.model_index )

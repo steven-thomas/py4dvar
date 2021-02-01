@@ -24,6 +24,7 @@ def uncondition( unknown ):
     weighted = []
     start = 0
     for unc_arr in PhysicalData.uncertainty:
+        size = unc_arr.size
         val = full_vector[start:start+size]
         weighted.append( val*unc_arr )
         start += size

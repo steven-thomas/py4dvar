@@ -59,7 +59,7 @@ class PhysicalAbstractData( FourDVarData ):
             pdict[ 'uncertainty' ] = self.uncertainty[i]
             pdict[ 'option_input' ] = self.option_input[i]
             pdict[ 'coord' ] = self.coord[i]
-            pdict[ 'model_index' ] = self.model_input[i]
+            pdict[ 'model_index' ] = self.model_index[i]
             phys_list.append( pdict )
         
         fh.save_list( phys_list, save_path )
@@ -81,13 +81,15 @@ class PhysicalAbstractData( FourDVarData ):
         coord = [ pdict.pop('coord') for pdict in phys_list ]
         mod = [ pdict.pop('model_index') for pdict in phys_list ]
 
+        cls_par = cls.__mro__[1]
+        
         if cls.size is not None:
             logger.warn( 'Overwriting PhysicalData meta data' )
-        cls.size = [ v.size for v in val ]
-        cls.uncertainty = unc
-        cls.option_input = opt
-        cls.coord = coord
-        cls.model_index = mod
+        cls_par.size = [ v.size for v in val ]
+        cls_par.uncertainty = unc
+        cls_par.option_input = opt
+        cls_par.coord = coord
+        cls_par.model_index = mod
 
         #populate model data
         md.coord_list = [ c for c in coord ]

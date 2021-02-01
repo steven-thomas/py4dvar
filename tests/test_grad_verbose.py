@@ -136,7 +136,7 @@ print( 'calculate and record least squares cost gradient' )
 st = time.time()
 gradient += (test_vector - prior_vector)
 fname = os.path.join( archive_path, 'gradient.pickle' )
-with open( fname, 'w' ) as f:
+with open( fname, 'wb' ) as f:
     pickle.dump( gradient, f )
 print( 'success in {}s. gradient saved in {}'.format( int(time.time()-st), fname ) )
 

@@ -14,7 +14,7 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.fil_handle as fh
+import fourdvar.util.file_handle as fh
 
 class ModelOutputData( FourDVarData ):
     """application
@@ -23,7 +23,7 @@ class ModelOutputData( FourDVarData ):
     coord = None
     model_index = None
 
-    def __init__( self, data, coord=None, model_input=None ):
+    def __init__( self, data, coord=None, model_index=None ):
         """
         application: create an instance of ModelOutputData
         input: user-defined

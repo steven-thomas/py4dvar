@@ -29,7 +29,8 @@ def run_model( model_input ):
     output = []
     gradient = []
     for val, mod_i in zip( model_input.value, model_input.model_index ):
-        p_out = gp_list[mod_i].predict( val, do_deriv=True, do_unc=True )
+        em_in = np.array( val ).reshape((1,-1))
+        p_out = gp_list[mod_i].predict( em_in, do_deriv=True, do_unc=True )
         output.append( p_out[0] )
         #p_out[1] = uncertainty
         gradient.append( p_out[2] )
