@@ -17,7 +17,10 @@ from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import fourdvar.datadef as d
 import fourdvar.util.archive_handle as archive
+from fourdvar.util.emulate_input_struct import EmulationInput
+from fourdvar.params.scope_em_file_defn import em_input_struct_fname
 import fourdvar.params.input_defn as input_defn
+import fourdvar.params.model_data as md
 from fourdvar._transform import transform
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -37,6 +40,36 @@ def setup():
     obs = get_observed()
     bg.archive( 'prior.pic' )
     obs.archive( 'observed.pic' )
+
+    min_list = []
+    max_list = []
+    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
+    for i in range(len(bg.value)):
+        mod_i = bg.model_index[i]
+        p_size = bg.size[i]
+        pi = 0
+        min_arr = np.zeros( p_size )
+        max_arr = np.zeros( p_size )
+        var_meta = em_struct[mod_i]
+        for var_dict in var_meta.var_param:
+            if var_dict['is_target']:
+                size = var_dict['size']
+                min_val = np.array(var_dict['min_val']).reshape(-1)
+                max_val = np.array(var_dict['max_val']).reshape(-1)
+                min_arr[pi:pi+size] = min_val[:]
+                max_arr[pi:pi+size] = max_val[:]
+                pi += size
+        assert pi == min_arr.size
+        assert pi == max_arr.size
+        min_list.append( min_arr )
+        max_list.append( max_arr )
+
+    min_phys = d.PhysicalData( min_list )
+    max_phys = d.PhysicalData( max_list )
+    min_vals = transform( min_phys, d.UnknownData ).get_vector()
+    max_vals = transform( max_phys, d.UnknownData ).get_vector()
+    bounds = [ (min_v,max_v,) for min_v,max_v in zip(min_vals,max_vals) ]
+    md.minim_bounds = bounds
     return None
 
 def cleanup():
@@ -96,8 +129,13 @@ def minim( cost_func, grad_func, init_guess ):
     start_cost = cost_func( init_guess )
     start_grad = grad_func( init_guess )
     start_dict = {'start_cost': start_cost, 'start_grad': start_grad }
+
+    min_arr = np.array([ x[0] for x in md.minim_bounds ])
+    max_arr = np.array([ x[1] for x in md.minim_bounds ])
+    if (init_guess < min_arr).any() or (init_guess > max_arr).any():
+        logger.warn( 'Inital input outside of bounds.' )
     
-    answer = minimize( cost_func, init_guess,
+    answer = minimize( cost_func, init_guess, bounds=md.minim_bounds,
                        fprime=grad_func, callback=callback_func )
     #check answer warnflag, etc for success
     answer = list( answer ) + [ start_dict ]

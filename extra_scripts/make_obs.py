@@ -1,77 +1,24 @@
-"""
-make_obs.py
-
-Copyright 2016 University of Melbourne.
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and limitations under the License.
-"""
 
 import numpy as np
 
 import context
-import fourdvar.user_driver as user
-import fourdvar.datadef as d
-from fourdvar._transform import transform
 import fourdvar.util.file_handle as fh
-from fourdvar.params.input_defn import obs_file
+import fourdvar.params.input_defn as input_defn
 
-obs_unc_frac = 0.05
-obs_unc_floor = 0.01
+main_val = 1.0
+main_unc = 0.02
 
-#single point observations
-n_point_obs = 1000
+nobs = 1000
 
-#time averaged observations
-n_avg_obs = 100
-avg_obs_len = 10
+"""[{'value': 1.0, 'uncertainty': 0.1, 'weight_grid': {(0, 0): 1.0}}, {'value': 1.0, 'uncertainty': 0.1, 'weight_grid': {(0, 1): 1.0}}, {'value': 1.0, 'uncertainty': 0.1, 'weight_grid': {(1, 0): 1.0}}, {'value': 1.0, 'uncertainty': 0.1, 'weight_grid': {(1, 1): 1.0}}]"""
 
-#total carbon observations
-n_tot_obs = 500
+
+prior = fh.load_list( input_defn.prior_file )
+coord_list = [ x['coord'] for x in prior ]
 
 obs_list = []
-
-phys = user.get_background()
-mod_in = transform( phys, d.ModelInputData )
-mod_out = transform( mod_in, d.ModelOutputData )
-model_arr = mod_out.value
-nt,nx = model_arr.shape
-
-#create point observations
-point_t = np.random.randint( 0, nt, n_point_obs )
-point_x = np.random.randint( 0, nx, n_point_obs )
-for t,x in zip(point_t,point_x):
-    value = model_arr[t,x]
-    uncertainty = max( abs(value*obs_unc_frac), obs_unc_floor )
-    odict = { 'type': 'single point',
-              'value': value,
-              'uncertainty': uncertainty,
-              'weight_grid': {(t,x,): 1.} }
-    obs_list.append( odict )
-
-#create time averaged observations
-avg_t = np.random.randint( 0, nt-avg_obs_len, n_avg_obs )
-avg_x = np.random.randint( 0, nx, n_avg_obs )
-for t,x in zip(avg_t,avg_x):
-    value = model_arr[t:t+avg_obs_len,x].mean()
-    uncertainty = max( abs(value*obs_unc_frac), obs_unc_floor )
-    w = 1. / float(avg_obs_len)
-    odict = { 'type': 'time average',
-              'value': value,
-              'uncertainty': uncertainty,
-              'weight_grid': {(t+i,x,): w for i in range(avg_obs_len)} }
-    obs_list.append( odict )
-
-#create total carbon observations
-tot_t = np.random.randint( 0, nt, n_tot_obs )
-for t in tot_t:
-    value = model_arr[t,:].sum()
-    uncertainty = max( abs(value*obs_unc_frac), obs_unc_floor )
-    odict = { 'type': 'time average',
-              'value': value,
-              'uncertainty': uncertainty,
-              'weight_grid': {(t,i,): 1. for i in range(nx)} }
-    obs_list.append( odict )
-
-fh.save_list( obs_list, obs_file )
+for coord in coord_list:
+    for i in range(nobs):
+        obs = { 'value':main_val, 'uncertainty':main_unc, 'weight_grid':{coord:1.0} }
+        obs_list.append( obs )
+fh.save_list( obs_list, input_defn.obs_file )

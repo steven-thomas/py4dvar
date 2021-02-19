@@ -14,6 +14,7 @@ import pickle
 class EmulationInput( object ):
 
     var_param = []
+    setup_func = []
 
     def add_var( self, name, min_val, max_val, shape, is_target ):
         var_dict = {}
@@ -33,6 +34,10 @@ class EmulationInput( object ):
         self.var_param.append( var_dict )
         return None
 
+    def add_set( self, name, func, in_list ):
+        s_dict = { 'name': name, 'func': func, 'input': in_list }
+        self.setup_func.append( s_dict )
+
     def get_list( self, key ):
         src_list = [ v[key] for v in self.var_param ]
         size_list = [ v['size'] for v in self.var_param ]
@@ -49,6 +54,7 @@ class EmulationInput( object ):
     def save( self, fname ):
         with open( fname, 'wb' ) as f:
             pickle.dump( self.var_param, f )
+            pickle.dump( self.setup_func, f )
         return None
 
     @classmethod
@@ -56,4 +62,5 @@ class EmulationInput( object ):
         x = cls()
         with open(fname, 'rb') as f:
             x.var_param = pickle.load( f )
+            x.setup_func = pickle.load( f )
         return x

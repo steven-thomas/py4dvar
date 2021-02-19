@@ -20,12 +20,7 @@ def map_sense( sensitivity ):
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    sensitivity.value #list of arrays
-
     em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
-
-    sensitivity.coord
-    sensitivity.model_index
 
     target_vals = []
     for s_val, mod_i, p_size in zip( sensitivity.value,
