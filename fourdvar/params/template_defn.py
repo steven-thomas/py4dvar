@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import os
 from fourdvar.params.root_path_defn import store_path
 
-template_path = os.path.join( store_path, 'templates' )
+template_path = os.path.join( store_path, 'template' )
 
 #filepaths to template netCDF files used by CMAQ & fourdvar
 conc = os.path.join( template_path, 'conc_template.nc' )

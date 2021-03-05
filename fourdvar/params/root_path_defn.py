@@ -11,10 +11,10 @@ See the License for the specific language governing permissions and limitations 
 import os
 
 #full path to the top level of the repository
-root_path = '/home/stevenpt/fourdvar/py4dvar'
+root_path = '/home/563/spt563/fourdvar/p4d_cmaq_simple'
 
 #full path to the branch-specific data
-store_path = '/home/stevenpt/data/p4d_benchmark/emis_timestep_CO2only'
+store_path = '/home/563/spt563/fourdvar/p4d_cmaq_simple/DATA'
 
 #full path to the branch-shared data (eg: CMAQ met files)
-share_path = '/home/stevenpt/data/p4d_benchmark/shared'
+share_path = '/home/563/spt563/fourdvar/p4d_cmaq_simple/DATA'

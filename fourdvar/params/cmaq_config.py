@@ -18,11 +18,11 @@ from fourdvar.params.root_path_defn import store_path, share_path
 use_jobfs = False
 
 #No. of processors per column
-npcol = 1
-#npcol = 4
+#npcol = 1
+npcol = 4
 #No. of processors per row
-nprow = 1
-#nprow = 4
+#nprow = 1
+nprow = 4
 #note: if npcol and nprow are 1 then cmaq is run in serial mode
 
 #extra ioapi write logging
@@ -102,9 +102,9 @@ if use_jobfs is True:
         raise ValueError(msg)
 else:
     chk_path = os.path.join( cmaq_base, 'chkpnt' )
-mcip_path = os.path.join( share_path, 'mcip' )
-grid_path = os.path.join( share_path, 'grid' )
-jproc_path = os.path.join( share_path, 'jproc' )
+mcip_path = os.path.join( cmaq_base, 'mcip' )
+grid_path = os.path.join( cmaq_base, 'grid' )
+jproc_path = os.path.join( cmaq_base, 'jproc' )
 bcon_path = os.path.join( cmaq_base, 'bcon' )
 icon_path = os.path.join( cmaq_base, 'icon' )
 emis_path = os.path.join( cmaq_base, 'emis' )
@@ -130,6 +130,7 @@ hadv_chk = os.path.join( chk_path, 'HADV_CHK.<YYYYMMDD>.nc' )
 vadv_chk = os.path.join( chk_path, 'VADV_CHK.<YYYYMMDD>.nc' )
 emis_chk = os.path.join( chk_path, 'EMIS_CHK.<YYYYMMDD>.nc' )
 emist_chk = os.path.join( chk_path, 'EMIST_CHK.<YYYYMMDD>.nc' )
+cpl_chk = os.path.join( chk_path, 'CPL_CHK.<YYYYMMDD>.nc' )
 
 #xfirst file
 fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
@@ -142,8 +143,10 @@ emis_file = os.path.join( emis_path, 'emis_CO2only.<YYYYMMDD>.nc' )
 force_file = os.path.join( output_path, 'ADJ_FORCE.<YYYYMMDD>.nc' )
 #required met data, use unknown
 ocean_file = os.path.join( grid_path, 'surf_BENCHMARK.nc' )
-grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.nc' )
-grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.nc' )
+#grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D.nc' )
+#grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D.nc' )
+grid_dot_2d = os.path.join( grid_path, 'GRIDDOT2D_<YYYYMMDD>.nc' )
+grid_cro_2d = os.path.join( grid_path, 'GRIDCRO2D_<YYYYMMDD>.nc' )
 met_cro_2d = os.path.join( mcip_path, 'METCRO2D_<YYYYMMDD>.nc' )
 met_cro_3d = os.path.join( mcip_path, 'METCRO3D_<YYYYMMDD>.nc' )
 met_dot_3d = os.path.join( mcip_path, 'METDOT3D_<YYYYMMDD>.nc' )
@@ -188,7 +191,7 @@ cwd_logs = [ os.path.join( curdir, 'CTM_LOG_*' ),
 #list of all files above created by CMAQ (fwd & bwd) to be delete by wipeout()
 wipeout_fwd_list = [ fwd_logfile, floor_file, chem_chk, vdiff_chk, aero_chk,
                      ha_rhoj_chk, va_rhoj_chk, hadv_chk, vadv_chk, emis_chk,
-                     emist_chk, fwd_xfirst_file, conc_file, avg_conc_file,
+                     emist_chk, cpl_chk, fwd_xfirst_file, conc_file, avg_conc_file,
                      last_grid_file, drydep_file, wetdep1_file, wetdep2_file,
                      ssemis_file, aerovis_file, aerodiam_file, ipr1_file,
                      ipr2_file, ipr3_file, irr1_file, irr2_file, irr3_file,
@@ -197,8 +200,8 @@ wipeout_bwd_list = [ bwd_logfile, bwd_xfirst_file, conc_sense_file,
                      emis_sense_file, emis_scale_sense_file, bwd_stdout_log ]
 
 #drivers
-fwd_prog = os.path.join( share_path, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
-bwd_prog = os.path.join( share_path, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
+fwd_prog = os.path.join( cmaq_base, 'BLD_fwd_CO2only', 'ADJOINT_FWD' )
+bwd_prog = os.path.join( cmaq_base, 'BLD_bwd_CO2only', 'ADJOINT_BWD' )
 
 #shell used to call drivers
 cmd_shell = '/bin/csh'

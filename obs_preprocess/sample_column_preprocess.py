@@ -47,4 +47,4 @@ obs.interp_time = ointerp
 obs.model_process( model_grid )
 obslist = [ model_grid.get_domain(), obs.get_obsdict() ]
 fh.save_list( obslist, save_file )
-print 'observations saved to {:}'.format( save_file )
+print( 'observations saved to {:}'.format( save_file ) )

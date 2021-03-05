@@ -17,14 +17,14 @@ def convert_unc( unc, val ):
     convert the uncertainty object provided into a valid dictionary
     uncertainty object is either a string (filepath), dictionary (of spcs) or a scalar
     """
-    spc_list = val.keys()
-    arr_shape = val.values()[0].shape
+    spc_list = [ k for k in val.keys() ]
+    arr_shape = [ v for v in val.values() ][0].shape
     
     if str(unc) == unc:
         try:
             unc_var = ncf.get_variable( unc, spc_list )
         except:
-            print 'uncertainty file is not valid'
+            print( 'uncertainty file is not valid' )
             raise
         for spc in spc_list:
             arr = unc_var[ spc ]
@@ -42,7 +42,7 @@ def convert_unc( unc, val ):
         try:
             val = float( unc )
         except:
-            print 'invalid uncertainty parameter'
+            print( 'invalid uncertainty parameter' )
             raise
         unc_dict = { s:(np.zeros(arr_shape)+val) for s in spc_list }
 

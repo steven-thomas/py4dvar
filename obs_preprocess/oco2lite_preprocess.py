@@ -63,7 +63,7 @@ root_var = [ 'sounding_id',
 sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle' ]
 obslist = []
 for fname in filelist:
-    print 'read {}'.format( fname )
+    print( 'read {}'.format( fname ) )
     var_dict = {}
     with Dataset( fname, 'r' ) as f:
         size = f.dimensions[ 'sounding_id' ].size
@@ -71,7 +71,7 @@ for fname in filelist:
             var_dict[ var ] = f.variables[ var ][:]
         for var in sounding_var:
             var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
-    print 'found {} soundings'.format( size )
+    print( 'found {} soundings'.format( size ) )
     
     for i in range( size ):
         src_dict = { k: v[i] for k,v in var_dict.items() }
@@ -86,6 +86,6 @@ if len( obslist ) > 0:
     domain['is_lite'] = False
     datalist = [ domain ] + obslist
     fh.save_list( datalist, output_file )
-    print 'recorded observations to {}'.format( output_file )
+    print( 'recorded observations to {}'.format( output_file ) )
 else:
-    print 'No valid observations found, no output file generated.'
+    print( 'No valid observations found, no output file generated.' )

@@ -44,7 +44,7 @@ for weight in obs.weight_grid:
     date = datetime.datetime.strptime( str( d ), '%Y%m%d' ).date()
     obs_step.append( (date-dt.start_date).days*nstep + t )
 if skipped_obs > 0:
-    print '{:} non-surface obs were omitted.'
+    print( '{:} non-surface obs were omitted.' )
 
 omax = coverage.max()
 

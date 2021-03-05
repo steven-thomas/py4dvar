@@ -40,4 +40,4 @@ for coord, val, unc in zip( obs_coord, obs_val, obs_unc ):
     obs.model_process( model_grid )
     obslist.append( obs.get_obsdict() )
 fh.save_list( obslist, save_file )
-print 'observations saved to {:}'.format( save_file )
+print( 'observations saved to {:}'.format( save_file ) )

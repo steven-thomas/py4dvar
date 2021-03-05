@@ -12,7 +12,7 @@ import numpy as np
 import sys
 import os
 import shutil
-import cPickle as pickle
+import pickle
 from scipy.optimize import fmin_l_bfgs_b as minimize
 
 import fourdvar.datadef as d
@@ -43,8 +43,12 @@ def setup():
         logger.warn( 'input_defn.inc_icon is turned off.' )
     bg = get_background()
     obs = get_observed()
-    bg.archive( 'prior.ncf' )
-    obs.archive( 'observed.pickle' )
+    bg.archive( 'prior.nc' )
+    obs.archive( 'observed.pic' )
+    #mpi CMAQ will crash if any empty environment variables exist.
+    for evar_name, evar_val in os.environ.items():
+        if len( evar_val ) == 0:
+            _ = os.environ.pop(evar_name)
     return None
 
 def cleanup():

@@ -76,10 +76,10 @@ else:
         assert set( spc_list ).issubset( set(var_list) )
         spc_list = [ s for s in spc_list ]
     except AssertionError:
-        print 'spc_list must be a subset of cmaq spcs'
+        print( 'spc_list must be a subset of cmaq spcs' )
         raise
     except:
-        print 'invalid spc_list'
+        print( 'invalid spc_list' )
         raise
 
 # convert icon_nlay into valid number (only if we need icon)
@@ -93,7 +93,7 @@ if input_defn.inc_icon is True:
             assert int( icon_nlay ) == icon_nlay
             icon_nlay = int( icon_nlay )
         except:
-            print 'invalid icon_nlay'
+            print( 'invalid icon_nlay' )
             raise
         if icon_nlay > inlay:
             raise AssertionError('icon_nlay must be <= {:}'.format( inlay ))
@@ -108,7 +108,7 @@ else:
         assert int( emis_nlay ) == emis_nlay
         emis_nlay = int( emis_nlay )
     except:
-        print 'invalid emis_nlay'
+        print( 'invalid emis_nlay' )
         raise
     if emis_nlay > enlay:
         raise AssertionError('emis_nlay must be <= {:}'.format( enlay ))
@@ -130,7 +130,7 @@ else:
         assert int(hms) == hms
         hms = int(hms)
     except:
-        print 'invalid tstep'
+        print( 'invalid tstep' )
         raise
 
 day,hms = tstep
@@ -202,4 +202,4 @@ if input_defn.inc_icon is True:
     ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var, is_root=False )
 
 root.close()
-print 'Prior created and save to:\n  {:}'.format( save_path )
+print( 'Prior created and save to:\n  {:}'.format( save_path ) )

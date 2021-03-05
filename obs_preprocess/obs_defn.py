@@ -39,7 +39,7 @@ class ObsGeneral( object ):
                 raise AttributeError('obs No. {} is missing {}'.format(self.id,attr))
         for attr,val in self.default.items():
             if attr not in keys:
-                print '{:} not defined, setting to {:}'.format(attr,val)
+                print( '{:} not defined, setting to {:}'.format(attr,val) )
                 self.out_dict[ attr ] = val
         return deepcopy( self.out_dict )
     
