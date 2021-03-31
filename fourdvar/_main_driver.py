@@ -18,6 +18,8 @@ from fourdvar import user_driver
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
 
+use_qc = False
+
 def cost_func( vector ):
     """
     framework: cost function used by minimizer
@@ -46,7 +48,17 @@ def cost_func( vector ):
     
     res_vector = residual.get_vector()
     wres_vector = w_residual.get_vector()
-    ob_cost = 0.5 * np.sum( res_vector * wres_vector )
+    if use_qc is True:
+        #prior probability of gross error in obs
+        perr = np.array([ m.get('perr',0) for m in residual.misc_meta ])
+        #half width of gross error uniform dist.
+        dlen = np.array([ m.get('dlen',1) for m in residual.misc_meta ])
+        
+        gamma = np.sqrt(2*np.pi) * perr / (2.*dlen*(1-perr))
+        g_exp_vec = gamma + np.exp( -0.5*res_vector*wres_vector )
+        ob_cost = np.sum( -np.log(g_exp_vec/(gamma+1.)) )
+    else:
+        ob_cost = 0.5 * np.sum( res_vector * wres_vector )
     cost = bg_cost + ob_cost
     
     unknown.cleanup()
@@ -80,8 +92,26 @@ def gradient_func( vector ):
     
     residual = d.ObservationData.get_residual( observed, simulated )
     w_residual = d.ObservationData.error_weight( residual )
-    
-    adj_forcing = transform( w_residual, d.AdjointForcingData )
+
+    if use_qc is True:
+        res_vector = residual.get_vector()
+        wres_vector = w_residual.get_vector()
+        #prior probability of gross error in obs
+        perr = np.array([ m.get('perr',0) for m in residual.misc_meta ])
+        #half width of gross error uniform dist.
+        dlen = np.array([ m.get('dlen',1) for m in residual.misc_meta ])
+        
+        gamma = np.sqrt(2*np.pi) * perr / (2.*dlen*(1-perr))
+        g_exp_vec = gamma + np.exp( -0.5*res_vector*wres_vector )
+        qc_weight = 1-gamma/g_exp_vec
+
+        # down-weight obs rel. to probability of gross error.
+        obs_grad_vec = wres_vector * qc_weight
+        obs_grad = d.ObservationData( obs_grad_vec )
+    else:
+        obs_grad = w_residual
+        
+    adj_forcing = transform( obs_grad, d.AdjointForcingData )
     model_sensitivity = transform( adj_forcing, d.SensitivityData )
     physical_sensitivity = transform( model_sensitivity, d.PhysicalAdjointData )
     unknown_gradient = transform( physical_sensitivity, d.UnknownData )
