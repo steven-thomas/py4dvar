@@ -14,21 +14,10 @@ from fourdvar.params.root_path_defn import store_path
 
 em_path = os.path.join( store_path, 'emulate' )
 
-'''
-#list of input structs & emulation files, for each model index.
-em_input_struct_fname = [
-    os.path.join( em_path, 'quick_test_input.pic' )
-]
+#structure of vector scope / emulation input
+em_input_struct_fname = os.path.join( em_path, 'test_input_alex_v2.pic' )
 
-emulation_fname = [
-    os.path.join( em_path, 'quick_test_emulate.npz' )
-]
-'''
-#list of input structs & emulation files, for each model index.
-em_input_struct_fname = [
-    os.path.join( em_path, 'test_input.pic' )
-]
-
-emulation_fname = [
-    os.path.join( em_path, 'test_emulate.npz' )
+#list of emulation files, one for each model index
+emulation_fname_list = [
+    os.path.join( em_path, 'test_emulate_alex_v2.npz' )
 ]

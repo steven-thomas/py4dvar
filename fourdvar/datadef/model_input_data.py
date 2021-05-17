@@ -14,14 +14,13 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.file_handle as fh
+import fourdvar.util.netcdf_handle as ncf
 
 class ModelInputData( FourDVarData ):
     """application
     """
-    archive_name = 'model_input.pic.gz'
-    coord = None
-    model_index = None
+    archive_name = 'model_input.nc'
+    input_name = None
     
     def __init__( self, value ):
         """
@@ -45,34 +44,28 @@ class ModelInputData( FourDVarData ):
         if os.path.isfile( save_path ):
             os.remove( save_path )
 
-        mod_list = []
-        for i in range( len( self.value ) ):
-            mdict = { 'value': self.value[i] }
-            mdict[ 'coord' ] = self.coord[i]
-            mdict[ 'model_index' ] = self.model_index[i]
-            mod_list.append( mdict )
-        
-        fh.save_list( mod_list, save_path )
+        (ninput,nrow,ncol,) = self.value.shape
+        attr_dict = { 'INPUT_NAME': self.input_name }
+        dim_dict = { 'INPUT':ninput, 'ROW':nrow, 'COL':ncol }
+        var_dict = { 'INPUT': ('f4',('INPUT','ROW','COL',),self.value,) }
+
+        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
+                           var=var_dict, is_root=True )
+        root.close()
         return None
         
     @classmethod
-    def create_new( cls, value, coord=None, model_index=None ):
+    def create_new( cls, value, input_name=None ):
         """
         application: create an instance of ModelInputData from template with modified values.
         input: user_defined
         output: ModelInputData
         """
-        if cls.coord is None:
-            assert coord is not None, 'model_input.coord must be defined.'
-            cls.coord = coord
-        elif coord is not None:
-            assert cls.coord == coord, "Can't replace model input coord"
-        if cls.model_index is None:
-            assert model_index is not None, 'model_input.model_index must be defined.'
-            cls.model_index = model_index
-        elif model_index is not None:
-            assert cls.model_index == model_index, "Can't replace model input model_index."
-        assert len(value) == len(cls.coord), 'input values invalid.'
+        if cls.input_name is None:
+            assert input_name is not None, 'model_input.input_name must be defined.'
+            cls.input_name = input_name
+        elif input_name is not None:
+            assert cls.input_name == input_name, "Can't replace model input_name."
         return cls( value )
     
     #OPTIONAL
@@ -84,11 +77,9 @@ class ModelInputData( FourDVarData ):
         output: ModelInputData
         """
         pathname = os.path.realpath( dirname )
-        mod_list = fh.load_list( pathname )
-        val = [ np.array( md['value'] ) for md in mod_list ]
-        coord = [ md['coord'] for md in mod_list ]
-        model_index = [ md['model_index'] for md in mod_list ]
-        return cls.create_new( value, coord, model_index )
+        value = ncf.get_variable( pathname, 'INPUT' )
+        input_name = ncf.get_attr( pathname, 'INPUT_NAME' )
+        return cls.create_new( value, input_name )
     
     def cleanup( self ):
         """

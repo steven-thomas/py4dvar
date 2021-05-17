@@ -13,6 +13,8 @@ import numpy as np
 from fourdvar.datadef import PhysicalData, ModelInputData
 from fourdvar.util.emulate_input_struct import EmulationInput
 from fourdvar.params.scope_em_file_defn import em_input_struct_fname
+from fourdvar.params.model_data import param_fname
+import fourdvar.util.netcdf_handle as ncf
 
 def prepare_model( physical_data ):
     """
@@ -21,29 +23,26 @@ def prepare_model( physical_data ):
     output: ModelInputData
     """
 
-    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
+    em_struct = EmulationInput.load( em_input_struct_fname )
 
-    coord = physical_data.coord
-    model_index = physical_data.model_index
+    var_arr = physical_data.value
+    var_name = physical_data.var_name
+    par_arr = ncf.get_variable( param_fname, 'PARAM_MAP' )
+    par_name = ncf.get_attr( param_fname, 'PAR_LIST' )
 
-    m_in_list = []
-    for p_val, p_opt, mod_i in zip( physical_data.value, physical_data.option_input,
-                                    model_index ):
-        vi,oi,mi = 0,0,0
-        m_val = np.zeros( p_val.size + p_opt.size )
-        var_meta = em_struct[ mod_i ]
-        for var_dict in var_meta.var_param:
-            size = var_dict['size']
-            if var_dict['is_target']:
-                m_val[mi:mi+size] = p_val[vi:vi+size]
-                vi += size
-            else:
-                m_val[mi:mi+size] = p_opt[oi:oi+size]
-                oi += size
-            mi += size
-        assert m_val.size == mi, 'Missed model input'
-        assert p_val.size == vi, 'Missed target input'
-        assert p_opt.size == oi, 'Missed option input'
-        m_in_list.append( m_val )
+    full_input_name = em_struct.get_list('name')
+    input_name = [ name.split('.')[-1] for name in full_input_name ]
+
+    mod_in_arr = np.zeros( (len(input_name), var_arr.shape[1], var_arr.shape[2]) )
+    for i,name in enumerate( input_name ):
+        if name in var_name:
+            loc = var_name.index(name)
+            src_arr = var_arr[loc,:,:]
+        elif name in par_name:
+            loc = par_name.index(name)
+            src_arr = par_arr[loc,:,:]
+        else:
+            raise ValueError("can't find {:} in value or parameters.".format(name))
+        mod_in_arr[i,:,:] = src_arr[:,:]
     
-    return ModelInputData.create_new( m_in_list, coord, model_index )
+    return ModelInputData.create_new( mod_in_arr, input_name )

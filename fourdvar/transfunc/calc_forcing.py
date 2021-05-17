@@ -10,8 +10,8 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 
-from fourdvar.datadef import ObservationData, AdjointForcingData, ModelOutputData
-import fourdvar.params.model_data as md
+from fourdvar.datadef import AdjointForcingData
+import fourdvar.params.model_data as model_data
 
 def calc_forcing( w_residual ):
     """
@@ -19,10 +19,10 @@ def calc_forcing( w_residual ):
     input: ObservationData  (weighted residuals)
     output: AdjointForcingData
     """
-    force_arr = np.zeros(len(md.model_index))
+    force_arr = np.zeros( model_data.gradient.shape[1:] )
     for o_val, w_dict in zip( w_residual.value, w_residual.weight_grid ):
         for coord, weight in w_dict.items():
-            i = md.coord_index[ coord ]
-            force_arr[i] += (o_val * weight)
+            (row,col,) = coord
+            force_arr[row,col] += (o_val * weight)
     
     return AdjointForcingData.create_new( force_arr )

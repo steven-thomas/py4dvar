@@ -17,15 +17,19 @@ from pyscope.pySCOPE                       import run_scope
 import context
 from fourdvar.util.emulate_input_struct import EmulationInput
 
+use_archive = True
+vector_input_archive = []
+vector_output_archive = []
+
 #spectral weighting term for output flourescence
 spec_weight = np.zeros((211,))
 spec_weight[122] = 1.
 
 param_fname = os.path.join( mydir, 'base_config.cfg' )
-config = run_config.setup_config_input( param_fname )
-input_control = InputController( config=config.param, src_path=mydir )
-input_control.setup_new_run()
-param = run_config.process_config( config )
+#config = run_config.setup_config_input( param_fname )
+#input_control = InputController( config=config.param, src_path=mydir )
+#input_control.setup_new_run()
+#base_param = run_config.process_config( config )
 
 input_var = None
 def set_input( input_fname ):
@@ -48,9 +52,18 @@ def vector_scope( x ):
 
     if input_var is None:
         raise ValueError('Must set input_var first.')
+
+    if use_archive is True:
+        global vector_input_archive
+        global vector_output_archive
+        vector_input_archive.append( np.array(x[0]) )
     
     input_list = list(x[0])
-    new_run = copy.copy( param )
+    #new_run = copy.copy( base_param )
+    config = run_config.setup_config_input( param_fname )
+    input_control = InputController( config=config.param, src_path=mydir )
+    input_control.setup_new_run()
+    new_run = config.param
 
     #update attributes (or sub-attributes) of new param object
     for var_dict in input_var.var_param:
@@ -77,7 +90,19 @@ def vector_scope( x ):
             raise ValueError('unknown setup function {:}'.format(s_dict['func']))
         obj, name = get_leaf( new_run, s_dict['name'] )
         setattr( obj, name, new_val )
-                
-    output_control = run_scope( new_run )
+
+    config.param = new_run
+    param = run_config.process_config( config )
+
+    pname = [ full_name.split('.')[-1] for full_name in input_var.get_list('name') ]
+    print( pname )
+    print( list(x[0]) )
+
+    param = run_config.process_config( config )
+    output_control = run_scope( param )
     out_scale = (output_control.rad.LoF_ * spec_weight).sum()
+
+    if use_archive is True:
+        vector_output_archive.append( out_scale )
+    
     return out_scale

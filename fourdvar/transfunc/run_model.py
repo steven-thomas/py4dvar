@@ -12,8 +12,9 @@ import numpy as np
 import gp_emulator
 
 from fourdvar.datadef import ModelInputData, ModelOutputData
-from fourdvar.params.scope_em_file_defn import emulation_fname
+from fourdvar.params.scope_em_file_defn import emulation_fname_list
 import fourdvar.params.model_data as model_data
+import fourdvar.util.netcdf_handle as ncf
 import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
@@ -24,17 +25,21 @@ def run_model( model_input ):
     input: ModelInputData
     output: ModelOutputData
     """
-    gp_list =[ gp_emulator.GaussianProcess( emulator_file=f ) for f in emulation_fname ]
-    
-    output = []
-    gradient = []
-    for val, mod_i in zip( model_input.value, model_input.model_index ):
-        em_in = np.array( val ).reshape((1,-1))
-        p_out = gp_list[mod_i].predict( em_in, do_deriv=True, do_unc=True )
-        output.append( p_out[0][0] )
-        #p_out[1] = uncertainty
-        gradient.append( p_out[2] )
+    gp_list =[ gp_emulator.GaussianProcess( emulator_file=f )
+               for f in emulation_fname_list ]
+    model_map = ncf.get_variable( model_data.param_fname, 'MODEL_MAP' )
+    (ninput,nrow,ncol,) = model_input.value.shape
+    output = np.zeros( model_map.shape )
+    gradient = np.zeros( model_input.value.shape )
+    for r in range(nrow):
+        for c in range(ncol):
+            gp = gp_list[ model_map[r,c] ]
+            em_in = np.array( model_input.value[:,r,c] ).reshape((1,-1))
+            p_out = gp.predict( em_in, do_deriv=True, do_unc=True )
+            output[r,c] = p_out[0][0]
+            #uncertainty = p_out[1]
+            gradient[:,r,c] = p_out[2][:]
 
     model_data.gradient = gradient
 
-    return ModelOutputData( output, model_input.coord, model_input.model_index )
+    return ModelOutputData( output )

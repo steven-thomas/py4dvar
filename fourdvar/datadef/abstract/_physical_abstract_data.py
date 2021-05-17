@@ -13,8 +13,7 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.file_handle as fh
-import fourdvar.params.model_data as md
+import fourdvar.util.netcdf_handle as ncf
 
 import setup_logging
 logger = setup_logging.get_logger( __file__ )
@@ -22,13 +21,13 @@ logger = setup_logging.get_logger( __file__ )
 class PhysicalAbstractData( FourDVarData ):
     """Parent for PhysicalData and PhysicalAdjointData
     """
-    size = None
+    nvars = None
+    nrows = None
+    ncols = None
     uncertainty = None
-    option_input = None
-    coord = None
-    model_index = None
+    var_name = None
     
-    def __init__( self, val ):
+    def __init__( self, val_arr ):
         """
         application: create an instance of PhysicalData
         input: val = <list of value arrays>
@@ -36,8 +35,9 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: new_phys =  datadef.PhysicalData( filelist )
         """
-        assert [ v.size for v in val ] == self.size, 'invalid physical data values.'
-        self.value = val
+        msg = 'invalid physical data values.'
+        assert val_arr.shape == (self.nvars,self.nrows,self.ncols,), msg
+        self.value = val_arr
         return None
     
     def archive( self, path=None ):
@@ -53,16 +53,13 @@ class PhysicalAbstractData( FourDVarData ):
         if os.path.isfile( save_path ):
             os.remove( save_path )
 
-        phys_list = []
-        for i in range( len(self.size) ):
-            pdict = { 'value':self.value[i] }
-            pdict[ 'uncertainty' ] = self.uncertainty[i]
-            pdict[ 'option_input' ] = self.option_input[i]
-            pdict[ 'coord' ] = self.coord[i]
-            pdict[ 'model_index' ] = self.model_index[i]
-            phys_list.append( pdict )
-        
-        fh.save_list( phys_list, save_path )
+        attr_dict = { 'VAR_LIST': self.var_name }
+        dim_dict = { 'VAR':self.nvars, 'ROW':self.nrows, 'COL':self.ncols }
+        var_dict = { 'VALUE':('f4',('VAR','ROW','COL',),self.value),
+                     'UNCERTAINTY':('f4',('VAR','ROW','COL',),self.uncertainty) }
+        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict, var=var_dict,
+                           is_root=True )
+        root.close()
         return None
     
     @classmethod
@@ -74,28 +71,20 @@ class PhysicalAbstractData( FourDVarData ):
         
         eg: prior_phys = datadef.PhysicalData.from_file( "saved_prior.data" )
         """
-        phys_list = fh.load_list( filename )
-        val = [ np.array( pdict.pop('value') ) for pdict in phys_list ]
-        unc = [ np.array( pdict.pop('uncertainty') ) for pdict in phys_list ]
-        opt = [ np.array( pdict.pop('option_input') ) for pdict in phys_list ]
-        coord = [ pdict.pop('coord') for pdict in phys_list ]
-        mod = [ pdict.pop('model_index') for pdict in phys_list ]
+        val_arr = ncf.get_variable( filename, 'VALUE' )
+        unc_arr = ncf.get_variable( filename, 'UNCERTAINTY' )
+        var_list = ncf.get_attr( filename, 'VAR_LIST' )
 
-        cls_par = cls.__mro__[1]
-        
-        if cls.size is not None:
-            logger.warn( 'Overwriting PhysicalData meta data' )
-        cls_par.size = [ v.size for v in val ]
-        cls_par.uncertainty = unc
-        cls_par.option_input = opt
-        cls_par.coord = coord
-        cls_par.model_index = mod
+        (nvar,nrow,ncol,) = val_arr.shape
 
-        #populate model data
-        md.coord_list = [ c for c in coord ]
-        md.model_index = [ m for m in mod ]
+        cls_parent = cls.__mro__[1]
+        cls_parent.nvars = nvar
+        cls_parent.nrows = nrow
+        cls_parent.ncols = ncol
+        cls_parent.uncertainty = unc_arr
+        cls_parent.var_name = var_list
         
-        return cls( val )
+        return cls( val_arr )
     
     def cleanup( self ):
         """

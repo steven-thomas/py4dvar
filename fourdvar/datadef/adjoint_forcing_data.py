@@ -13,27 +13,20 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.file_handle as fh
-import fourdvar.params.model_data as md
+import fourdvar.util.netcdf_handle as ncf
 
 class AdjointForcingData( FourDVarData ):
     """application
     """
-    archive_name = 'adjoint_forcing.pic.gz'
-    coord = None
-    model_index = None
-    def __init__( self, data ):
+    archive_name = 'adjoint_forcing.nc'
+    def __init__( self, value ):
         """
         application: create an instance of AdjointForcingData
         input: None
         output: None
         """
         # most work handled by the create_new classmethod.
-        self.value = np.array( data )
-        if self.coord is None:
-            self.coord = md.coord_list
-        if self.model_index is None:
-            self.model_index = md.model_index
+        self.value = np.array( value )
         return None
     
     def archive( self, path=None ):
@@ -49,18 +42,15 @@ class AdjointForcingData( FourDVarData ):
         if os.path.isfile( save_path ):
             os.remove( save_path )
 
-        adj_list = []
-        for i in range( len( self.value ) ):
-            adict = { 'value': self.value[i] }
-            adict[ 'coord' ] = self.coord[i]
-            adict[ 'model_index' ] = self.model_index[i]
-            adj_list.append( adict )
-        
-        fh.save_list( adj_list, save_path )
+        (nrow,ncol,) = self.value.shape
+        dim_dict = {'ROW':nrow,'COL':ncol}
+        var_dict = { 'FORCING': ('f4', ('ROW','COL',), self.value[:]) }
+        root = ncf.create( save_path, dim=dim_dict, var=var_dict, is_root=True )
+        root.close()
         return None
         
     @classmethod
-    def create_new( cls, data, **kwargs ):
+    def create_new( cls, data ):
         """
         application: create an instance of AdjointForcingData from template with new data
         input: user-defined
@@ -68,10 +58,6 @@ class AdjointForcingData( FourDVarData ):
         
         eg: new_forcing =  datadef.AdjointForcingData( filelist )
         """
-        if cls.coord is None:
-            cls.coord = [ c for c in md.coord_list ]
-        if cls.model_index is None:
-            cls.model_index = [ m for m in md.model_index ]
         return cls( data )
 
     #OPTIONAL
@@ -83,14 +69,8 @@ class AdjointForcingData( FourDVarData ):
         output: AdjointForcingData
         """
         pathname = os.path.realpath( dirname )
-        adj_list = fh.load_list( pathname )
-        val = [ np.array( adj['value'] ) for adj in adj_list ]
-        coord = [ adj['coord'] for adj in adj_list ]
-        model_index = [ adj['model_index'] for adj in adj_list ]
-        
-        cls.coord = coord
-        cls.model_index = model_index
-        return cls( val )
+        value = ncf.get_variable( pathname, 'FORCING' )
+        return cls( value )
     
     def cleanup( self ):
         """

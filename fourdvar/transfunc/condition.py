@@ -11,7 +11,8 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import UnknownData
-from fourdvar.datadef.abstract._physical_abstract_data import PhysicalAbstractData
+from fourdvar.params.model_data import index_fname
+import fourdvar.util.netcdf_handle as ncf
 
 def condition_adjoint( physical_adjoint ):
     """
@@ -42,14 +43,27 @@ def phys_to_unk( physical, is_adjoint ):
     
     notes: this function must apply the inverse prior error covariance
     """
-    value = np.concatenate( physical.value )
-    uncertainty = np.concatenate( physical.uncertainty )
-    
+    val_arr = physical.value
+    unc_arr = physical.uncertainty
+    index_map = ncf.get_variable( index_fname, 'INDEX_MAP' )
+    nindex = ncf.get_attr( index_fname, 'NINDEX' )
+        
     #weighting function changes if is_adjoint
     if is_adjoint is True:
         weight = lambda val, sd: val * sd
     else:
         weight = lambda val, sd: val / sd
+    w_val_arr = weight( val_arr, unc_arr )
+
+    unknown_arr = np.zeros(nindex)
+    for i in range(nindex):
+        i_map = (index_map == i)
+        val_set = w_val_arr[i_map]
+        if is_adjoint is True:
+            unknown_arr[i] = val_set.sum()
+        else:
+            msg = 'Physical data diverged from index map.'
+            assert (val_set == val_set[0]).all(), msg
+            unknown_arr[i] = val_set[0]
     
-    unk_arr = weight( value, uncertainty )
-    return UnknownData( unk_arr )
+    return UnknownData( unknown_arr )

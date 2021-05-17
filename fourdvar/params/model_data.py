@@ -8,9 +8,15 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
+import os
+
+from fourdvar.params.root_path_defn import store_path
+
+#unknown index mapping file
+index_fname = os.path.join( store_path, 'domain', 'index_map.nc' )
+#scope model parameter mapping file
+param_fname = os.path.join( store_path, 'domain', 'param_map.nc' )
+
 gradient = None
-coord_index = None
-coord_list = None
-model_index = None
 
 minim_bounds = None

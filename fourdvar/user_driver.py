@@ -41,35 +41,26 @@ def setup():
     bg.archive( 'prior.pic' )
     obs.archive( 'observed.pic' )
 
-    min_list = []
-    max_list = []
-    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
-    for i in range(len(bg.value)):
-        mod_i = bg.model_index[i]
-        p_size = bg.size[i]
-        pi = 0
-        min_arr = np.zeros( p_size )
-        max_arr = np.zeros( p_size )
-        var_meta = em_struct[mod_i]
-        for var_dict in var_meta.var_param:
-            if var_dict['is_target']:
-                size = var_dict['size']
-                min_val = np.array(var_dict['min_val']).reshape(-1)
-                max_val = np.array(var_dict['max_val']).reshape(-1)
-                min_arr[pi:pi+size] = min_val[:]
-                max_arr[pi:pi+size] = max_val[:]
-                pi += size
-        assert pi == min_arr.size
-        assert pi == max_arr.size
-        min_list.append( min_arr )
-        max_list.append( max_arr )
+    em_struct = EmulationInput.load( em_input_struct_fname )
+    full_input_name = em_struct.get_list('name')
+    input_name = [ name.split('.')[-1] for name in full_input_name ]
+    min_list = em_struct.get_list('min_val')
+    max_list = em_struct.get_list('max_val')
 
-    min_phys = d.PhysicalData( min_list )
-    max_phys = d.PhysicalData( max_list )
+    min_arr = np.zeros( bg.value.shape )
+    max_arr = np.zeros( bg.value.shape )
+    for i,name in enumerate(bg.var_name):
+        loc = input_name.index(name)
+        min_arr[i,:,:] = min_list[loc]
+        max_arr[i,:,:] = max_list[loc]
+    
+    min_phys = d.PhysicalData( min_arr )
+    max_phys = d.PhysicalData( max_arr )
     min_vals = transform( min_phys, d.UnknownData ).get_vector()
     max_vals = transform( max_phys, d.UnknownData ).get_vector()
     bounds = [ (min_v,max_v,) for min_v,max_v in zip(min_vals,max_vals) ]
     md.minim_bounds = bounds
+    print( bounds )
     return None
 
 def cleanup():

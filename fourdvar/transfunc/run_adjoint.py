@@ -11,6 +11,8 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import AdjointForcingData, SensitivityData
+from fourdvar.util.emulate_input_struct import EmulationInput
+from fourdvar.params.scope_em_file_defn import em_input_struct_fname
 import fourdvar.params.model_data as md
 
 def run_adjoint( adjoint_forcing ):
@@ -19,15 +21,12 @@ def run_adjoint( adjoint_forcing ):
     input: AdjointForcingData
     output: SensitivityData
     """
-    # model_data content
-    #gradient = None
-    #coord_index = None
-    #coord_list = None
-    #model_index = None
-    
-    sens_list = []
-    for val, grad in zip( adjoint_forcing.value, md.gradient ):
-        sens = val * np.array( grad )
-        sens_list.append( sens )
+    em_struct = EmulationInput.load( em_input_struct_fname )
+    full_input_name = em_struct.get_list('name')
+    input_name = [ name.split('.')[-1] for name in full_input_name ]
 
-    return SensitivityData( sens_list, md.coord_list, md.model_index )
+    nrow,ncol = adjoint_forcing.value.shape
+    frc_arr = adjoint_forcing.value.reshape((1,nrow,ncol,))
+    sens = frc_arr * md.gradient
+
+    return SensitivityData( sens, input_name )

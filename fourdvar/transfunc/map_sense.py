@@ -20,24 +20,14 @@ def map_sense( sensitivity ):
     input: SensitivityData
     output: PhysicalAdjointData
     """
-    em_struct = [ EmulationInput.load( fname ) for fname in em_input_struct_fname ]
+    ninput,nrow,ncol = sensitivity.value.shape
+    input_name = sensitivity.input_name
+    nvar = d.PhysicalAdjointData.nvars
+    var_name = d.PhysicalAdjointData.var_name
 
-    target_vals = []
-    for s_val, mod_i, p_size in zip( sensitivity.value,
-                                     sensitivity.model_index,
-                                     d.PhysicalAdjointData.size ):
-        si,pi = 0,0
-        p_arr = np.zeros( p_size )
-        var_meta = em_struct[ mod_i ]
-        for var_dict in var_meta.var_param:
-            #only add target data to the PhysicalData input
-            size = var_dict['size']
-            if var_dict['is_target']:
-                p_arr[pi:pi+size] = s_val.flatten()[si:si+size]
-                pi += size
-            si += size
-        assert pi == p_size, 'Missed target data'
-        assert si == s_val.size, 'Missed source data'
-        target_vals.append( p_arr )
+    adj_arr = np.zeros((nvar,nrow,ncol,))
+    for i,name in enumerate(var_name):
+        loc = input_name.index(name)
+        adj_arr[i,:,:] = sensitivity.value[loc,:,:]
     
-    return d.PhysicalAdjointData( target_vals )
+    return d.PhysicalAdjointData( adj_arr )

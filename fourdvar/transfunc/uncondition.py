@@ -11,6 +11,8 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import UnknownData, PhysicalData
+from fourdvar.params.model_data import index_fname
+import fourdvar.util.netcdf_handle as ncf
 
 def uncondition( unknown ):
     """
@@ -21,11 +23,11 @@ def uncondition( unknown ):
     notes: this function must apply the prior error covariance
     """
     full_vector = unknown.get_vector()
-    weighted = []
-    start = 0
-    for unc_arr in PhysicalData.uncertainty:
-        size = unc_arr.size
-        val = full_vector[start:start+size]
-        weighted.append( val*unc_arr )
-        start += size
+    index_map = ncf.get_variable( index_fname, 'INDEX_MAP' )
+    val_arr = np.zeros(index_map.shape)
+    for i,val in enumerate(full_vector):
+        i_map = (index_map == i)
+        val_arr[i_map] = val
+
+    weighted = val_arr * PhysicalData.uncertainty
     return PhysicalData( weighted )

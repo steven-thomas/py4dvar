@@ -13,16 +13,15 @@ import os
 
 from fourdvar.datadef.abstract._fourdvar_data import FourDVarData
 from fourdvar.util.archive_handle import get_archive_path
-import fourdvar.util.file_handle as fh
+import fourdvar.util.netcdf_handle as ncf
 
 class SensitivityData( FourDVarData ):
     """application
     """
-    archive_name = 'model_sensitivity.pic.gz'
-    coord = None
-    model_index = None
+    archive_name = 'model_sensitivity.nc'
+    input_name = None
     
-    def __init__( self, data, coord=None, model_index=None ):
+    def __init__( self, value, input_name=None ):
         """
         application: create an instance of SensitivityData
         input: user-defined
@@ -30,11 +29,9 @@ class SensitivityData( FourDVarData ):
         
         eg: new_sense =  datadef.SensitivityData( filelist )
         """
-        self.value = data
-        if self.coord is None:
-            self.coord = coord
-        if self.model_index is None:
-            self.model_index = model_index
+        self.value = value
+        if self.input_name is None:
+            self.input_name = input_name
         return None
     
     def archive( self, path=None ):
@@ -49,8 +46,15 @@ class SensitivityData( FourDVarData ):
         save_path = os.path.join( save_path, path )
         if os.path.isfile( save_path ):
             os.remove( save_path )
-        datalist = self.value
-        fh.save_list( datalist, save_path )
+
+        (ninput,nrow,ncol,) = self.value.shape
+        attr_dict = { 'INPUT_NAME': self.input_name }
+        dim_dict = { 'INPUT':ninput, 'ROW':nrow, 'COL':ncol }
+        var_dict = { 'SENSITIVITY': ('f4',('INPUT','ROW','COL',),self.value,) }
+
+        root = ncf.create( path=save_path, attr=attr_dict, dim=dim_dict,
+                           var=var_dict, is_root=True )
+        root.close()
         return None
 
     #OPTIONAL
@@ -62,8 +66,9 @@ class SensitivityData( FourDVarData ):
         output: SensitivityData
         """
         pathname = os.path.realpath( dirname )
-        data = fh.load_list( pathname )
-        return cls( data )
+        value = ncf.get_variable( pathname, 'SENSITIVITY' )
+        input_name = ncf.get_attr( pathname, 'INPUT_NAME' )
+        return cls.create_new( value, input_name )
     
     def cleanup( self ):
         """
