@@ -19,14 +19,15 @@ import setup_logging
 
 logger = setup_logging.get_logger( __file__ )
 
+gp_list =[ gp_emulator.GaussianProcess( emulator_file=f )
+           for f in emulation_fname_list ]
+
 def run_model( model_input ):
     """
     application: run the forward model, save result to ModelOutputData
     input: ModelInputData
     output: ModelOutputData
     """
-    gp_list =[ gp_emulator.GaussianProcess( emulator_file=f )
-               for f in emulation_fname_list ]
     model_map = ncf.get_variable( model_data.param_fname, 'MODEL_MAP' )
     (ninput,nrow,ncol,) = model_input.value.shape
     output = np.zeros( model_map.shape )

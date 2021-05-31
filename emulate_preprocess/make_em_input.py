@@ -27,6 +27,7 @@ x.add_var( 'canopy.LIDFb', -1, 1, None, False )
 x.add_var( 'leafbio.Cab', 1, 100, None, True )
 # [ug cm-2] Carotenoid content, usually 25% of Chlorophyll
 #x.add_var( 'leafbio.Cca', 1, 30, None, True ) #TODO set to 25% Cab
+x.add_set( 'leafbio.Cca', 'prod', [0.25,'leafbio.Cab'] )
 # [umol m-2 s-1] maximum carboxylation capacity (at optimum temperature)
 x.add_var( 'leafbio.Vcmo', 1, 250, None, True )
 

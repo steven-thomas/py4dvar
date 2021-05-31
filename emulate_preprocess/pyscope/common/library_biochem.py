@@ -42,7 +42,6 @@ def biochemical(biochem_in):
         - Photosynthesis of a leaf or needle (umol m-2 s-1)
         - Fluorescence of a leaf or needle (fraction of fluor. in the dark)
     """
-
     # Calculates net assimilation rate A, fluorescence F using biochemical
     # model
 

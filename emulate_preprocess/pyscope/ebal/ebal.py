@@ -186,6 +186,9 @@ class Ebal():
 
             # Net radiation of the components
 
+            #SPT dbgping
+            #print( 'SPT shaded/sunlit max temp:', self.Tch.max(), self.Tcu.max() )
+            
             # Thermal radiative transfer model for vegetation emission (with
             # Stefan-Boltzman's equation)
             T_struct = [self.Tcu, self.Tch, self.Ts[1], self.Ts[0]]

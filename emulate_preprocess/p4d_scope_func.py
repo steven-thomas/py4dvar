@@ -82,10 +82,15 @@ def vector_scope( x ):
     for s_dict in input_var.setup_func:
         in_val = []
         for in_name in s_dict['input']:
-            obj, name = get_leaf( new_run, in_name )
-            in_val.append( getattr( obj, name ) )
+            if type( in_name ) == str:
+                obj, name = get_leaf( new_run, in_name )
+                in_val.append( getattr( obj, name ) )
+            else:
+                in_val.append( in_name )
         if s_dict['func'] == 'sum':
             new_val = sum( in_val )
+        elif s_dict['func'] == 'prod':
+            new_val = np.prod( in_val )
         else:
             raise ValueError('unknown setup function {:}'.format(s_dict['func']))
         obj, name = get_leaf( new_run, s_dict['name'] )
@@ -94,9 +99,8 @@ def vector_scope( x ):
     config.param = new_run
     param = run_config.process_config( config )
 
-    pname = [ full_name.split('.')[-1] for full_name in input_var.get_list('name') ]
-    print( pname )
-    print( list(x[0]) )
+    #pname = [ full_name.split('.')[-1] for full_name
+    #          in input_var.get_list('name') ]
 
     param = run_config.process_config( config )
     output_control = run_scope( param )

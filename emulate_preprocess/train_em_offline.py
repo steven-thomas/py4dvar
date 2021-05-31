@@ -8,7 +8,7 @@ import emulate_preprocess.training_defn as training_defn
 import fourdvar.params.scope_em_file_defn as em_file_defn
 
 em_index = training_defn.em_training_index
-em_fname = em_file_defn.emulate_fname_list[em_index]
+em_fname = em_file_defn.emulation_fname_list[em_index]
 
 with open(training_defn.train_input_filtered_fname, 'rb') as f:
     input_arr = np.array( pickle.load(f) )

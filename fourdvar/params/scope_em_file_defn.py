@@ -19,5 +19,6 @@ em_input_struct_fname = os.path.join( em_path, 'test_input_alex_v2.pic' )
 
 #list of emulation files, one for each model index
 emulation_fname_list = [
-    os.path.join( em_path, 'test_emulate_alex_v2.npz' )
+    os.path.join( em_path, 'test_emulate_alex_v2.npz' ),
+    os.path.join( em_path, 'em_with_cca_func.npz' )
 ]
