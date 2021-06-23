@@ -22,3 +22,9 @@ emulation_fname_list = [
     os.path.join( em_path, 'test_emulate_alex_v2.npz' ),
     os.path.join( em_path, 'em_with_cca_func.npz' )
 ]
+
+#list of scope setup files, one for each model index.
+scope_setup_fname_list = [
+    os.path.join( em_path, 'setup_v1_c3.pic' ),
+    os.path.join( em_path, 'setup_v1_c4.pic' )
+]

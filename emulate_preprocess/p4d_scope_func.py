@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import copy
+import pickle
 
 #special change, add yourself to sys.path to call scope.
 mydir = os.path.dirname( os.path.realpath( __file__ ) )
@@ -15,7 +16,9 @@ from pyscope.io_wrapper.input_controller   import InputController
 from pyscope.pySCOPE                       import run_scope
 
 import context
+from emulate_preprocess.training_defn import em_training_index
 from fourdvar.util.emulate_input_struct import EmulationInput
+from fourdvar.params.scope_em_file_defn import scope_setup_fname_list
 
 use_archive = True
 vector_input_archive = []
@@ -26,10 +29,8 @@ spec_weight = np.zeros((211,))
 spec_weight[122] = 1.
 
 param_fname = os.path.join( mydir, 'base_config.cfg' )
-#config = run_config.setup_config_input( param_fname )
-#input_control = InputController( config=config.param, src_path=mydir )
-#input_control.setup_new_run()
-#base_param = run_config.process_config( config )
+
+setup_index = em_training_index
 
 input_var = None
 def set_input( input_fname ):
@@ -65,7 +66,15 @@ def vector_scope( x ):
     input_control.setup_new_run()
     new_run = config.param
 
-    #update attributes (or sub-attributes) of new param object
+    #update attributes of param object with specific emulation setup values.
+    setup_fname = scope_setup_fname_list[setup_index]
+    with open( setup_fname, 'rb' ) as f:
+        setup_dict = pickle.load(f)
+    for full_name, value in setup_dict.items():
+        obj, name = get_leaf( new_run, full_name )
+        setattr( obj, name, value )
+
+    #update attributes of new param object with input values
     for var_dict in input_var.var_param:
         obj, name = get_leaf( new_run, var_dict['name'] )
         vlen = var_dict['size']
