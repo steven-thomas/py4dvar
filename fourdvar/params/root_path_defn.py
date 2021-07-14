@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import os
 
 #full path to the top level of the repository
-root_path = '/home/unimelb.edu.au/stevenpt/work/scope/py4dvar'
+root_path = '/home/stevenpt/fourdvar/SCOPE_simple'
 
 #full path to the branch-specific data
-store_path = '/home/unimelb.edu.au/stevenpt/work/scope/py4dvar/DATA'
+store_path = '/home/stevenpt/fourdvar/SCOPE_simple/DATA'

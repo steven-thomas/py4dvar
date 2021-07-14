@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import copy
+import shutil
 import pickle
 
 #special change, add yourself to sys.path to call scope.
@@ -49,7 +50,21 @@ def get_leaf( obj, full_name ):
             new_obj = getattr( new_obj, name )
     return new_obj, leaf_name
 
-def vector_scope( x ):
+def move_config( config, dname ):
+    orig_dir = config.param.paths.input
+    if orig_dir.endswith('/'):
+        orig_dir = orig_dir[:-1]
+    new_dir = os.path.join( orig_dir, dname )
+    if not os.path.isdir( new_dir ):
+        os.mkdir( new_dir )
+    config.param.paths.input = new_dir
+    config.param.atmo.atmofile = config.param.atmo.atmofile.replace(orig_dir,new_dir)
+    config.param.directional.anglesfile = config.param.directional.anglesfile.replace(orig_dir,new_dir)
+    config.param.optipar.optifile = config.param.optipar.optifile.replace(orig_dir,new_dir)
+    config.param.soil.soil_file = config.param.soil.soil_file.replace(orig_dir,new_dir)
+    return config
+
+def vector_scope( x, dname=None ):
 
     if input_var is None:
         raise ValueError('Must set input_var first.')
@@ -62,6 +77,8 @@ def vector_scope( x ):
     input_list = list(x[0])
     #new_run = copy.copy( base_param )
     config = run_config.setup_config_input( param_fname )
+    if dname is not None:
+        config = move_config( config, dname )
     input_control = InputController( config=config.param, src_path=mydir )
     input_control.setup_new_run()
     new_run = config.param
@@ -108,14 +125,12 @@ def vector_scope( x ):
     config.param = new_run
     param = run_config.process_config( config )
 
-    #pname = [ full_name.split('.')[-1] for full_name
-    #          in input_var.get_list('name') ]
-
     param = run_config.process_config( config )
     output_control = run_scope( param )
     out_scale = (output_control.rad.LoF_ * spec_weight).sum()
 
     if use_archive is True:
         vector_output_archive.append( out_scale )
-    
+    if dname is not None:
+        shutil.rmtree( config.param.paths.input )
     return out_scale

@@ -49,61 +49,77 @@ class InputController():
         
         return None
 
+    def _input_copy( self, src_fname, dst_fname ):
+        """copy file to tmp input location. Create needed directories if inside
+        config input path"""
+        dst_loc = os.path.dirname( dst_fname )
+        if (not os.path.isdir(dst_loc) and
+            dst_loc.startswith(self.config.paths.input)):
+            dlist = dst_loc[len(self.config.paths.input):].split('/')
+            cur_dir = self.config.paths.input
+            for dname in dlist:
+                cur_dir = os.path.join( cur_dir, dname )
+                if not os.path.isdir(cur_dir):
+                    os.mkdir( cur_dir )
+        shutil.copyfile( src_fname, dst_fname )
+        return None
+
     def setup_new_run( self, src_path=None ):
 
         print( 'setting up new scope run.' )
         
         #overwite working directory files with source files
-        shutil.copyfile( self.source_atmofile, self.config.atmo.atmofile )
-        shutil.copyfile( self.source_anglesfile, self.config.directional.anglesfile )
-        shutil.copyfile( self.source_optifile, self.config.optipar.optifile )
-        shutil.copyfile( self.source_soil_file, self.config.soil.soil_file )
+        self._input_copy( self.source_atmofile, self.config.atmo.atmofile )
+        self._input_copy( self.source_anglesfile, self.config.directional.anglesfile )
+        self._input_copy( self.source_optifile, self.config.optipar.optifile )
+        self._input_copy( self.source_soil_file, self.config.soil.soil_file )
 
         xyt = self.config.xyt
         source_data_dir = self.source_input_path + 'dataset ' + self.source_Dataset_dir
         # Data direction location (copied from config.py)
-        working_data_dir = self.config.paths.input + 'dataset ' + xyt.Dataset_dir
+        working_data_dir = os.path.join( self.config.paths.input,
+                                         'dataset ' + xyt.Dataset_dir )
 
-        shutil.copyfile( source_data_dir + '/' + self.source_t_file,
+        self._input_copy( source_data_dir + '/' + self.source_t_file,
                          working_data_dir + '/' + xyt.t_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_year_file,
+        self._input_copy( source_data_dir + '/' + self.source_year_file,
                          working_data_dir + '/' + xyt.year_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_Rin_file,
+        self._input_copy( source_data_dir + '/' + self.source_Rin_file,
                          working_data_dir + '/' + xyt.Rin_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_Rli_file,
+        self._input_copy( source_data_dir + '/' + self.source_Rli_file,
                          working_data_dir + '/' + xyt.Rli_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_p_file,
+        self._input_copy( source_data_dir + '/' + self.source_p_file,
                          working_data_dir + '/' + xyt.p_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_Ta_file,
+        self._input_copy( source_data_dir + '/' + self.source_Ta_file,
                          working_data_dir + '/' + xyt.Ta_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_ea_file,
+        self._input_copy( source_data_dir + '/' + self.source_ea_file,
                          working_data_dir + '/' + xyt.ea_file )
-        shutil.copyfile( source_data_dir + '/' + self.source_u_file,
+        self._input_copy( source_data_dir + '/' + self.source_u_file,
                          working_data_dir + '/' + xyt.u_file )
 
         #each of these files may be 'None'
         if self.source_CO2_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_CO2_file,
+            self._input_copy( source_data_dir + '/' + self.source_CO2_file,
                              working_data_dir + '/' + xyt.CO2_file )
         if self.source_z_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_z_file,
+            self._input_copy( source_data_dir + '/' + self.source_z_file,
                              working_data_dir + '/' + xyt.z_file )
         if self.source_tts_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_tts_file,
+            self._input_copy( source_data_dir + '/' + self.source_tts_file,
                              working_data_dir + '/' + xyt.tts_file )
         if self.source_LAI_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_LAI_file,
+            self._input_copy( source_data_dir + '/' + self.source_LAI_file,
                              working_data_dir + '/' + xyt.LAI_file )
         if self.source_hc_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_hc_file,
+            self._input_copy( source_data_dir + '/' + self.source_hc_file,
                              working_data_dir + '/' + xyt.hc_file )
         if self.source_SMC_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_SMC_file,
+            self._input_copy( source_data_dir + '/' + self.source_SMC_file,
                              working_data_dir + '/' + xyt.SMC_file )
         if self.source_Vcmax_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_Vcmax_file,
+            self._input_copy( source_data_dir + '/' + self.source_Vcmax_file,
                              working_data_dir + '/' + xyt.Vcmax_file )
         if self.source_Cab_file is not None:
-            shutil.copyfile( source_data_dir + '/' + self.source_Cab_file,
+            self._input_copy( source_data_dir + '/' + self.source_Cab_file,
                              working_data_dir + '/' + xyt.Cab_file )
         return None
