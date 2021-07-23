@@ -43,7 +43,7 @@ def phys_to_unk( physical, is_adjoint ):
     notes: this function must apply the inverse prior error covariance
     """
     p = PhysicalAbstractData
-    emis_len = len(p.cat_emis) * p.nstep_emis * p.nlays_emis * p.nrows * p.ncols
+    emis_len = p.nstep_emis * p.nlays_emis * p.nrows * p.ncols
     bcon_len = p.nstep_bcon * p.bcon_region
     if inc_icon is True:
         total_len = len(p.spcs) * (1 + emis_len + bcon_len)
@@ -73,6 +73,4 @@ def phys_to_unk( physical, is_adjoint ):
         arg[ i:i+bcon_len ] = bcon.flatten()
         i += bcon_len
     assert i == total_len, 'Some unknowns left unassigned!'
-    #remove nan's
-    arg = arg[ ~np.isnan( arg ) ]    
     return UnknownData( arg )

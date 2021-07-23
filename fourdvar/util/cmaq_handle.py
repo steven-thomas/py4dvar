@@ -124,7 +124,6 @@ def setup_run():
     env_dict['ADJ_VADV_CHK'] = cfg.vadv_chk + ' -v'
     env_dict['ADJ_EMIS_CHK'] = cfg.emis_chk + ' -v'
     env_dict['ADJ_EMIST_CHK'] = cfg.emist_chk + ' -v'
-    env_dict['ADJ_CPL_CHK'] = cfg.cpl_chk + ' -v'
     env_dict['GRIDDESC'] = cfg.griddesc
     env_dict['GRID_NAME'] = cfg.gridname
     env_dict['DEPV_TRAC_1'] = cfg.depv_trac

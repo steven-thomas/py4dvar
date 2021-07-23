@@ -104,18 +104,18 @@ def map_sense( sensitivity ):
     test_spc = PhysicalAdjointData.spcs[0]
     test_fname = dt.replace_date( template.emis, dt.start_date )
     mod_shape = ncf.get_variable( test_fname, test_spc ).shape    
+    xcell = ncf.get_attr( test_fname, 'XCELL' )
+    ycell = ncf.get_attr( test_fname, 'YCELL' )
+    cell_area = float(xcell*ycell)
         
     #create blank constructors for PhysicalAdjointData
     p = PhysicalAdjointData
     if inc_icon is True:
         icon_dict = { spc: 1. for spc in p.spcs }
-    ncat = len( p.cat_emis )
-    emis_shape = ( ncat, p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
+    emis_shape = ( p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
     emis_dict = { spc: np.zeros( emis_shape ) for spc in p.spcs }
     bcon_shape = ( p.nstep_bcon, p.bcon_region, )
     bcon_dict = { spc: np.zeros( bcon_shape ) for spc in p.spcs }
-
-    diurnal = ncf.get_variable( template.diurnal, p.spcs )
     del p
     
     #construct icon_dict
@@ -142,6 +142,8 @@ def map_sense( sensitivity ):
         label = dt.replace_date( emis_pattern, date )
         sense_fname = sensitivity.file_data[ label ][ 'actual' ]
         sense_data_dict = ncf.get_variable( sense_fname, PhysicalAdjointData.spcs )
+        emis_fname = dt.replace_date( template.emis, date )
+        emis_vars = ncf.get_variable( emis_fname, emis_dict.keys() )
 
         pstep = i // PhysicalAdjointData.tday_emis
         b_start = int( i * b_daysize )
@@ -151,18 +153,10 @@ def map_sense( sensitivity ):
         emis_unit = unit_convert_emis[ dt.replace_date( unit_key, date ) ]
         bcon_unit = unit_convert_bcon[ dt.replace_date( unit_key, date ) ]
         for spc in PhysicalAdjointData.spcs:
-            cat_arr = diurnal[ spc ][ :-1, :nlay, :, : ]
             sense_arr_emis = (sense_data_dict[ spc ] * emis_unit)[:-1,:nlay,:,:]
             model_arr_emis = sense_arr_emis.reshape((model_step-1,-1,nlay,nrow,ncol,)).sum(axis=1)
-            for c in range( ncat ):
-                data = model_arr_emis.copy()
-                data[ cat_arr != c ] = np.nan
-                data = np.nansum( data, axis=0 )
-                #insert NaN's if cell never had category c
-                nan_arr = (cat_arr == c).sum( axis=0 )
-                nan_arr = np.where( (nan_arr==0), np.nan, 0. )
-                data += nan_arr
-                emis_dict[spc][c,pstep,:,:,:] += data
+            emis_val_arr = emis_vars[spc][:-1,:nlay,:,:] * (1.0/cell_area)
+            emis_dict[spc][pstep,:,:,:] += (model_arr_emis * emis_val_arr).sum(axis=0)
 
             sense_arr_bcon = (sense_data_dict[ spc ][:] * bcon_unit)[:-1,:,:,:]
             tot_lay = sense_arr_bcon.shape[1]

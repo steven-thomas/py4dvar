@@ -12,8 +12,8 @@ import os
 
 #full path to the top level of the repository
 #root_path = '/home/ns0890/CMAQ_nasimeh_build'
-root_path = '/home/stevenpt/fourdvar/nasimeh_sron_build'
+root_path = '/home/stevenpt/fourdvar/nasimeh_scaled_build'
 
 #full path to the branch-specific data
 #store_path = '/home/ns0890/data/py4dvar_test'
-store_path = '/home/stevenpt/data/py4dvar_builds/nasimeh_sron_test/'
+store_path = '/home/stevenpt/data/py4dvar_builds/nasimeh_scaled_build'

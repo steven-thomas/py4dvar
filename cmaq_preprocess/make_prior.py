@@ -17,7 +17,6 @@ import fourdvar.util.date_handle as dt
 import fourdvar.util.file_handle as fh
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.input_defn as input_defn
-import fourdvar.params.template_defn as template
 from fourdvar.params.root_path_defn import store_path
 from cmaq_preprocess.uncertainty import convert_unc
 
@@ -59,7 +58,8 @@ bcon_tsec = 'single'
 # single number: apply value to every uncertainty
 # dict: apply single value to each spcs ( eg: { 'CO2':1e-6, 'CO':1e-7 } )
 # string: filename for netCDF file already correctly formatted.
-emis_unc = 1e-8 # mol/(s*m**2)
+#emis_unc = 1e-8 # mol/(s*m**2)
+emis_unc = 0.01 # unitless emissions multiplier
 
 # data for ICON scaling
 # list of values, one for each species
@@ -163,31 +163,11 @@ xcell = float( ncf.get_attr( efile, 'XCELL' ) )
 ycell = float( ncf.get_attr( efile, 'YCELL' ) )
 cell_area = xcell * ycell
 
-cat_list = ncf.get_attr( template.diurnal, 'CAT-LIST' ).strip().split()
-ncat = len( cat_list )
-
+# emis is scaling term, use to multiply a pre-defined daily pattern of emission values.
+# set prior value to 1. (no change from template).
 emis_dict = {}
 for spc in spc_list:
-    ecat_dict = { c: [] for c in range( ncat ) }
-    cat_arr = ncf.get_variable( template.diurnal, spc )[ :-1, :emis_nlay, :, : ]
-    for date in dt.get_datelist():
-        efile = dt.replace_date( cmaq_config.emis_file, date )
-        e_arr = ncf.get_variable( efile, spc )[ :-1, :emis_nlay, :, : ] / cell_area
-        for c in range( ncat ):
-            data = e_arr.copy()
-            data[ cat_arr!=c ] = np.nan
-            ecat_dict[c].append( data )
-    
-    cat_arr_list = []
-    for c in range( ncat ):
-        data = ecat_dict[ c ]
-        data = np.concatenate( data, axis=0 )
-        data = np.nanmean( data.reshape((emis_nstep,-1,emis_nlay,nrow,ncol,)), axis=1 )
-        cat_arr_list.append( data )
-    
-    emis_data = np.stack( cat_arr_list, axis=0 )
-    msg = "emis_data produced invalid shape."
-    assert emis_data.shape == (ncat,emis_nstep,emis_nlay,nrow,ncol), msg
+    emis_data = np.ones((emis_nstep,emis_nlay,nrow,ncol,))
     emis_dict[ spc ] = emis_data
 
 emis_unc = convert_unc( emis_unc, emis_dict )
@@ -206,11 +186,9 @@ root_attr = { 'SDATE': np.int32( dt.replace_date( '<YYYYDDD>', dt.start_date ) )
 
 root = ncf.create( path=save_path, attr=root_attr, dim=root_dim, is_root=True )
 
-emis_dim = { 'TSTEP': None, 'LAY': emis_nlay, 'CAT': ncat }
-emis_attr = { 'TDAY': tday,
-              'CAT_NAME': ''.join( [ '{:<16}'.format(s) for s in cat_list ] ) }
-emis_var = { k: ('f4', ('CAT','TSTEP','LAY','ROW','COL'), v)
-             for k,v in emis_dict.items() }
+emis_dim = { 'TSTEP': None, 'LAY': emis_nlay }
+emis_attr = { 'TDAY': tday }
+emis_var = { k: ('f4', ('TSTEP','LAY','ROW','COL'), v) for k,v in emis_dict.items() }
 ncf.create( parent=root, name='emis', dim=emis_dim, attr=emis_attr, var=emis_var, is_root=False )
 
 if input_defn.inc_icon is True:

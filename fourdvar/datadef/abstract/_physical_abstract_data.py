@@ -33,7 +33,6 @@ class PhysicalAbstractData( FourDVarData ):
     ncols = None       #No. columns for all data
     spcs = None        #list of species for all data
     emis_unc = None    #dict of emis uncertainty values
-    cat_emis = None    #list of diurnal category names for emission data
 
     bcon_region = None #No. bcon regions
     tsec_bcon = None   #No. seconds per boundary condition timestep
@@ -59,8 +58,8 @@ class PhysicalAbstractData( FourDVarData ):
         eg: new_phys =  datadef.PhysicalData( filelist )
         """
         #icon_dict: {var-name: scaling_value}
-        #emis_dict: {var-name: np.array([cat, time, layer, row, column])}
-        #bcon_dict: {var-name: np.array([cat, time, layer, row, column])}
+        #emis_dict: {var-name: np.array([time, layer, row, column])}
+        #bcon_dict: {var-name: np.array([time, b-region])}
         
         #params must all be set and not None (usally using cls.from_file)
         self.assert_params()
@@ -80,9 +79,8 @@ class PhysicalAbstractData( FourDVarData ):
                 self.icon[ spcs_name ] = icon_data
 
             emis_data = np.array( emis_dict[ spcs_name ] )
-            assert len( emis_data.shape ) == 5, 'emis dimensions invalid.'
-            encat,ent,enl,enr,enc = emis_data.shape
-            assert encat == len(self.cat_emis), 'emis category indices invalid.'
+            assert len( emis_data.shape ) == 4, 'emis dimensions invalid.'
+            ent,enl,enr,enc = emis_data.shape
             assert ent == self.nstep_emis, 'emis timesteps invalid.'
             assert enl == self.nlays_emis, 'emis layers invalid.'
             assert enr == self.nrows, 'emis rows invalid.'
@@ -136,17 +134,13 @@ class PhysicalAbstractData( FourDVarData ):
             ncf.create( parent=root, name='icon', dim=icon_dim, var=icon_var,
                         is_root=False )
 
-        emis_dim = {  'TSTEP': None,
-                      'LAY': self.nlays_emis,
-                      'CAT': len(self.cat_emis) }
-        cat_name_str = ''.join( ['{:<16}'.format(c) for c in self.cat_emis ] )
-        emis_attr = { 'TDAY': self.tday_emis,
-                      'CAT_NAME': cat_name_str }
+        emis_dim = { 'TSTEP': None, 'LAY': self.nlays_emis }
+        emis_attr = { 'TDAY': self.tday_emis }
         emis_var = {}
         for spc in self.spcs:
-            emis_var[ spc ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
+            emis_var[ spc ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                 self.emis[ spc ], )
-            emis_var[ unc(spc) ] = ( 'f4', ('CAT','TSTEP','LAY','ROW','COL'),
+            emis_var[ unc(spc) ] = ( 'f4', ('TSTEP','LAY','ROW','COL'),
                                      self.emis_unc[ spc ], )
         ncf.create( parent=root, name='emis', dim=emis_dim, attr=emis_attr,
                     var=emis_var, is_root=False )
@@ -181,7 +175,6 @@ class PhysicalAbstractData( FourDVarData ):
         edate = str( ncf.get_attr( filename, 'EDATE' ) )
         tday_emis = ncf.get_attr( filename, 'TDAY', group='emis' )
         spcs_list = ncf.get_attr( filename, 'VAR-LIST' ).split()
-        cat_emis = ncf.get_attr( filename, 'CAT_NAME', group='emis' ).split()
         unc_list = [ unc( spc ) for spc in spcs_list ]
         bcon_up_lay = ncf.get_attr( filename, 'UP_LAY', group='bcon' )
         tsec_bcon = ncf.get_attr( filename, 'TSEC', group='bcon' )
@@ -211,7 +204,7 @@ class PhysicalAbstractData( FourDVarData ):
         bcon_shape = [ b.shape for b in bcon_dict.values() ]
         for bshape in bcon_shape[1:]:
             assert bshape == bcon_shape[0], 'all bcon spcs must have the same shape.'
-        ecat, estep, elays, erows, ecols = emis_shape[0]
+        estep, elays, erows, ecols = emis_shape[0]
         bstep, bregion = bcon_shape[0]
         
         if inc_icon is True:
@@ -233,9 +226,9 @@ class PhysicalAbstractData( FourDVarData ):
         
         #assign new param values.
         par_name = ['tday_emis','nstep_emis','nlays_emis','nrows','ncols','spcs',
-                    'cat_emis','emis_unc','bcon_region','tsec_bcon','nstep_bcon',
+                    'emis_unc','bcon_region','tsec_bcon','nstep_bcon',
                     'bcon_up_lay','bcon_unc']
-        par_val = [tday_emis, estep, elays, erows, ecols, spcs_list, cat_emis,
+        par_val = [tday_emis, estep, elays, erows, ecols, spcs_list,
                    emis_unc, bregion, tsec_bcon, bstep, bcon_up_lay, bcon_unc]
         par_mutable = ['emis_unc','bcon_unc']
         if inc_icon is True:
@@ -271,7 +264,7 @@ class PhysicalAbstractData( FourDVarData ):
         notes: method raises assertion error if None valued parameter is found.
         """
         par_name = ['tday_emis','nstep_emis','nlays_emis','nrows','ncols','spcs',
-                    'cat_emis','emis_unc','bcon_region','tsec_bcon','nstep_bcon',
+                    'emis_unc','bcon_region','tsec_bcon','nstep_bcon',
                     'bcon_up_lay','bcon_unc']
         if inc_icon is True:
             par_name += [ 'icon_unc' ]

@@ -29,8 +29,8 @@ nprow = 3
 ioapi_logging = False
 
 #max & min No. seconds per sync (science) step
-maxsync = 300 #600
-minsync = 300 #600
+maxsync = 600
+minsync = 600
 
 #use PT3DEMIS (option not supported)
 #DO NOT MODIFY
@@ -133,7 +133,6 @@ hadv_chk = os.path.join( chk_path, 'HADV_CHK.<YYYYMMDD>.nc' )
 vadv_chk = os.path.join( chk_path, 'VADV_CHK.<YYYYMMDD>.nc' )
 emis_chk = os.path.join( chk_path, 'EMIS_CHK.<YYYYMMDD>.nc' )
 emist_chk = os.path.join( chk_path, 'EMIST_CHK.<YYYYMMDD>.nc' )
-cpl_chk = os.path.join( chk_path, 'CPL_CHK.<YYYYMMDD>.nc' )
 
 #xfirst file
 fwd_xfirst_file = os.path.join( output_path, 'XFIRST.<YYYYMMDD>' )
@@ -194,7 +193,7 @@ cwd_logs = [ os.path.join( curdir, 'CTM_LOG_*' ),
 #list of all files above created by CMAQ (fwd & bwd) to be delete by wipeout()
 wipeout_fwd_list = [ fwd_logfile, floor_file, chem_chk, vdiff_chk, aero_chk,
                      ha_rhoj_chk, va_rhoj_chk, hadv_chk, vadv_chk, emis_chk,
-                     emist_chk, cpl_chk, fwd_xfirst_file, conc_file, avg_conc_file,
+                     emist_chk, fwd_xfirst_file, conc_file, avg_conc_file,
                      last_grid_file, drydep_file, wetdep1_file, wetdep2_file,
                      ssemis_file, aerovis_file, aerodiam_file, ipr1_file,
                      ipr2_file, ipr3_file, irr1_file, irr2_file, irr3_file,

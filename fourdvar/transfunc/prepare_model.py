@@ -19,27 +19,7 @@ from fourdvar.params.cmaq_config import met_cro_3d
 from fourdvar.params.input_defn import inc_icon
 
 unit_key = 'units.<YYYYMMDD>'
-unit_convert_emis = None
 unit_convert_bcon = None
-
-def get_unit_convert_emis():
-    """
-    extension: get unit conversion value
-    input: None
-    output: scalar
-    
-    notes: PhysicalData.emis units = mol/(s*m^2)
-           ModelInputData.emis units = mol/s
-    """
-    global unit_key
-    
-    fname = dt.replace_date( template.emis, dt.start_date )
-    xcell = ncf.get_attr( fname, 'XCELL' )
-    ycell = ncf.get_attr( fname, 'YCELL' )
-    area = float( xcell*ycell )
-    unit_dict = { dt.replace_date( unit_key, date ): area
-                  for date in dt.get_datelist() }
-    return unit_dict
 
 def get_unit_convert_bcon():
     """
@@ -80,10 +60,7 @@ def prepare_model( physical_data ):
     output: ModelInputData
     """
     global unit_key
-    global unit_convert_emis
     global unit_convert_bcon
-    if unit_convert_emis is None:
-        unit_convert_emis = get_unit_convert_emis()
     if unit_convert_bcon is None:
         unit_convert_bcon = get_unit_convert_bcon()
 
@@ -96,8 +73,6 @@ def prepare_model( physical_data ):
     else:
         model_input_args = {}
 
-    diurnal = ncf.get_variable( template.diurnal, physical_data.spcs )
-    
     #all emis files & spcs for model_input use same NSTEP dimension, get it's size
     emis_fname = dt.replace_date( template.emis, dt.start_date )
     m_daysize = ncf.get_variable( emis_fname, physical_data.spcs[0] ).shape[0] - 1
@@ -105,20 +80,19 @@ def prepare_model( physical_data ):
     b_daysize = float(physical_data.nstep_bcon) / len( dlist )
     assert (b_daysize < 1) or (m_daysize % b_daysize == 0), 'physical & model input emis TSTEP incompatible.'
     nlay = physical_data.nlays_emis
+    nrow, ncol = physical_data.nrows, physical_data.ncols
     
     emis_pattern = 'emis.<YYYYMMDD>'
     for i,date in enumerate( dlist ):
         spcs_dict = {}
         estep = int( i // physical_data.tday_emis )
+        emis_fname = dt.replace_date( template.emis, date )
         for spcs_name in physical_data.spcs:
-            model_arr = np.zeros( diurnal[ spcs_name ].shape )
-            for c,_ in enumerate( physical_data.cat_emis ):
-                phys_arr = physical_data.emis[ spcs_name ][ c, estep, ... ]
-                phys_arr[ np.isnan( phys_arr ) ] = 0.
-                di_filter = (diurnal[ spcs_name ][:,:nlay,:,:] == c)
-                model_arr[:,:nlay,:,:] += phys_arr * di_filter
-            spcs_dict[ spcs_name ] = model_arr * unit_convert_emis[ dt.replace_date( unit_key, date ) ]
-
+            emis_arr = ncf.get_variable( emis_fname, spcs_name )
+            phys_arr = physical_data.emis[spcs_name][estep,...].reshape((1,nlay,nrow,ncol))
+            emis_arr[:,:nlay,:,:] *= phys_arr
+            spcs_dict[spcs] = emis_arr
+        
         #add bcon values to emissons
         msg = 'Only setup for 8-region boundary conditions.'
         assert physical_data.bcon_region == 8, msg

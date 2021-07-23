@@ -11,9 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 
 from fourdvar.datadef import UnknownData, PhysicalData
-import fourdvar.util.netcdf_handle as ncf
 from fourdvar.params.input_defn import inc_icon
-import fourdvar.params.template_defn as template
 
 def uncondition( unknown ):
     """
@@ -25,13 +23,11 @@ def uncondition( unknown ):
     """
     PhysicalData.assert_params()
     p = PhysicalData
-    ncat = len( p.cat_emis )
-    emis_shape = ( ncat, p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
+    emis_shape = ( p.nstep_emis, p.nlays_emis, p.nrows, p.ncols, )
+    emis_len = p.nstep_emis * p.nlays_emis * p.nrows * p.ncols
     bcon_shape = ( p.nstep_bcon, p.bcon_region, )
     bcon_len = np.prod( bcon_shape )
     del p
-
-    diurnal = ncf.get_variable( template.diurnal, PhysicalData.spcs )
     
     vals = unknown.get_vector()
     if inc_icon is True:
@@ -44,18 +40,10 @@ def uncondition( unknown ):
             icon = vals[ i ]
             i += 1
             icon_dict[ spc ] = icon * PhysicalData.icon_unc[ spc ]
-
-        emis_arr = np.zeros( emis_shape )
-        cat_arr = diurnal[ spc ][ :-1, :PhysicalData.nlays_emis, :, : ]
-        for c in range( ncat ):
-            nan_arr = (cat_arr == c).sum( axis=0, keepdims=True )
-            nan_arr = np.where( (nan_arr==0), np.nan, 0. )
-            emis_arr[ c, :, :, :, : ] = nan_arr
-
-        emis_len = np.count_nonzero( ~np.isnan(emis_arr) )
-        emis_vector = vals[ i:i+emis_len ]
-        emis_arr[ ~np.isnan(emis_arr) ] = emis_vector
-        emis_dict[ spc ] = emis_arr * PhysicalData.emis_unc[ spc ]
+        
+        emis = vals[ i:i+emis_len ]
+        emis = emis.reshape( emis_shape )
+        emis_dict[ spc ] = emis * PhysicalData.emis_unc[ spc ]
         i += emis_len
 
         bcon = vals[ i:i+bcon_len ]
