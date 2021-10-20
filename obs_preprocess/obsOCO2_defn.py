@@ -8,10 +8,13 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import numpy as np
+from __future__ import absolute_import
+
 import datetime as dt
-from ray_trace import Point, Ray
-from obs_defn import ObsMultiRay
+import numpy as np
+
+from obs_preprocess.obs_defn import ObsMultiRay
+from obs_preprocess.ray_trace import Point, Ray
 
 class ObsOCO2( ObsMultiRay ):
     """Single observation (or sounding) from OCO2 satellite
@@ -43,10 +46,11 @@ class ObsOCO2( ObsMultiRay ):
         newobs = cls( obstype='OCO2_sounding' )
         newobs.out_dict['value'] = kwargs['xco2']
         newobs.out_dict['uncertainty'] = kwargs['xco2_uncertainty']
-
+        
         # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
-        #newobs.out_dict['surface_type'] = kwargs['surface_type']
-        #newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        newobs.out_dict['surface_type'] = kwargs['surface_type']
+        newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        newobs.out_dict['xco2_quality_flag'] = kwargs['xco2_quality_flag']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO2'
         newobs.src_data = kwargs.copy()
@@ -54,11 +58,7 @@ class ObsOCO2( ObsMultiRay ):
     
     def model_process( self, model_space ):
         ObsMultiRay.model_process( self, model_space )
-        #set lite_coord to surface cell with largest weight
-        if 'weight_grid' in self.out_dict.keys():
-            surf = [ (v,k) for k,v in self.out_dict['weight_grid'].items()
-                     if k[2]==0 ]
-            self.out_dict[ 'lite_coord' ] = max(surf)[1]
+        #now created self.out_dict[ 'weight_grid' ]
         return None
     
     def add_visibility( self, proportion, model_space ):
@@ -80,8 +80,27 @@ class ObsOCO2( ObsMultiRay ):
         
         weight_grid = {}
         for l, weight in enumerate( model_vis ):
-            layer_slice = { c:v for c,v in proportion.items() if c[2] == l }
-            layer_sum = sum( layer_slice.values() )
+            lrtainty : float (ppm)
+        - xco2_apriori : float (ppm)
+        - co2_profile_apriori : array[ float ] (length=levels, units=ppm)
+        - xco2_averaging_kernel : array[ float ] (length=levels)
+        - pressure_levels : array[ float ] (length=levels, units=hPa)
+        - pressure_weight : array[ float ] (length=levels)
+        """
+        newobs = cls( obstype='OCO2_sounding' )
+        newobs.out_dict['value'] = kwargs['xco2']
+        newobs.out_dict['uncertainty'] = kwargs['xco2_uncertainty']
+
+        # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
+        newobs.out_dict['surface_type'] = kwargs['surface_type']
+        newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        newobs.out_dict['xco2_quality_flag'] = kwargs['xco2_quality_flag']
+        #OCO2 Lite-files only record CO2 values
+        newobs.spcs = 'CO2'
+        newobs.src_data = kwargs.copy()
+        return newobs
+ = { c:v for c,v in proportion.items() if c[2] == l }
+            lyer_sum = sum( layer_slice.values() )
             weight_slice = { c: weight*v/layer_sum for c,v in layer_slice.items() }
             weight_grid.update( weight_slice )
         

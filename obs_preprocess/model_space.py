@@ -8,17 +8,18 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import numpy as np
-import datetime as dt
-import pyproj
-from netCDF4 import Dataset
-from copy import deepcopy
+from __future__ import absolute_import
 
-from ray_trace import Grid
+from copy import deepcopy
+import datetime as dt
+from netCDF4 import Dataset
+import numpy as np
+import pyproj
 
 import fourdvar.params.cmaq_config as cmaq_config
 import fourdvar.params.template_defn as template_defn
 import fourdvar.util.date_handle as date_handle
+from obs_preprocess.ray_trace import Grid
 
 #convert HHMMSS into sec
 tosec = lambda t: 3600*(int(t)//10000) + 60*( (int(t)//100) % 100 ) + (int(t)%100)
@@ -156,13 +157,14 @@ class ModelSpace( object ):
         time = target_coord[1]
         row = target_coord[3]
         col = target_coord[4]
+        
         if date != self.psurf_date:
             self.update_psurf( date )
         vgbot = self.psurf_arr[time,row,col]
         vglvl = np.array( self.gridmeta[ 'VGLVLS' ] )
         vgtop = float( self.gridmeta[ 'VGTOP' ] )
         return ( vglvl[:]*(vgbot-vgtop) + vgtop )
-    
+
     def get_pressure_weight( self, target_coord ):
         pbound = self.get_pressure_bounds( target_coord )
         #assign everything above the top layer to the top layer
@@ -171,7 +173,7 @@ class ModelSpace( object ):
         pdiff = pbound[:-1] - pbound[1:]
         pweight = pdiff / pbound[0]
         return pweight
-    
+        
     def pressure_interp( self, obs_pressure, obs_value, target_coord ):
         obs_pressure = np.array( obs_pressure )
         obs_value = np.array( obs_value )
@@ -205,6 +207,11 @@ class ModelSpace( object ):
     
     def get_xy( self, lat, lon ):
         return self.proj( lon, lat )
+
+    def lat_lon_inside( self, lat, lon ):
+        x1,y1 = self.get_xy( lat, lon )
+        xlim,ylim,_ = [ (e[0],e[-1],) for e in self.grid.edges ]
+        return ( (min(xlim) < x1 < max(xlim)) and (min(ylim) < y1 < max(ylim)) )
     
     def get_ray_top( self, start, zenith, azimuth ):
         """get the (x,y,z) point where a ray leaves the top of the model

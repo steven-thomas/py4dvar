@@ -8,17 +8,17 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import numpy as np
-from obs_preprocess.ray_trace import Point, Ray
+from __future__ import absolute_import
+
 from copy import deepcopy
+import numpy as np
+
+from obs_preprocess.ray_trace import Point, Ray
 
 class ObsGeneral( object ):
     """base class for observations."""
     count = 0
-    #required attributes must be defined in out_dict
     required = ['value','uncertainty','weight_grid']
-    #default attributes will be added to out_dice if not already present
-    default = {'offset_term': 0., 'lite_coord':None}
     
     def __init__( self, obstype='Unknown' ):
         self.id = ObsGeneral.count
@@ -37,10 +37,6 @@ class ObsGeneral( object ):
         for attr in self.required:
             if attr not in keys:
                 raise AttributeError('obs No. {} is missing {}'.format(self.id,attr))
-        for attr,val in self.default.items():
-            if attr not in keys:
-                print '{:} not defined, setting to {:}'.format(attr,val)
-                self.out_dict[ attr ] = val
         return deepcopy( self.out_dict )
     
     def model_process( self, model_space ):
@@ -242,15 +238,13 @@ class ObsInstantRay( ObsSimple ):
         key   = model_space time co-ordinate,
         value = proportion of observation."""
         #assume self.time = [ int(YYYYMMDD), int(HHMMSS) ]
-        #interpolate time between 2 closest timesteps
-        # unless interp_time attr exists and is False
+        #interpolate time between 2 closest timesteps unless interp_time attr is False
         start = model_space.get_step( self.time )
         end = model_space.next_step( start )
         end_val = model_space.get_step_pos( self.time[1] )
         start_val = 1 - end_val
         
         if hasattr( self, 'interp_time' ) and self.interp_time is False:
-            # assign obs to closest timestep
             if start_val >= end_val:
                 result = { start : 1. }
             else:
@@ -298,7 +292,7 @@ class ObsInstantRay( ObsSimple ):
 class ObsMultiRay( ObsInstantRay ):
     """Simple example for instant piecewise-straight path observations
     eg: Satelite measurement.
-    Uses model_process, map_time & add_visibility from obsInstantRay
+    Uses model_process, map_time & get_visibility from obsInstantRay
     only works for 1 species
     """
     @classmethod
