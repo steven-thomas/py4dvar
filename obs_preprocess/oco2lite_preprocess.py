@@ -8,7 +8,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from __future__ import absolute_import
+
 
 import glob
 from netCDF4 import Dataset
@@ -18,7 +18,7 @@ import context
 from fourdvar.params.root_path_defn import store_path
 import fourdvar.util.file_handle as fh
 from model_space import ModelSpace
-from obsOCO2_defn import ObsOCO2
+from obsTROPOMI_defn import ObsTROPOMI
 import super_obs_util as so_util
 
 #-CONFIG-SETTINGS---------------------------------------------------------
@@ -28,10 +28,10 @@ import super_obs_util as so_util
 #'pattern': source = file_pattern_string, use all files that match pattern
 source_type = 'directory'
 
-source = os.path.join( store_path, 'obs_oco2_data' )
+source = os.path.join( store_path, 'obs_TROPOMI_data' )
 #source = os.path.join( store_path, 'obs_1day' )
 
-output_file = './oco2_observed.pic.gz'
+output_file = './TROPOMI_observed.pic.gz'
 
 #if true interpolate between 2 closest time-steps, else assign to closet time-step
 interp_time = False
@@ -51,46 +51,59 @@ elif source_type.lower() == 'directory':
                  if os.path.isfile( os.path.join( dirname, f ) ) ]
 else:
     raise TypeError( "source_type '{}' not supported".format(source_type) )
-
-root_var = [ 'sounding_id',
-             'latitude',
-             'longitude',
+#organise variables by group 
+root_var = [ 'pixel_id',
+             'latitude_center',
+             'longitude_center',
              'time',
              'solar_zenith_angle',
-             'sensor_zenith_angle',
-             'xco2_quality_flag',
-             'xco2',
-             'xco2_uncertainty',
-             'xco2_apriori',
-             'pressure_levels',
-             'co2_profile_apriori',
-             'xco2_averaging_kernel',
-             'pressure_weight' ]
-sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle', 'operation_mode' ]
-retrieval_var = ['surface_type']
+             'viewing_zenith_angle',
+             'solar_azimuth_angle',
+             'viewing_azimuth_angle']
+             #'co_column',
+             #'co_column_precision',
+             #'co_profile_aprior',
+             #'pressure_levels',
+             #'co_profile_apriori',
+             #'co_column_averaging_kernal',
+             #'pressure_weight' ]
+target_var = ['co_column',
+             'co_column_precision',
+             'co_profile_apriori',
+             #'pressure_levels',
+             'co_profile_apriori',
+             'co_column_averaging_kernel']
+#sounding_var = [ 'solar_azimuth_angle', 'sensor_azimuth_angle', 'operation_mode' ]
+meteo_var = ['landflag', 'pressure_levels']
+diagnostics_var = ['processing_quality_flags']
 
 obslist = []
 for fname in filelist:
-    print 'read {}'.format( fname )
+    print('read {}'.format( fname ))
     var_dict = {}
     with Dataset( fname, 'r' ) as f:
-        size = f.dimensions[ 'sounding_id' ].size
+        size = f.dimensions[ 'nobs' ].size
         for var in root_var:
-            var_dict[ var ] = f.variables[ var ][:]
-        for var in sounding_var:
-            var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
-        for var in retrieval_var:
-            var_dict[ var ] = f.groups[ 'Retrieval' ].variables[ var ][:]
-    print 'found {} soundings'.format( size )
+            var_dict[ var ] = f.groups['instrument'].variables[ var ][:]
+        for var in target_var:
+            var_dict[ var ] = f.groups['target_product'].variables[ var ][:]
+        #for var in sounding_var:
+        #    var_dict[ var ] = f.groups[ 'Sounding' ].variables[ var ][:]
+        for var in meteo_var:
+            var_dict[ var ] = f.groups[ 'meteo' ].variables[ var ][:]
+        for var in diagnostics_var:
+            var_dict[ var ] = f.groups[ 'diagnostics' ].variables[ var ][:]
+
+    print('found {} soundings'.format( size ))
     
     sounding_list = []
     for i in range( size ):
-        src_dict = { k: v[i] for k,v in var_dict.items() }
-        lat = src_dict['latitude']
-        lon = src_dict['longitude']
-        if so_util.max_quality_only is True and src_dict['xco2_quality_flag'] != 0:
+        src_dict = { k: v[i] for k,v in list(var_dict.items()) }
+        lat = src_dict['latitude_center']
+        lon = src_dict['longitude_center']
+        if so_util.max_quality_only is True and src_dict['processing_quality_flags'] != 0:
             pass
-        elif so_util.surface_type != -1 and src_dict['surface_type'] != so_util.surface_type:
+        elif so_util.surface_type != -1 and src_dict['landflag'] != so_util.surface_type:
             pass
         elif so_util.operation_mode != -1 and src_dict['operation_mode'] != so_util.operation_mode:
             pass
@@ -110,7 +123,7 @@ for fname in filelist:
         sounding_list = merge_list
 
     for sounding in sounding_list:
-        obs = ObsOCO2.create( **sounding )
+        obs = ObsTROPOMI.create( **sounding )
         obs.interp_time = interp_time
         obs.model_process( model_grid )
         if obs.valid is True:
@@ -130,6 +143,6 @@ if len( obslist ) > 0:
     domain = model_grid.get_domain()
     datalist = [ domain ] + obslist
     fh.save_list( datalist, output_file )
-    print 'recorded observations to {}'.format( output_file )
+    print('recorded observations to {}'.format( output_file ))
 else:
-    print 'No valid observations found, no output file generated.'
+    print('No valid observations found, no output file generated.')

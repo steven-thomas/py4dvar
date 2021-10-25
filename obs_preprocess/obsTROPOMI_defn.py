@@ -50,7 +50,7 @@ class ObsTROPOMI( ObsMultiRay ):
         # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
         newobs.out_dict['surface_type'] = kwargs['surface_type']
         newobs.out_dict['operation_mode'] = kwargs['operation_mode']
-        newobs.out_dict['quality_flag'] = kwargs['quality_flag']
+        newobs.out_dict['processing_quality_flags'] = kwargs['processing_quality_flags']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO'
         newobs.src_data = kwargs.copy()

@@ -116,7 +116,7 @@ class ModelSpace( object ):
         if spc not in self.spcs: return False
         return True
     
-    def get_step( self, (cdate, ctime) ):
+    def get_step( self, cdate, ctime ):
         #convert ctime (HHMMSS) into timestep index
         stime = self.gridmeta[ 'STIME' ]
         tstep = self.gridmeta[ 'TSTEP' ]
@@ -134,7 +134,7 @@ class ModelSpace( object ):
         tstep = self.gridmeta[ 'TSTEP' ]
         return ( float(tosec(ctime)-tosec(stime)) / tosec(tstep) ) % 1
     
-    def next_step( self, (cdate, cstep) ):
+    def next_step( self, cdate, cstep ):
         assert (0 <= cstep < self.nstep), 'invalid step'
         cstep = cstep + 1
         if cstep == self.nstep:

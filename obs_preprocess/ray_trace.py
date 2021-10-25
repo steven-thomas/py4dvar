@@ -8,7 +8,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from __future__ import absolute_import
+
 
 import numpy as np
 
@@ -74,7 +74,7 @@ class Grid( object ):
     def get_weight( self, ray ):
         dist_dict = self.get_ray_cell_dist( ray )
         result = {}
-        for k,v in dist_dict.items():
+        for k,v in list(dist_dict.items()):
             result[ k ] = v / ray.length
         return result
 
@@ -137,6 +137,6 @@ if __name__ == "__main__":
     my_grid = Grid( offset, spacing )
     my_ray = Ray( start, end )
     weight = my_grid.get_weight( my_ray )
-    for k,v in weight.items():
-        print '{:}: {:.3}'.format( k, v )
+    for k,v in list(weight.items()):
+        print('{:}: {:.3}'.format( k, v ))
 
