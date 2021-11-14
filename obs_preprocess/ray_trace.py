@@ -45,32 +45,54 @@ class Grid( object ):
         assert ray.ndim == self.ndim, 'dimension mis-match'
         assert 0 <= dim < self.ndim, 'invalid dimension'
         p1, p2 = ray.get_minmax_1d( dim )
+        print('p1', p1, type(p1),  'p2', p2, type(p2))
         ind1 = self.get_cell_1d( p1, dim ) + 1
         ind2 = self.get_cell_1d( p2, dim ) + 1
+       # [ind1,ind2] = sorted([ind1,ind2])
+        print("ind1", ind1, type(ind1))
+        print("ind2", ind2, type(ind2))
         [ind1,ind2] = sorted([ind1,ind2])
+        print("dim", dim, type(dim))
         return self.edges[ dim ][ ind1:ind2 ]
     
     def get_ray_cell_dist( self, ray ):
+       # print('being called')
+        if ray.ndim != self.ndim:
+            print('ray_ndim')
         assert ray.ndim == self.ndim, 'dimension mis-match'
         ray_par_list = []
         for dim in range( self.ndim ):
             edge_collision = self.get_collision_1d( ray, dim )
             ray_par_list.extend( [ ray.get_par( edge, dim ) for edge in edge_collision ] )
         ray_par_list.sort()
+        if ray_par_list[0] < 0:
+            print('ray par 0 the issue')
         assert ray_par_list[0] >= 0, 'collision outside ray path'
+        if ray_par_list[-1] > 1:
+            print('ray par 1 the issue')
         assert ray_par_list[-1] <= 1, 'collision outside ray path'
         ray_par_list.insert( 0, 0 )
         ray_par_list.append( 1 )
         point_list = [ ray.get_point( par ) for par in ray_par_list ]
         
         result = {}
+       # print(len(point_list))
+       # print("result",result)
         for prev, point in zip( point_list[:-1], point_list[1:] ):
+           # print(point)
+            print( prev, type(prev))
+            print(point,type(point))
+            print(Point , type(Point))
+
             mid_point = Point.mid_point( prev, point )
+            print(mid_point)
             co_ord = self.get_cell( mid_point )
+            print(co_ord)
             #weight = point.dist( prev ) / ray.length
             result[ co_ord ] = result.get( co_ord, 0 ) + point.dist( prev )
+            print("loop working")
         return result
-    
+        print("result length")
     def get_weight( self, ray ):
         dist_dict = self.get_ray_cell_dist( ray )
         result = {}
@@ -91,6 +113,8 @@ class Ray( object ):
         assert 0 <= dim < self.ndim, 'invalid dimension'
         start = self.start[ dim ]
         end = self.end[ dim ]
+        print(type(self.start), self.start, type(self.end), self.end)
+        print(self.start.co_ord, self.end.co_ord, "co_ord", "start", start, "end", end)
         return sorted( [start, end] )
     
     def get_par( self, value, dim ):
@@ -124,12 +148,23 @@ class Point( object ):
     
     @classmethod
     def mid_point( cls, p1, p2 ):
+        if not (isinstance( p1, Point ) and isinstance( p2, Point )):
+            print('not mid only between 2 points')
+            print(type(p1), type(p2))
         assert isinstance( p1, Point ) and isinstance( p2, Point ), 'mid_point only between 2 points'
+        if not (p1.ndim == p2.ndim): 
+            print('not dimension mis- match')
         assert p1.ndim == p2.ndim, "dimension mis-match"
         return cls( [ 0.5*(p1[d] + p2[d]) for d in range( p1.ndim ) ] )
 
-
+demo_point = Point([3,3])
 if __name__ == "__main__":
+
+    p1 = Point([1,1])
+    p2 = Point([2,2])
+    p3 = Point.mid_point(p1,p2)
+    print(p3)
+    """
     offset = (0,0,0,)
     spacing = (np.ones(4),np.ones(4),np.ones(4),)
     start = (0.5,0.75,0.25,)
@@ -139,4 +174,4 @@ if __name__ == "__main__":
     weight = my_grid.get_weight( my_ray )
     for k,v in list(weight.items()):
         print('{:}: {:.3}'.format( k, v ))
-
+    """

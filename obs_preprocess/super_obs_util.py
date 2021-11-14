@@ -17,7 +17,7 @@ import numpy as np
 max_quality_only = True
 surface_type = 1         # 1=land,  0=ocean, -1=both
 operation_mode = -1       # 1=glint, 0=nadir, -1=both
-group_by_second = True
+group_by_second = False
 group_by_column = True
 
 error_ocean = 0.5
@@ -27,8 +27,8 @@ error_land = 0.8
 
 def merge_second( sounding_list ):
 
-    value = np.array( [ s['xco2'] for s in sounding_list ] )
-    unc = np.array( [ s['xco2_uncertainty'] for s in sounding_list ] )
+    value = np.array( [ s['co_column'] for s in sounding_list ] )
+    unc = np.array( [ s['co_column_precision'] for s in sounding_list ] )
     
     def weight_avg( s_list, var ):
         var_arr = np.array( [ s[var] for s in s_list ] )
@@ -45,12 +45,13 @@ def merge_second( sounding_list ):
     snum = len( sounding_list )
     avg_var_unc = (np.sum(unc)**2)/snum
     avg_unc = unc.mean()
-    xco2_w_avg = weight_avg( sounding_list, 'xco2' )
+    xco2_w_avg = weight_avg( sounding_list, 'co_column' )
     spread_ret = np.sqrt( ((xco2_w_avg - value)**2).mean() )
     
     #use spread if it is higher than reported uncertainty
-    surface_type = int( sounding_list[0]['surface_type'] )
-    my_err = error_land if surface_type == 1 else error_ocean
+    #print(sounding_list[0]['landflag'].data)
+    surface_type = int( sounding_list[0]['landflag'].data )
+    my_err = error_land if surface_type != 1 else error_ocean
     if spread_ret == 0.:
         avg_spread = my_err
     else:

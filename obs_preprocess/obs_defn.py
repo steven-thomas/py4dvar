@@ -210,10 +210,13 @@ class ObsInstantRay( ObsSimple ):
         
         loc_dict = self.map_location( model_space )
         if self.valid is False: return None
-        
+        print('pass spatial test')
+
+
         time_dict = self.map_time( model_space )
         if self.valid is False: return None
-        
+        print('pass time test')    
+
         proportion = {}
         for time_k, time_v in time_dict.items():
             for loc_k, loc_v in loc_dict.items():
@@ -222,7 +225,8 @@ class ObsInstantRay( ObsSimple ):
         
         weight_grid = self.add_visibility( proportion, model_space )
         if self.valid is False: return None
-        
+        print('pass weight test')
+
         #dicts must have identical keys
         assert set( weight_grid ) == set( proportion )
         for key in weight_grid.keys():

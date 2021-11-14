@@ -13,8 +13,11 @@ from __future__ import absolute_import
 import datetime as dt
 import numpy as np
 
+import context
+
 from obs_defn import ObsMultiRay
-from ray_trace import Point, Ray
+#from ray_trace import Point, Ray
+from obs_preprocess.ray_trace import Point, Ray
 
 class ObsTROPOMI( ObsMultiRay ):
     """Single observation (or sounding) from OCO2 satellite
@@ -48,8 +51,9 @@ class ObsTROPOMI( ObsMultiRay ):
         newobs.out_dict['uncertainty'] = kwargs['co_column_precision']
         
         # newobs.out_dict['OCO2_id'] = kwargs['sounding_id']
-        newobs.out_dict['surface_type'] = kwargs['surface_type']
-        newobs.out_dict['operation_mode'] = kwargs['operation_mode']
+        #newobs.out_dict['surface_type'] = kwargs['surface_type']
+        newobs.out_dict['surface_type'] = kwargs['landflag']
+       # newobs.out_dict['operation_mode'] = kwargs['operation_mode']
         newobs.out_dict['processing_quality_flags'] = kwargs['processing_quality_flags']
         #OCO2 Lite-files only record CO2 values
         newobs.spcs = 'CO'
@@ -105,30 +109,31 @@ class ObsTROPOMI( ObsMultiRay ):
             weight_grid.update( weight_slice )
         
         return weight_grid
-    
+      """ 
     def map_location( self, model_space ):
         assert model_space.gridmeta['GDTYP'] == 2, 'invalid GDTYP'
         #convert source location data into a list of spacial points
-        lat = self.src_data[ 'latitude' ]
-        lon = self.src_data[ 'longitude' ]
+        #print("this is actually being called but just checking")
+        lat = self.src_data[ 'latitude_center' ]
+        lon = self.src_data[ 'longitude_center' ]
         p0_zenith = np.radians( self.src_data[ 'solar_zenith_angle' ] )
-        p0_azimuth = np.radians( self.src_data[ 'solar_azimuth_angle' ] )
-        p2_zenith = np.radians( self.src_data[ 'sensor_zenith_angle' ] )
-        p2_azimuth = np.radians( self.src_data[ 'sensor_azimuth_angle' ] )
-        
+        p0_azimuth = np.radians ( self.src_data[ 'solar_azimuth_angle' ] ) 
+        p2_zenith = np.radians( self.src_data[ 'viewing_zenith_angle' ] )
+        p2_azimuth = np.radians( self.src_data[ 'viewing_azimuth_angle' ] ) 
         x1,y1 = model_space.get_xy( lat, lon )
         p1 = (x1,y1,0)
         p0 = model_space.get_ray_top( p1, p0_zenith, p0_azimuth )
         p2 = model_space.get_ray_top( p1, p2_zenith, p2_azimuth )
-        
         ray_in = Ray( p0, p1 )
         ray_out = Ray( p1, p2 )
-        try:
-            in_dict = model_space.grid.get_ray_cell_dist( ray_in )
-            out_dict = model_space.grid.get_ray_cell_dist( ray_out )
-        except AssertionError:
-            self.coord_fail( 'outside grid area' )
-            return None
+       # try:
+        in_dict = model_space.grid.get_ray_cell_dist( ray_in )
+        out_dict = model_space.grid.get_ray_cell_dist( ray_out )
+       # except AssertionError:
+       # raise(ValueError)
+       # self.coord_fail( 'outside grid area' )
+
+           # return None
         
         dist_dict = in_dict.copy()
         for coord, val in out_dict.items():
@@ -148,4 +153,4 @@ class ObsTROPOMI( ObsMultiRay ):
         self.time = [ day, time ]
         #use generalized function
         return ObsMultiRay.map_time( self, model_space )
-        """
+        

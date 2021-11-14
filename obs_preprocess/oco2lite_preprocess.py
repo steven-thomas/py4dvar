@@ -77,6 +77,7 @@ target_var = ['co_column',
 meteo_var = ['landflag', 'pressure_levels']
 diagnostics_var = ['processing_quality_flags']
 
+
 obslist = []
 for fname in filelist:
     print('read {}'.format( fname ))
@@ -109,8 +110,9 @@ for fname in filelist:
             pass
         elif model_grid.lat_lon_inside( lat=lat, lon=lon ):
             if so_util.group_by_second is True:
-                src_dict['sec'] = int( src_dict['time'] )
+                src_dict['sec'] = int( src_dict['time'][0])
             sounding_list.append( src_dict )
+           # print(src_dict['time'][0])
     del var_dict
 
     if so_util.group_by_second is True:
@@ -122,13 +124,15 @@ for fname in filelist:
             merge_list.append( sounding )
         sounding_list = merge_list
 
+   # print(ObsTROPOMI.__dict__)
+    print(len(sounding_list))
     for sounding in sounding_list:
         obs = ObsTROPOMI.create( **sounding )
         obs.interp_time = interp_time
         obs.model_process( model_grid )
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
-
+    print(len(obslist))
 if so_util.group_by_column is True:
     obslist = [ o for o in obslist if so_util.is_single_column(o) ]
     col_list = list( set( [ so_util.get_col_id(o) for o in obslist ] ) )
