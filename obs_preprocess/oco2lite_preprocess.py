@@ -99,7 +99,7 @@ for fname in filelist:
     
     sounding_list = []
     for i in range( size ):
-        src_dict = { k: v[i] for k,v in list(var_dict.items()) }
+        src_dict = { k: v.squeeze()[i] for k,v in list(var_dict.items()) }
         lat = src_dict['latitude_center']
         lon = src_dict['longitude_center']
         if so_util.max_quality_only is True and src_dict['processing_quality_flags'] != 0:
@@ -113,7 +113,7 @@ for fname in filelist:
                 src_dict['sec'] = int( src_dict['time'][0])
             sounding_list.append( src_dict )
            # print(src_dict['time'][0])
-    del var_dict
+   # del var_dict
 
     if so_util.group_by_second is True:
         sec_list = list( set( [ s['sec'] for s in sounding_list ] ) )

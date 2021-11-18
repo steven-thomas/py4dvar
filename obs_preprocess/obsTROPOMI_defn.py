@@ -147,7 +147,7 @@ class ObsTROPOMI( ObsMultiRay ):
     
     def map_time( self, model_space ):
         #convert source time into [ int(YYYYMMDD), int(HHMMSS) ]
-        fulltime = dt.datetime.utcfromtimestamp( self.src_data[ 'time' ] )
+        fulltime = dt.datetime.utcfromtimestamp( self.src_data[ 'time' ].squeeze())
         day = int( fulltime.strftime( '%Y%m%d' ) )
         time = int( fulltime.strftime( '%H%M%S' ) )
         self.time = [ day, time ]
