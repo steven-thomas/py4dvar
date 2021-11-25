@@ -126,14 +126,14 @@ class ObsTROPOMI( ObsMultiRay ):
         p2 = model_space.get_ray_top( p1, p2_zenith, p2_azimuth )
         ray_in = Ray( p0, p1 )
         ray_out = Ray( p1, p2 )
-       # try:
-        in_dict = model_space.grid.get_ray_cell_dist( ray_in )
-        out_dict = model_space.grid.get_ray_cell_dist( ray_out )
-       # except AssertionError:
+        try:
+            in_dict = model_space.grid.get_ray_cell_dist( ray_in )
+            out_dict = model_space.grid.get_ray_cell_dist( ray_out )
+        except AssertionError:
        # raise(ValueError)
-       # self.coord_fail( 'outside grid area' )
+            self.coord_fail( 'outside grid area' )
 
-           # return None
+            return None
         
         dist_dict = in_dict.copy()
         for coord, val in out_dict.items():
@@ -147,10 +147,14 @@ class ObsTROPOMI( ObsMultiRay ):
     
     def map_time( self, model_space ):
         #convert source time into [ int(YYYYMMDD), int(HHMMSS) ]
-        fulltime = dt.datetime.utcfromtimestamp( self.src_data[ 'time' ].squeeze())
+       # fulltime = dt.datetime.utcfromtimestamp( self.src_data[ 'time' ])
+        t_array = self.src_data[ 'time' ]
+        fulltime = dt.datetime(year = t_array[0], month = t_array[1], day = t_array[2], hour = t_array[3], minute = t_array[4], second = t_array[5])
+
         day = int( fulltime.strftime( '%Y%m%d' ) )
         time = int( fulltime.strftime( '%H%M%S' ) )
         self.time = [ day, time ]
+    
         #use generalized function
         return ObsMultiRay.map_time( self, model_space )
         

@@ -125,7 +125,7 @@ for fname in filelist:
         sounding_list = merge_list
 
    # print(ObsTROPOMI.__dict__)
-    print(len(sounding_list))
+   # print(len(sounding_list))
     for sounding in sounding_list:
         obs = ObsTROPOMI.create( **sounding )
         obs.interp_time = interp_time

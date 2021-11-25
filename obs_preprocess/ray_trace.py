@@ -113,8 +113,6 @@ class Ray( object ):
         assert 0 <= dim < self.ndim, 'invalid dimension'
         start = self.start[ dim ]
         end = self.end[ dim ]
-        print(type(self.start), self.start, type(self.end), self.end)
-        print(self.start.co_ord, self.end.co_ord, "co_ord", "start", start, "end", end)
         return sorted( [start, end] )
     
     def get_par( self, value, dim ):
@@ -148,12 +146,10 @@ class Point( object ):
     
     @classmethod
     def mid_point( cls, p1, p2 ):
-        if not (isinstance( p1, Point ) and isinstance( p2, Point )):
-            print('not mid only between 2 points')
-            print(type(p1), type(p2))
+       # if not (isinstance( p1, Point ) and isinstance( p2, Point )):
         assert isinstance( p1, Point ) and isinstance( p2, Point ), 'mid_point only between 2 points'
-        if not (p1.ndim == p2.ndim): 
-            print('not dimension mis- match')
+       # if not (p1.ndim == p2.ndim): 
+           
         assert p1.ndim == p2.ndim, "dimension mis-match"
         return cls( [ 0.5*(p1[d] + p2[d]) for d in range( p1.ndim ) ] )
 
