@@ -123,6 +123,7 @@ for fname in filelist:
                        for s in sounding_list if s['sec'] == sec ] )
             merge_list.append( sounding )
         sounding_list = merge_list
+        print(sounding_list, "<- sounding list")
 
    # print(ObsTROPOMI.__dict__)
    # print(len(sounding_list))
@@ -132,7 +133,8 @@ for fname in filelist:
         obs.model_process( model_grid )
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
-    print(len(obslist))
+    
+    
 if so_util.group_by_column is True:
     obslist = [ o for o in obslist if so_util.is_single_column(o) ]
     col_list = list( set( [ so_util.get_col_id(o) for o in obslist ] ) )
@@ -142,7 +144,9 @@ if so_util.group_by_column is True:
                                       if so_util.get_col_id(o) == col ] )
         merge_list.append( obs )
     obslist = merge_list
-
+    print(obslist, "<-obs list")
+    print(col_list, "<- col list")
+    print(merge_list, "<- merge list")
 if len( obslist ) > 0:
     domain = model_grid.get_domain()
     datalist = [ domain ] + obslist

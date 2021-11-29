@@ -129,6 +129,7 @@ class ObsTROPOMI( ObsMultiRay ):
         try:
             in_dict = model_space.grid.get_ray_cell_dist( ray_in )
             out_dict = model_space.grid.get_ray_cell_dist( ray_out )
+        
         except AssertionError:
        # raise(ValueError)
             self.coord_fail( 'outside grid area' )
@@ -158,3 +159,4 @@ class ObsTROPOMI( ObsMultiRay ):
         #use generalized function
         return ObsMultiRay.map_time( self, model_space )
         
+
