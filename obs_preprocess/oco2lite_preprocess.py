@@ -102,7 +102,7 @@ for fname in filelist:
         src_dict = { k: v.squeeze()[i] for k,v in list(var_dict.items()) }
         lat = src_dict['latitude_center']
         lon = src_dict['longitude_center']
-        if so_util.max_quality_only is True and src_dict['processing_quality_flags'] != 0:
+        if so_util.max_quality_only is True: # and src_dict['processing_quality_flags'] != 0:
             pass
         elif so_util.surface_type != -1 and src_dict['landflag'] != so_util.surface_type:
             pass
@@ -123,12 +123,13 @@ for fname in filelist:
                        for s in sounding_list if s['sec'] == sec ] )
             merge_list.append( sounding )
         sounding_list = merge_list
-        print(sounding_list, "<- sounding list")
+         
 
    # print(ObsTROPOMI.__dict__)
    # print(len(sounding_list))
     for sounding in sounding_list:
         obs = ObsTROPOMI.create( **sounding )
+        print(sounding)
         obs.interp_time = interp_time
         obs.model_process( model_grid )
         if obs.valid is True:
