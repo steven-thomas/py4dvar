@@ -222,7 +222,7 @@ class ModelSpace( object ):
         notes: function does not care about the horizontal domain of the model
         """
         assert 0 <= zenith < (0.5*np.pi), 'invalid zenith angle (must be radians)'
-        assert -(2*np.pi) <= azimuth <= (2*np.pi), 'invalid azimuth angle (must be radians)'
+        assert 0 <= np.abs(azimuth) <= (2*np.pi), 'invalid azimuth angle (must be radians)'
         x0,y0,z0 = start
         assert 0 <= z0 < self.max_height, 'invalid vertical start coordinate'
         v_dist = self.max_height - z0

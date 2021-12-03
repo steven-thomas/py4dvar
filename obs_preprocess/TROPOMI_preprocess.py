@@ -131,7 +131,7 @@ for fname in filelist:
         obs = ObsTROPOMI.create( **sounding )
         obs.interp_time = interp_time
         obs.model_process( model_grid )
-        print(sounding)
+       # print(sounding)
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
     
@@ -145,9 +145,7 @@ if so_util.group_by_column is True:
                                       if so_util.get_col_id(o) == col ] )
         merge_list.append( obs )
     obslist = merge_list
-    print(obslist, "<-obs list")
-    print(col_list, "<- col list")
-    print(merge_list, "<- merge list")
+   
 if len( obslist ) > 0:
     domain = model_grid.get_domain()
     datalist = [ domain ] + obslist

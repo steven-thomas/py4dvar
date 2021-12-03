@@ -126,15 +126,16 @@ class ObsTROPOMI( ObsMultiRay ):
         p2 = model_space.get_ray_top( p1, p2_zenith, p2_azimuth )
         ray_in = Ray( p0, p1 )
         ray_out = Ray( p1, p2 )
-       # try:
-        in_dict = model_space.grid.get_ray_cell_dist( ray_in )
-        out_dict = model_space.grid.get_ray_cell_dist( ray_out )
+       # print(p0_zenith, p2_zenith)
+        try:
+            in_dict = model_space.grid.get_ray_cell_dist( ray_in )
+            out_dict = model_space.grid.get_ray_cell_dist( ray_out )
         
-       # except AssertionError:
+        except AssertionError:
        # raise(ValueError)
            # self.coord_fail( 'outside grid area' )
 
-        #    return None
+            return None
         
         dist_dict = in_dict.copy()
         for coord, val in out_dict.items():

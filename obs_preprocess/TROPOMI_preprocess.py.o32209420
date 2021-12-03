@@ -1,0 +1,13 @@
+
+======================================================================================
+                  Resource Usage on 2021-12-03 16:56:27:
+   Job Id:             32209420.gadi-pbs
+   Project:            w22
+   Exit Status:        2
+   Service Units:      0.00
+   NCPUs Requested:    1                      NCPUs Used: 1               
+                                           CPU Time Used: 00:00:00                                   
+   Memory Requested:   500.0MB               Memory Used: 15.68MB         
+   Walltime requested: 10:00:00            Walltime Used: 00:00:01        
+   JobFS requested:    100.0MB                JobFS used: 0B              
+======================================================================================
