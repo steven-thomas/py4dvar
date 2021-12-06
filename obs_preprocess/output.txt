@@ -1,3 +1,75 @@
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03772.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03758.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03741.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03701.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03815.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03728.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03828.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03756.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03730.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03785.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03812.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03700.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03814.nc
+found 697890 soundings
 read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03699.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03829.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03729.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03800.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03813.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03713.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03843.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03771.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03841.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03784.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03743.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03798.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03786.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03715.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03801.nc
+found 697890 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03727.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03714.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03827.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03799.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03744.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03742.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03770.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03842.nc
+found 697675 soundings
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03757.nc
 found 697675 soundings
 No valid observations found, no output file generated.
