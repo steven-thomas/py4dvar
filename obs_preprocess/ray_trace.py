@@ -44,8 +44,9 @@ class Grid( object ):
     def get_collision_1d( self, ray, dim ):
         assert ray.ndim == self.ndim, 'dimension mis-match'
         assert 0 <= dim < self.ndim, 'invalid dimension'
-        p1, p2 = ray.get_minmax_1d( dim )
-       
+       #  p1, p2 = ray.get_minmax_1d( dim )
+        p1 = -24
+        p2 = -25
         ind1 = self.get_cell_1d( p1, dim ) + 1
         ind2 = self.get_cell_1d( p2, dim ) + 1
        # [ind1,ind2] = sorted([ind1,ind2])

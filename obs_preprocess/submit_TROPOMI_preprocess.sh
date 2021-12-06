@@ -16,30 +16,31 @@
 #PBS -q express
 #PBS -l wd
 #PBS -l jobfs=5GB
-
-#module use /g/data3/hh5/public/modules
-#module load conda/analysis27
-
+#PBS -l storage=gdata/hh5
+module use /g/data3/hh5/public/modules
+module load conda/analysis3-21.07
+module load python3/3.10.0
 #module unload openmpi
 #module load openmpi
 
 #cmaq-stuff
-module purge
-module load pbs
+#module purge
+#module load pbs
 module load intel-compiler/2019.3.199
-module load openmpi/4.0.3
+#module load openmpi/4.0.3
 module load netcdf/4.7.1
-module load hdf5/1.10.5
-module load nco
+#module load hdf5/1.10.5
+#module load nco
 #python-stuff
-module load python3/3.7.4
-module unload python2 python3
-module use /g/data3/hh5/public/modules
-module load conda/gdal27
+#module load python3/3.7.4
+ 
+#module unload python2 python3
+#module use /g/data3/hh5/public/modules
+#module load conda/gdal27
 
 
 
 
 
-python3 TROPOMI_preprocess.py >& output.txt
+python TROPOMI_preprocess.py >& output.txt
 

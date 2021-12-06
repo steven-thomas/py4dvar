@@ -1,4 +1,3 @@
-Traceback (most recent call last):
-  File "TROPOMI_preprocess.py", line 14, in <module>
-    from netCDF4 import Dataset
-ModuleNotFoundError: No module named 'netCDF4'
+read /scratch/w22/cm5310/store_share_p4d/obs_TROPOMI_data/s5p_l2_co_0007_03699.nc
+found 697675 soundings
+No valid observations found, no output file generated.
