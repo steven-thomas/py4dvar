@@ -85,9 +85,11 @@ class ModelSpace( object ):
         #construct grid for ray-tracing
         xoffset = self.gridmeta[ 'XORIG' ]
         yoffset = self.gridmeta[ 'YORIG' ]
+       # print(xoffset, yoffset, "x and y offset")
         zoffset = 0.
         xspace = self.gridmeta[ 'XCELL' ] * np.ones( self.ncol )
         yspace = self.gridmeta[ 'YCELL' ] * np.ones( self.nrow )
+       # print(xspace, yspace, "xspace yspace")
         zspace = np.diff( layer_height[:self.nlay+1] )
         offset = ( xoffset, yoffset, zoffset )
         spacing = ( xspace, yspace, zspace )

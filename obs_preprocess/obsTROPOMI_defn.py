@@ -119,19 +119,24 @@ class ObsTROPOMI( ObsMultiRay ):
         p0_zenith = np.radians( self.src_data[ 'solar_zenith_angle' ] )
         p0_azimuth = np.radians ( self.src_data[ 'solar_azimuth_angle' ] ) 
         p2_zenith = np.radians( self.src_data[ 'viewing_zenith_angle' ] )
-        p2_azimuth = np.radians( self.src_data[ 'viewing_azimuth_angle' ] ) 
+        p2_azimuth = np.radians( self.src_data[ 'viewing_azimuth_angle' ] )
+       # print( lat, lon )
         x1,y1 = model_space.get_xy( lat, lon )
+        print("x y",  model_space.proj( 134, -30 ))
+        print("lon, lat" , model_space.proj(4050000, 3553882. , inverse=True ))
         p1 = (x1,y1,0)
         p0 = model_space.get_ray_top( p1, p0_zenith, p0_azimuth )
         p2 = model_space.get_ray_top( p1, p2_zenith, p2_azimuth )
         ray_in = Ray( p0, p1 )
         ray_out = Ray( p1, p2 )
-       # print(p0_zenith, p2_zenith)
+        print(p0, p1, p2)
+        print(model_space.grid.edges)
         try:
             in_dict = model_space.grid.get_ray_cell_dist( ray_in )
             out_dict = model_space.grid.get_ray_cell_dist( ray_out )
-        
+           # print(out_dict)       
         except AssertionError:
+            print( 'we missed')
        # raise(ValueError)
            # self.coord_fail( 'outside grid area' )
 
@@ -152,12 +157,11 @@ class ObsTROPOMI( ObsMultiRay ):
        # fulltime = dt.datetime.utcfromtimestamp( self.src_data[ 'time' ])
         t_array = self.src_data[ 'time' ]
         fulltime = dt.datetime(year = t_array[0], month = t_array[1], day = t_array[2], hour = t_array[3], minute = t_array[4], second = t_array[5])
-
+       # print('time called')
         day = int( fulltime.strftime( '%Y%m%d' ) )
         time = int( fulltime.strftime( '%H%M%S' ) )
         self.time = [ day, time ]
     
         #use generalized function
         return ObsMultiRay.map_time( self, model_space )
-        
-
+    

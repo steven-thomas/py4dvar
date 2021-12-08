@@ -1,3 +1,4 @@
+
 """
 oco2lite_preprocess.py
 
@@ -13,6 +14,7 @@ See the License for the specific language governing permissions and limitations 
 import glob
 from netCDF4 import Dataset
 import os
+import sys
 
 import context
 from fourdvar.params.root_path_defn import store_path
@@ -96,13 +98,16 @@ for fname in filelist:
             var_dict[ var ] = f.groups[ 'diagnostics' ].variables[ var ][:]
 
     print('found {} soundings'.format( size ))
+
     
     sounding_list = []
-    for i in range( size ):
+    #for i in range( size ):
+    i = -1
+    while len(sounding_list) < 1:
+        i += 1
         src_dict = { k: v.squeeze()[i] for k,v in list(var_dict.items()) }
         lat = src_dict['latitude_center']
         lon = src_dict['longitude_center']
-       # print(lat, lon)
         if so_util.max_quality_only is True and src_dict['processing_quality_flags'] != 0:
             pass
         elif so_util.surface_type != -1 and src_dict['landflag'] != so_util.surface_type:
@@ -126,6 +131,12 @@ for fname in filelist:
         sounding_list = merge_list
         
 
+   # print( sounding_list[0].keys() )
+    sounding_list[0]['latitude_center'] = -30.0
+    sounding_list[0]['longitude_center'] = 134.0
+    sounding_list[0]['solar_zenith_angle'] = 1.0
+    sounding_list[0]['viewing_zenith_angle'] = 1.0
+    #sys.exit(1)
    # print(ObsTROPOMI.__dict__)
    # print(len(sounding_list))
     for sounding in sounding_list:
@@ -135,7 +146,8 @@ for fname in filelist:
        # print(sounding)
         if obs.valid is True:
             obslist.append( obs.get_obsdict() )
-    
+            print(obslist)
+    break
     
 if so_util.group_by_column is True:
     obslist = [ o for o in obslist if so_util.is_single_column(o) ]
